@@ -69,6 +69,22 @@ class ProgressiveFeatures:
 
         return filtered
 
+    def new_get_initial_features(self):
+        # TODO this could be more efficient !
+        weight_of_initial_feature = self.get_initial_feature_weight()
+        trivial_features = self.search_space.get_all_trivial_features()
+        if weight_of_initial_feature == 1:
+            return trivial_features
+
+        combinations_to_merge = itertools.combinations(trivial_features, weight_of_initial_feature)
+        initial_features = []
+        for combination in combinations_to_merge:
+            merged = self.search_space.merge_features_safe(combination)
+            if (merged is not None):
+                initial_features.append(merged)
+        return initial_features
+
+
     def __init__(self, combinatorial_candidates,
                  fitness_list,
                  search_space: SearchSpace.SearchSpace,
@@ -96,6 +112,11 @@ class ProgressiveFeatures:
         # set up the starting cooccurrence model
         self.pool_of_features = initial_features
         self.present_combinatorial_features = set([self.hot_encoder.feature_from_hot_encoding(f) for f in self.pool_of_features])
+
+        print("DEBUG: generating combinatorial features")
+        initial_features_combinatorial = self.new_get_initial_features()
+        for feature in initial_features_combinatorial:
+            print(f"\t{feature}")
 
     def get_adjusted_score(self, feature_raw, observed_prop): #TODO replace feature raw with feature_combinatorial
         def significance_of_observation(observed, expected):

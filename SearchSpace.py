@@ -25,6 +25,8 @@ class Feature:
 
     def __eq__(self, other):
         return self.values == other.values
+
+
 class Candidate:
     # a wrapper for a tuple
     def __init__(self, values):
@@ -57,8 +59,10 @@ class SearchSpace:
     def get_random_candidate(self):
         return Candidate(tuple((random.randrange(card) for card in self.cardinalities)))
 
+    def get_empty_feature(self):
+        return Feature([None]*self.dimensions)
     def get_single_value_feature(self, var, val):
-        result = Feature([None]*self.dimensions)
+        result = self.get_empty_feature()
         result.values[var] = val
         return result
 
@@ -79,6 +83,50 @@ class SearchSpace:
 
     def __repr__(self):
         return f"SearchSpace{self.cardinalities}"
+
+    def merge_two_features(self, feature_a: Feature, feature_b: Feature):
+        return Feature([from_a or from_b for (from_a, from_b) in zip(feature_a.values, feature_b.values)])
+
+    def merge_two_features_safe(self, feature_a: Feature, feature_b: Feature):
+        print(f"Merging {feature_a} and {feature_b}", end="")
+        result:Feature = Feature([])
+        # I'm sorry!!! but having 0 or None was really confusing..
+        for from_a, from_b in zip(feature_a.values, feature_b.values):
+            if from_a is None:
+                if from_b is None:
+                    result.values.append(None)
+                else:
+                    result.values.append(from_b)
+            else:
+                if from_b is None:
+                    result.values.append(from_a)
+                elif from_a != from_b:
+                    print("...Failed")
+                    return None
+                else:
+                    result.values.append(from_a)
+
+
+        print(f" = {result}")
+        return result
+
+    def merge_features_safe(self, list_of_features):
+        # assumes list_of_features has at least 2 elements
+        result = self.merge_two_features_safe(list_of_features[0], list_of_features[1])
+        for feature in list_of_features[2:]:
+            if result is None:
+                return None
+            result = self.merge_two_features_safe(result, feature)
+        if result is None:
+            return None
+        return result
+    def merge_features(self, list_of_features):
+        # assumes list_of_features has at least 2 elements
+        result = self.merge_two_features(list_of_features[0], list_of_features[1])
+        for feature in list_of_features[2:]:
+            result = self.merge_two_features(result, feature)
+        return result
+
 
 
 

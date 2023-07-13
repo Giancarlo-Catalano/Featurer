@@ -27,11 +27,11 @@ def test_problem_thoroughly(problem):
                                                                     problem.get_complexity_of_feature,
                                                                     problem.pretty_print_feature,
                                                                     importance_of_explainability=0.4,
-                                                                    merging_power = 2)
+                                                                    merging_power = 6)
 
 
 trap5 = TrapK.TrapK(4, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
+checkerboard = CheckerBoard.CheckerBoardProblem(2, 2)
 onemax = OneMax.OneMaxProblem(6)
 binval = BinVal.BinValProblem(6, 2)
 
