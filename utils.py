@@ -270,7 +270,6 @@ def weighted_sum(a, weight_a, b, weight_b):
 
 
 def arithmetic_weighted_average(a, weight_a, b, weight_b):
-
     return weighted_sum(a, weight_a, b, weight_b) / (weight_a+weight_b)
 
 

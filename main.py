@@ -3,10 +3,10 @@ from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK
 
 import Version_B.FeatureDiscoverer
 
-trap5 = TrapK.TrapK(4, 3)
+trap5 = TrapK.TrapK(5, 4)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
-onemax = OneMax.OneMaxProblem(6)
-binval = BinVal.BinValProblem(6, 2)
+onemax = OneMax.OneMaxProblem(12)
+binval = BinVal.BinValProblem(12, 2)
 
 
 def test_FeatureDiscoverer(problem):
@@ -16,9 +16,9 @@ def test_FeatureDiscoverer(problem):
     ss = problem.get_search_space()
     random_candidates = [ss.get_random_candidate() for _ in range(6000)]
     scores = [problem.score_of_candidate(c) for c in random_candidates]
-    importance_of_explainability = 0.6
-    complexity_damping = 2
-    merging_power = 3
+    importance_of_explainability = 0.7
+    complexity_damping = 1
+    merging_power = 5
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,
                                                        candidateC_population=random_candidates,
@@ -47,6 +47,7 @@ def test_FeatureDiscoverer(problem):
 
     print("Starting to generate the next generation")
     new_features = fd.get_next_wave_of_features(trivial_featuresH, trivial_featuresH)
+    new_features.sort(key=utils.second)
     print("The generated features are:")
     print_list_of_features(new_features, with_scores=True)
 
@@ -58,5 +59,5 @@ def test_FeatureDiscoverer(problem):
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(checkerboard)
+    test_FeatureDiscoverer(trap5)
 

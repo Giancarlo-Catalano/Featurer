@@ -60,11 +60,6 @@ class FeatureDiscoverer:
 
         return clash_matrix.ravel()
 
-    def fast_is_feature_valid(self, featureH, flat_feature_clash_matrix):
-        """returns true if the feature is valid in the search space, by using a matrix multiplication"""
-        return utils.flat_outer_product(featureH) @ flat_feature_clash_matrix == 0
-
-
     def get_explainability_of_feature(self, featureH):
         """ returns a score in [0,1] describing how explainable the feature is, based on the given complexity function"""
         featureC = self.hot_encoder.feature_from_hot_encoding(featureH)
@@ -98,40 +93,17 @@ class FeatureDiscoverer:
             return result
 
 
-        def select_explainable_features(featureH_list):
-            """given a list of features, it returns the ones that it thinks are worth keeping, based on their explainabilty"""
-            """ Effectively, it does a truncation selection of the approximate complexity"""
-            if len(featureH_list) < self.search_space.total_cardinality:
-                # print(f"A list of {len(featureH_list)} was spared")
-                return featureH_list
-
-            # deb_initial_size = len(featureH_list)
-
-            complexity_scores = np.array([self.complexity_function(self.hot_encoder.feature_from_hot_encoding(featureH))
-                               for featureH in featureH_list])
-
-            # we then select the top importance_of_explainability of the population, scored by explainability
-            threshold = utils.arithmetic_weighted_average(np.min(complexity_scores), self.importance_of_explainability,
-                                                          np.max(complexity_scores), self.importance_of_fitness)
-
-
-            # deb_final_size = len([featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
-            #                  if complexity <= threshold])
-            # print(f"The list was filtered from {deb_initial_size} to {deb_final_size}")
-            return [featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
-                             if complexity <= threshold]
-
-
         def aggressively_select_explainable_features(featureH_list):
             """given a list of features, it returns the ones that it thinks are worth keeping, based on their explainabilty"""
             """ Effectively, it does a truncation selection of the approximate complexity"""
 
-            if len(featureH_list) < self.search_space.total_cardinality:
+            ideal_size = self.search_space.total_cardinality
+
+            if len(featureH_list) < ideal_size:
                 # print(f"A list of {len(featureH_list)} was spared")
                 return featureH_list
 
 
-            ideal_size = self.search_space.dimensions**2
             current_size = len(featureH_list)
 
 
@@ -141,9 +113,9 @@ class FeatureDiscoverer:
                                for featureH in featureH_list])
 
             # we then select the top importance_of_explainability of the population, scored by explainability
-            portion_to_keep = (current_size/ideal_size)**2
-            threshold = utils.arithmetic_weighted_average(np.min(complexity_scores), 1-portion_to_keep,
-                                                          np.max(complexity_scores), portion_to_keep)
+            portion_to_keep = (ideal_size/current_size)**(self.merging_power*2)
+            threshold = utils.weighted_sum(np.min(complexity_scores), 1-portion_to_keep,
+                                           np.max(complexity_scores), portion_to_keep)
 
 
             # deb_final_size = len([featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
@@ -154,6 +126,7 @@ class FeatureDiscoverer:
 
         def consider_feature(feature):
             for weight in reversed(range(at_most)):  # NOTE: the lack of +1
+                # TODO rewrite according to design document
                 organised_by_weight[weight + 1].extend(
                     aggressively_select_explainable_features(new_merges_when_adding_feature_to_weight_category(feature, weight)))
 
@@ -201,15 +174,6 @@ class FeatureDiscoverer:
     def get_explainability_of_features(self, featureH_pool):
         """returns an array with the respective explainability score of each feature"""
         return np.array([self.get_explainability_of_feature(featureH) for featureH in featureH_pool])
-
-
-    def get_approximate_complexity_of_feature(self, featureH):
-        """ During feature search, it's necessary to only consider the features that are explainable"""
-        """ This is because there are simply too many features, and we exclude in advance the least explainable ones"""
-        """ While this could be done considering the fitness as well, it's not predictable how mergings affect fitness"""
-        """ Whereas we can assume that complexity worsens through mergings """
-        """ Since calculating the complexity can be slow, we use a surrogate: the weight of the feature"""
-        return np.sum(featureH)
 
     def get_scores_of_features(self, featureH_pool):
         """returns the scores for each feature, which consider both the average_fitness and the """
