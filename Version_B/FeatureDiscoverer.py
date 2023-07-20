@@ -141,7 +141,7 @@ class FeatureDiscoverer:
                                for featureH in featureH_list])
 
             # we then select the top importance_of_explainability of the population, scored by explainability
-            portion_to_keep = current_size/ideal_size
+            portion_to_keep = (current_size/ideal_size)**2
             threshold = utils.arithmetic_weighted_average(np.min(complexity_scores), 1-portion_to_keep,
                                                           np.max(complexity_scores), portion_to_keep)
 
@@ -155,7 +155,7 @@ class FeatureDiscoverer:
         def consider_feature(feature):
             for weight in reversed(range(at_most)):  # NOTE: the lack of +1
                 organised_by_weight[weight + 1].extend(
-                    select_explainable_features(new_merges_when_adding_feature_to_weight_category(feature, weight)))
+                    aggressively_select_explainable_features(new_merges_when_adding_feature_to_weight_category(feature, weight)))
 
         for feature in featureH_pool:
             consider_feature(feature)
@@ -194,7 +194,7 @@ class FeatureDiscoverer:
         unboosted = (average_fitnesses - min_fitness)/(max_fitness-min_fitness)  # forces them to be between 0 and 1
 
         def boost(x):
-            return 3*x**2-2*x**3
+            return 3*x**2-2*x**3  # this is the solution to integral([x*(1-x)]^k) for k=1
 
         return boost(unboosted)
 
@@ -219,7 +219,7 @@ class FeatureDiscoverer:
                        + fitness_percentiles * self.importance_of_fitness
 
         # DEBUG
-
+        """
         print("The scores of all the features are:")
         for (feature_H, explainability, fitness) in zip(featureH_pool, explainability_scores, fitness_percentiles):
             featureC = self.hot_encoder.feature_from_hot_encoding(feature_H)
@@ -234,7 +234,7 @@ class FeatureDiscoverer:
                   f"ar_m = {arithmetic:.2f},"
                   f"ge_m = {geometric:.2f},"
                   f"ha_m = {harmonic:.2f}")
-
+        """
         return weighted_sum
 
     def get_next_wave_of_features(self, current_featureH_pool, trivial_features):
@@ -244,6 +244,6 @@ class FeatureDiscoverer:
         scores = self.get_scores_of_features(valid_mergings)
 
         sorted_by_score = sorted(zip(valid_mergings, scores), key=utils.second, reverse=True)
-        amount_to_keep = self.search_space.total_cardinality ** 2  # freshly pulled out of my arse!
+        amount_to_keep = self.search_space.total_cardinality**2  # freshly pulled out of my arse!
         # return [merged_feature for (merged_feature, _) in sorted_by_score[:amount_to_keep]]
         return sorted_by_score[:amount_to_keep]
