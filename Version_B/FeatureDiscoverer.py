@@ -102,10 +102,10 @@ class FeatureDiscoverer:
             """given a list of features, it returns the ones that it thinks are worth keeping, based on their explainabilty"""
             """ Effectively, it does a truncation selection of the approximate complexity"""
             if len(featureH_list) < self.search_space.total_cardinality:
-                print(f"A list of {len(featureH_list)} was spared")
+                # print(f"A list of {len(featureH_list)} was spared")
                 return featureH_list
 
-            deb_initial_size = len(featureH_list)
+            # deb_initial_size = len(featureH_list)
 
             complexity_scores = np.array([self.complexity_function(self.hot_encoder.feature_from_hot_encoding(featureH))
                                for featureH in featureH_list])
@@ -115,9 +115,40 @@ class FeatureDiscoverer:
                                                           np.max(complexity_scores), self.importance_of_fitness)
 
 
-            deb_final_size = len([featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
-                             if complexity <= threshold])
-            print(f"The list was filtered from {deb_initial_size} to {deb_final_size}")
+            # deb_final_size = len([featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
+            #                  if complexity <= threshold])
+            # print(f"The list was filtered from {deb_initial_size} to {deb_final_size}")
+            return [featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
+                             if complexity <= threshold]
+
+
+        def aggressively_select_explainable_features(featureH_list):
+            """given a list of features, it returns the ones that it thinks are worth keeping, based on their explainabilty"""
+            """ Effectively, it does a truncation selection of the approximate complexity"""
+
+            if len(featureH_list) < self.search_space.total_cardinality:
+                # print(f"A list of {len(featureH_list)} was spared")
+                return featureH_list
+
+
+            ideal_size = self.search_space.dimensions**2
+            current_size = len(featureH_list)
+
+
+            # deb_initial_size = len(featureH_list)
+
+            complexity_scores = np.array([self.complexity_function(self.hot_encoder.feature_from_hot_encoding(featureH))
+                               for featureH in featureH_list])
+
+            # we then select the top importance_of_explainability of the population, scored by explainability
+            portion_to_keep = current_size/ideal_size
+            threshold = utils.arithmetic_weighted_average(np.min(complexity_scores), 1-portion_to_keep,
+                                                          np.max(complexity_scores), portion_to_keep)
+
+
+            # deb_final_size = len([featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
+            #                  if complexity <= threshold])
+            # print(f"The list was filtered from {deb_initial_size} to {deb_final_size}")
             return [featureH for (featureH, complexity) in zip(featureH_list, complexity_scores)
                              if complexity <= threshold]
 
@@ -160,7 +191,12 @@ class FeatureDiscoverer:
         if (min_fitness == max_fitness):
             return average_fitnesses / min_fitness # should be all ones! TODO perhaps these should be all 0.5?
 
-        return (average_fitnesses - min_fitness)/(max_fitness-min_fitness)  # forces them to be between 0 and 1
+        unboosted = (average_fitnesses - min_fitness)/(max_fitness-min_fitness)  # forces them to be between 0 and 1
+
+        def boost(x):
+            return 3*x**2-2*x**3
+
+        return boost(unboosted)
 
     def get_explainability_of_features(self, featureH_pool):
         """returns an array with the respective explainability score of each feature"""

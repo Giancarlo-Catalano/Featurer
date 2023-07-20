@@ -16,8 +16,8 @@ def test_FeatureDiscoverer(problem):
     ss = problem.get_search_space()
     random_candidates = [ss.get_random_candidate() for _ in range(6000)]
     scores = [problem.score_of_candidate(c) for c in random_candidates]
-    importance_of_explainability = 0.60
-    complexity_damping = 3
+    importance_of_explainability = 0.30
+    complexity_damping = 2
     merging_power = 4
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,
