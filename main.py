@@ -40,13 +40,11 @@ def test_FeatureDiscoverer(problem):
                 print(f"(has score {score:.2f})")
                 print("-" * 10)
 
-    trivial_featuresH = fd.get_initial_features()
-
     # print(f"The trivial hot features are:")
     # print_list_of_features(trivial_featuresH)
 
     print("Starting to generate the next generation")
-    new_features = fd.get_next_wave_of_features(trivial_featuresH, trivial_featuresH)
+    new_features = fd.get_next_wave_of_features()
     new_features.sort(key=utils.second)
     print("The generated features are:")
     print_list_of_features(new_features, with_scores=True)
