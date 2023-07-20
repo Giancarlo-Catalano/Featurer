@@ -1,6 +1,7 @@
 import itertools
 import math
 import random
+import traceback
 import warnings
 
 import numpy as np
@@ -225,11 +226,16 @@ def stop_for_every_warning(func):
         func()
     except RuntimeWarning:
         print("A warning was raised!")
+        traceback.print_exc()
 
 
 
 def sample_index_with_weights(probabilities):
     return random.choices(range(len(probabilities)), probabilities, k=1)[0]
+
+
+def chi_squared(observed, expected):
+    return ((observed-expected)**2)/expected
 
 
 def sample_from_grid_of_weights(probabilities):
@@ -244,3 +250,41 @@ def reattempt_until(generator, condition_to_satisfy):
         candidate = generator()
         if condition_to_satisfy(candidate):
             return candidate
+
+def as_row_matrix(array_input):
+    return np.reshape(array_input, (array_input.shape[0], 1))
+def as_column_matrix(array_input):
+    return np.reshape(array_input, (1, array_input.shape[0]))
+
+
+def row_wise_self_outer_product(input_matrix):
+    return np.einsum('ij,ik->ijk', input_matrix, input_matrix, optimize=True).reshape(input_matrix.shape[0], -1)
+
+def flat_outer_product(input_array):
+    return np.outer(input_array, input_array).ravel()
+
+
+
+def weighted_sum(a, weight_a, b, weight_b):
+    return a*weight_a+b*weight_b
+
+
+def arithmetic_weighted_average(a, weight_a, b, weight_b):
+
+    return weighted_sum(a, weight_a, b, weight_b) / (weight_a+weight_b)
+
+
+def geometric_weighted_average(a, weight_a, b, weight_b):
+    return ((a ** weight_a) * (b ** weight_b)) ** (1.0 / (weight_a + weight_b))
+
+
+def harmonic_weighted_average(a, weight_a, b, weight_b):
+    return (weight_a+weight_b) / ((weight_a / a) + (weight_b / b))
+
+
+def remap(x, starting_rage, ending_range):
+    (starting_min, starting_max) = starting_rage
+    (ending_min, ending_max) = ending_range
+
+    in_zero_one_range = (x-starting_min)/(starting_max-starting_min)
+    return in_zero_one_range*(ending_max-ending_min)+ending_min

@@ -19,6 +19,10 @@ class HotEncoder:
     def __init__(self, search_space):
         self.search_space = search_space
 
+    @property
+    def empty_feature(self): # TO TEST
+        return np.zeros(sum(self.search_space.cardinalities))
+
     def to_hot_encoding(self, candidate):
         """works for both candidates and features"""
         return np.concatenate(
@@ -62,3 +66,5 @@ def merge_many_features(list_of_hot_features):
 
 def features_are_equal(raw_a, raw_b):
     return np.array_equal(raw_a, raw_b)
+
+

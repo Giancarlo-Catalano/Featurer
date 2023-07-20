@@ -19,6 +19,8 @@ class FeatureGroup:
 
     def get_feature_vectors_for_candidates(self, candidate_matrix):
         """1 = feature is present"""
+        # print(f"In get_feature_vectors_for_candidate, candidate_matrix = \n{candidate_matrix}\n"
+        #       f", and precomputed_feature_matrix = \n{self.precomputed_feature_matrix}")
         positive_when_absent = (1 - candidate_matrix) @ self.precomputed_feature_matrix
         return 1 - np.minimum(positive_when_absent, 1)
 

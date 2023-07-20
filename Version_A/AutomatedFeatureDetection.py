@@ -1,9 +1,6 @@
-import CooccurrenceModel
-import SimpleVariableExplainer
-import SurrogateScoreModel
+from Version_A import SimpleVariableExplainer, SurrogateScoreModel
 import utils
 import SearchSpace
-from old_files import InducedClustering, SimplerInducedClustering
 import ProgressiveFeatures
 
 

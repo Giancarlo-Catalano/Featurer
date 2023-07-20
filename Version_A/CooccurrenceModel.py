@@ -30,8 +30,12 @@ class CooccurrenceModel:
         unnormalised_value = row_matrix @ self.cooccurrence_matrix @ np.transpose(row_matrix)  # a scalar, somehow
         return self.normalise_score_of_feature_vector(feature_vector, unnormalised_value)
 
+
     def normalise_score_of_feature_vector(self, feature_vector, unnormalised_value):
         amount_of_cells_involved = np.sum(feature_vector) ** 2
+        if (amount_of_cells_involved == 0):
+            print(f"WARNING: received a candidate with no features!")
+            return 0
         average_value = unnormalised_value / amount_of_cells_involved
         return average_value / (self.maximum_value)
 

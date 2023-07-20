@@ -17,10 +17,10 @@ class Feature:
     def __init__(self, values):
         self.values = values
     def __repr__(self):
-        return "["+(" ".join([value_to_string(val) for val in self.values]))+"]"
+        return "<"+(" ".join([value_to_string(val) for val in self.values]))+">"
 
     def __hash__(self):
-        return self.values.__hash__()
+        return tuple(self.values).__hash__()
 
 
     def __eq__(self, other):
@@ -33,7 +33,7 @@ class Candidate:
         self.values = values
 
     def __repr__(self):
-        return "{"+(" ".join([value_to_string(val) for val in self.values]))+"}"
+        return "<"+(" ".join([value_to_string(val) for val in self.values]))+">"
 
 
     def __eq__(self, other):
@@ -88,9 +88,8 @@ class SearchSpace:
         return Feature([from_a or from_b for (from_a, from_b) in zip(feature_a.values, feature_b.values)])
 
     def merge_two_features_safe(self, feature_a: Feature, feature_b: Feature):
-        print(f"Merging {feature_a} and {feature_b}", end="")
         result:Feature = Feature([])
-        # I'm sorry!!! but having 0 or None was really confusing..
+        # I'm sorry!!! but having (0 or None) was really confusing..
         for from_a, from_b in zip(feature_a.values, feature_b.values):
             if from_a is None:
                 if from_b is None:
@@ -101,13 +100,10 @@ class SearchSpace:
                 if from_b is None:
                     result.values.append(from_a)
                 elif from_a != from_b:
-                    print("...Failed")
                     return None
                 else:
                     result.values.append(from_a)
 
-
-        print(f" = {result}")
         return result
 
     def merge_features_safe(self, list_of_features):
@@ -126,10 +122,3 @@ class SearchSpace:
         for feature in list_of_features[2:]:
             result = self.merge_two_features(result, feature)
         return result
-
-
-
-
-
-
-

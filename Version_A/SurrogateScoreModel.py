@@ -3,7 +3,6 @@ import math
 import CooccurrenceModel
 import ProgressiveFeatures
 import numpy as np
-import SearchSpace
 import HotEncoding
 import utils
 
@@ -15,8 +14,8 @@ class SurrogateScoreModel:
     def __init__(self, feature_detection_model: ProgressiveFeatures.ProgressiveFeatures):
         scores_of_features = feature_detection_model.get_scores_of_features_in_model(
             adjust_scores_considering_complexity=False)
-        features = feature_detection_model.pool_of_features  # in future versions, a conversion from a set to a list will be necessary
-        proportion_to_keep = 0.5
+        features = feature_detection_model.cooccurrence_model.feature_group.hot_features  # in future versions, a conversion from a set to a list will be necessary
+        proportion_to_keep = 1
         amount_to_keep = math.ceil(proportion_to_keep * len(scores_of_features))
         features_with_scores = list(zip(features, scores_of_features))
         features_with_scores.sort(key=utils.second, reverse=True)

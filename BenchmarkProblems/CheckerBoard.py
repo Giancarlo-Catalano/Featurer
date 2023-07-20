@@ -47,8 +47,7 @@ class CheckerBoardProblem:
         bounds_area = bounds_cols*bounds_rows
         normal_score = bounds_area/self.get_total_area()
 
-        damping = 2
-        return (1/damping)*(normal_score-0.5)+0.5
+        return normal_score
 
 
     def candidate_to_boolean_grid(self, candidate: SearchSpace.Candidate):

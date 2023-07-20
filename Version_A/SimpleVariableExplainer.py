@@ -1,5 +1,4 @@
 import itertools
-import math
 
 import utils
 import numpy as np
@@ -26,10 +25,6 @@ class SimpleVariableExplainer:
 
         return self.cooccurrence_model.cooccurrence_matrix[start_a:end_a, start_b:end_b]
 
-    @staticmethod
-    def chi_squared(observed, expected):
-        return ((observed-expected)**2)/expected
-
     def is_chi_squared_significant_95(self, chi_squared, degrees_of_freedom):
         pearson_95_thresholds = [0, 3.841, 5.991, 7.815, 9.488, 11.07, 12.592, 14.067, 15.507, 16.919, 18.307, 19.675, 21.026, 22.362, 23.685, 24.996, 26.296, 27.587, 28.869, 30.144, 31.41, 32.671, 33.924, 35.172, 36.415, 37.652, 38.885, 40.113, 41.337, 42.557, 43.773, 55.758, 67.505, 79.082, 90.531, 101.879, 113.145, 124.342]
         if (degrees_of_freedom  > len(pearson_95_thresholds)):
@@ -45,13 +40,11 @@ class SimpleVariableExplainer:
         expected_frequencies = utils.to_column_vector(marginal_frequencies_a) @ utils.array_to_row_vector(
             marginal_frequencies_b)
 
-        # before, there were proportions
+
         binomial_frequencies *= self.cooccurrence_model.maximum_value
         expected_frequencies *= self.cooccurrence_model.maximum_value
-        # print(f"The binomial frequencies are \n{binomial_frequencies}")
-        # print(f"The marginal frequencies are \n{expected_frequencies}")
 
-        total_chi_squared = sum([self.chi_squared(observed, expected)
+        total_chi_squared = sum([utils.chi_squared(observed, expected)
                               for (observed, expected)
                                   in zip(np.nditer(binomial_frequencies), np.nditer(expected_frequencies))])
 
@@ -100,9 +93,6 @@ class SimpleVariableExplainer:
 
         print(f"For the given problem, the correlation matrix is")
         pretty_print_matrix(variable_correlation_matrix)
-        print(f"\nIn boolean form, the significant variables are")
-        pretty_print_matrix(variable_correlation_matrix_boolean)
-
 
     def get_variance_of_variable(self, variable_index):
         variable_self_correlation_values = np.diag(self.get_binomial_frequencies(variable_index, variable_index))
