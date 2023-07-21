@@ -69,7 +69,7 @@ class FeatureDiscoverer:
 
     def select_simple_features(self, input_features):
         """returns the simpler of the input features"""
-        ideal_size = self.search_space.total_cardinality
+        ideal_size = self.search_space.total_cardinality*self.merging_power
         current_size = len(input_features)
 
 
@@ -88,7 +88,7 @@ class FeatureDiscoverer:
         return [featureH for (featureH, complexity) in zip(input_features, complexity_scores)
                 if complexity <= threshold]
 
-    def discover_features(self, at_most):
+    def explore_features(self, at_most):
         """returns *all* the *valid* merges obtained by choosing at_most features from feature_pool"""
         organised_by_weight = list(list() for _ in range(at_most + 1))
         organised_by_weight[0].append(self.hot_encoder.empty_feature)
@@ -102,9 +102,11 @@ class FeatureDiscoverer:
                                          for old_feature in organised_by_weight[weight_category]])
 
                 new_features = self.select_valid_features(new_features)
-                new_features = self.select_simple_features(new_features)
+                # new_features = self.select_simple_features(new_features)
 
                 organised_by_weight[weight_category + 1].extend(new_features)
+                organised_by_weight[weight_category + 1] = \
+                    self.select_simple_features(organised_by_weight[weight_category + 1])
 
         for feature in self.trivial_featuresH:
             consider_feature(feature)
@@ -166,9 +168,9 @@ class FeatureDiscoverer:
 
         return weighted_sum
 
-    def get_next_wave_of_features(self):
+    def discover_features(self):
         """returns the best mergings of the given pool of features"""
-        discovered_features = self.discover_features(at_most=self.merging_power)
+        discovered_features = self.explore_features(at_most=self.merging_power)
         scores = self.get_scores_of_features(discovered_features)
 
         sorted_by_score = sorted(zip(discovered_features, scores), key=utils.second, reverse=True)

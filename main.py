@@ -4,7 +4,7 @@ from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK
 import Version_B.FeatureDiscoverer
 
 trap5 = TrapK.TrapK(5, 4)
-checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
+checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 
@@ -16,8 +16,8 @@ def test_FeatureDiscoverer(problem):
     ss = problem.get_search_space()
     random_candidates = [ss.get_random_candidate() for _ in range(6000)]
     scores = [problem.score_of_candidate(c) for c in random_candidates]
-    importance_of_explainability = 0.7
-    complexity_damping = 1
+    importance_of_explainability = 0.5
+    complexity_damping = 2
     merging_power = 5
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,
@@ -43,8 +43,8 @@ def test_FeatureDiscoverer(problem):
     # print(f"The trivial hot features are:")
     # print_list_of_features(trivial_featuresH)
 
-    print("Starting to generate the next generation")
-    new_features = fd.get_next_wave_of_features()
+    print("Exploring features...")
+    new_features = fd.discover_features()
     new_features.sort(key=utils.second)
     print("The generated features are:")
     print_list_of_features(new_features, with_scores=True)

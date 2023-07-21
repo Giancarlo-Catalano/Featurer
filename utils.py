@@ -153,14 +153,15 @@ def from_hot_encoding(hot_encoding):
     """determines what the original value was"""
     """Note: None signifies that there were no 1s found (valid), and math.nan signifies that there were multiple (invalid)"""
 
-    result = None
-    for (i, value) in enumerate(hot_encoding):
-        if value:
-            if result is None:
-                result = i
-            else:  # the result had been found already!
-                return math.nan
-    return result
+    if np.max(hot_encoding) == 0:
+        return None
+
+    if np.sum(hot_encoding) > 1.0:
+        return math.nan
+    else:
+        for (i, value) in enumerate(hot_encoding):
+            if value:
+                return i
 
 
 def from_hot_encoding_old(hot_encoding):
