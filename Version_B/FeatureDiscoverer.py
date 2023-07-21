@@ -16,7 +16,8 @@ class FeatureDiscoverer:
 
     # features: set of featureH
 
-    def __init__(self, search_space, candidateC_population, fitness_scores, merging_power, complexity_function, complexity_damping = 2,
+    def __init__(self, search_space, candidateC_population, fitness_scores, merging_power, complexity_function,
+                 complexity_damping=2,
                  importance_of_explainability=0.5):
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
@@ -32,21 +33,20 @@ class FeatureDiscoverer:
 
     @property
     def importance_of_fitness(self):
-        return 1.0-self.importance_of_explainability
+        return 1.0 - self.importance_of_explainability
 
     def select_valid_features(self, input_features):
         """removes the features which are invalid because of toestepping"""
         clash_results = HotEncoding.fast_features_are_invalid(np.array(input_features), self.flat_clash_matrix)
 
         return [feature for (feature, clashes)
-                        in zip(input_features, clash_results)
-                        if not clashes]
+                in zip(input_features, clash_results)
+                if not clashes]
 
     def select_simple_features(self, input_features):
         """returns the simpler of the input features"""
-        ideal_size = self.search_space.total_cardinality*self.merging_power
+        ideal_size = self.search_space.total_cardinality  # *self.merging_power
         current_size = len(input_features)
-
 
         if current_size <= ideal_size:
             # print(f"A list of {len(featureH_list)} was spared")
@@ -71,7 +71,7 @@ class FeatureDiscoverer:
         def consider_feature(trivial_feature):
             for weight_category in reversed(range(at_most)):  # NOTE: the lack of +1
                 if len(organised_by_weight[weight_category]) == 0:
-                    continue # grrr I hate this keyword... why not call it skip?
+                    continue  # grrr I hate this keyword... why not call it skip?
 
                 new_features = np.array([HotEncoding.merge_features(old_feature, trivial_feature)
                                          for old_feature in organised_by_weight[weight_category]])
@@ -95,6 +95,22 @@ class FeatureDiscoverer:
         positive_when_absent = (1 - self.candidate_matrix) @ feature_matrix
         return 1 - np.minimum(positive_when_absent, 1)
 
+    @staticmethod
+    def remap_array_in_zero_one(input_array):
+        """remaps the values in the given array to be between 0 and 1"""
+        min_value = np.min(input_array)
+        max_value = np.max(input_array)
+
+        if (min_value == max_value):
+            return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
+
+        return (input_array - min_value) / (max_value - min_value)
+
+    @staticmethod
+    def boost_range(x):
+        """the input array is in [0, 1], and the result will have values lower than 0.5 lowered, greater than 0.5 increased"""
+        return 3 * x ** 2 - 2 * x ** 3  # this is the solution to integral([x*(1-x)]^k) for k=1
+
     def get_percentile_of_average_fitness_of_features(self, featureH_pool):
         """returns an array with the scores of the given features, adjusted by complexity and statistical significance"""
 
@@ -107,24 +123,19 @@ class FeatureDiscoverer:
                                       zip(sum_of_fitness_for_each_feature, count_for_each_feature)])
 
         # then we remap the fitnesses to be between 0 and 1
-        # knowing that all the fitnesses are between a min and a max, we will have min become 0 and max become 1
-        # effectively applying remap(fitness, from=(min, max), to=(0, 1))
+        unboosted = self.remap_array_in_zero_one(average_fitnesses)  # forces them to be between 0 and 1
+        return self.boost_range(unboosted)
 
-        min_fitness = np.min(self.fitness_scores)
-        max_fitness = np.max(self.fitness_scores)
+    def get_commonality_for_each_feature(self, featureH_pool):
+        """returns an array indicating how common each feature is, as a percentage in [0, 1]"""
 
-        if (min_fitness == max_fitness):
-            return average_fitnesses / min_fitness # should be all ones! TODO perhaps these should be all 0.5?
-
-        unboosted = (average_fitnesses - min_fitness)/(max_fitness-min_fitness)  # forces them to be between 0 and 1
-
-        def boost(x):
-            return 3*x**2-2*x**3  # this is the solution to integral([x*(1-x)]^k) for k=1
-
-        return boost(unboosted)
+        feature_presence_matrix = self.which_candidates_contain_which_features(featureH_pool)
+        count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
+        return self.remap_array_in_zero_one(count_for_each_feature)
 
     def get_explainability_of_features(self, featureH_pool):
         """returns an array with the respective explainability score of each feature"""
+
         def get_explainability_of_feature(featureH):
             """ returns a score in [0,1] describing how explainable the feature is, based on the given complexity function"""
             featureC = self.hot_encoder.feature_from_hot_encoding(featureH)
@@ -134,26 +145,31 @@ class FeatureDiscoverer:
 
         return np.array([get_explainability_of_feature(featureH) for featureH in featureH_pool])
 
-    def get_scores_of_features(self, featureH_pool, with_inverse_fitness = False):
+    def get_scores_of_features(self, featureH_pool, on_commonality=False, with_inverse_fitness=False):
         """returns the scores for each feature, which consider both the average_fitness and the """
-        fitness_percentiles = self.get_percentile_of_average_fitness_of_features(featureH_pool)
+        fitness_percentiles = None
+        if on_commonality:
+            fitness_percentiles = self.get_commonality_for_each_feature(featureH_pool)
+        else:
+            fitness_percentiles = self.get_percentile_of_average_fitness_of_features(featureH_pool)
+
         if with_inverse_fitness:
-            fitness_percentiles = 1-fitness_percentiles
+            fitness_percentiles = 1 - fitness_percentiles
+
         explainability_scores = self.get_explainability_of_features(featureH_pool)
         weighted_sum = explainability_scores * self.importance_of_explainability \
                        + fitness_percentiles * self.importance_of_fitness
 
         return weighted_sum
 
-
     def generate_explainable_features(self):
         self.enumerated_explainable_features = self.explore_features(at_most=self.merging_power)
 
-
-    def get_important_features(self, with_inverse_fitness=False):
-        scores = self.get_scores_of_features(self.enumerated_explainable_features, with_inverse_fitness=with_inverse_fitness)
+    def get_important_features(self, on_commonality=False, inverted=False):
+        scores = self.get_scores_of_features(self.enumerated_explainable_features,
+                                             on_commonality=on_commonality,
+                                             with_inverse_fitness=inverted)
 
         sorted_by_score = sorted(zip(self.enumerated_explainable_features, scores), key=utils.second, reverse=True)
-        amount_to_keep = self.search_space.total_cardinality ** 2  # freshly pulled out of my arse!
+        amount_to_keep = self.search_space.total_cardinality  # freshly pulled out of my arse!
         return sorted_by_score[:amount_to_keep]
-

@@ -36,6 +36,7 @@ def test_FeatureDiscoverer(problem):
                 problem.pretty_print_feature(fd.hot_encoder.feature_from_hot_encoding(featureH))
                 print("-"*10)
         else:
+            featuresH.sort(key=utils.second, reverse=True)
             for featureH, score in featuresH:
                 print("-" * 10)
                 problem.pretty_print_feature(fd.hot_encoder.feature_from_hot_encoding(featureH))
@@ -50,28 +51,24 @@ def test_FeatureDiscoverer(problem):
 
 
     print("Obtaining the good and bad features")
-    good_features = fd.get_important_features(with_inverse_fitness=False)
-    bad_features = fd.get_important_features(with_inverse_fitness=True)
+    good_features       = fd.get_important_features(on_commonality=False, inverted=False)
+    bad_features        = fd.get_important_features(on_commonality=False, inverted=True)
+    popular_features    = fd.get_important_features(on_commonality=True, inverted=False)
+    unpopular_features  = fd.get_important_features(on_commonality=True, inverted=True)
 
-    good_features.sort(key=utils.second, reverse=False)
-    bad_features.sort(key=utils.second, reverse=False)
 
     print("The good features are")
     print_list_of_features(good_features, with_scores=True)
     print("The bad features are")
     print_list_of_features(bad_features, with_scores=True)
-
-
-def test_fast_clash_test(search_space: SearchSpace.SearchSpace):
-    print(f"The search space is {search_space}")
-    clash_matrix = HotEncoding.get_search_space_flat_clash_matrix(search_space)
-    print(f"The clash matrix is \n{clash_matrix}")
+    print("The popular features are")
+    print_list_of_features(popular_features, with_scores=True)
+    print("The unpopular features are")
+    print_list_of_features(unpopular_features, with_scores=True)
 
 
 
 
 if __name__ == '__main__':
     test_FeatureDiscoverer(checkerboard)
-    # ss = SearchSpace.SearchSpace((2, 5, 3, 2))
-    # test_fast_clash_test(ss)
 

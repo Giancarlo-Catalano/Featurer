@@ -69,8 +69,7 @@ class HotEncoder:
 
     def decode_tuple(self, hot_encoded):
         deconcatted = self.deconcat_hot_encoding(hot_encoded)
-        decoded_individually = [utils.from_hot_encoding(hot) for hot in deconcatted]
-        return tuple(decoded_individually)
+        return tuple(utils.from_hot_encoding(hot) for hot in deconcatted)
 
     def candidate_from_hot_encoding(self, hot_encoded):
         return SearchSpace.Candidate(self.decode_tuple(hot_encoded))
