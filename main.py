@@ -53,8 +53,8 @@ def test_FeatureDiscoverer(problem):
 
 
     print("Obtaining the good and bad features")
-    (good_features, bad_features) = fd.get_important_features(on_commonality=False)
-    (popular_features, unpopular_features)    = fd.get_important_features(on_commonality=True)
+    (good_features, bad_features)          = fd.get_explainable_features(criteria='fitness')
+    (popular_features, unpopular_features) = fd.get_explainable_features(criteria='popularity')
 
 
     print("The good features are")

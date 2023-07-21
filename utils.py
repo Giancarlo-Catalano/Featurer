@@ -28,12 +28,15 @@ def first(pair):
 def second(pair):
     return pair[1]
 
+
 def third(triplet):
     return triplet[2]
 
 
 def remove_from_tuple(input, which):
-    return tuple(input[:which], input[(which+1):])
+    return tuple(input[:which], input[(which + 1):])
+
+
 def remove_from_zipped_list(zipped, which):
     return [remove_from_tuple(input_tuple, which) for input_tuple in zipped]
 
@@ -49,7 +52,7 @@ def concat(lists):
     return sum(lists, [])
 
 
-def group(iterable, key_function=lambda x:x):
+def group(iterable, key_function=lambda x: x):
     """returns a dictionary, where the key is the key computed here"""
 
     precomputed_keys = [key_function(item) for item in iterable]
@@ -88,11 +91,11 @@ def group_unhashable(iterable, key=lambda x: x, custom_equals=lambda x, y: x == 
     return catalog
 
 
-#def remove_duplicates(iterable, key=lambda x: x):
+# def remove_duplicates(iterable, key=lambda x: x):
 #    return [cluster[0] for cluster in group(iterable, key).values()]
 
 
-def remove_duplicates(iterable, key=lambda x:x):
+def remove_duplicates(iterable, key=lambda x: x):
     seen_keys_set = set()
     seen_items = list()
     for item in iterable:
@@ -101,6 +104,7 @@ def remove_duplicates(iterable, key=lambda x:x):
             seen_keys_set.add(item_key)
             seen_items.append(item)
     return seen_items
+
 
 def remove_duplicates_unhashable(iterable, key=lambda x: x, custom_equals=lambda x, y: x == y):
     return [group_items[0] for (group_key, group_items) in group_unhashable(iterable, key, custom_equals)]
@@ -124,7 +128,7 @@ def unzip(zipped):
 
 def identity_matrix(n):
     """Creates a MATRIX as an Identity, with INTEGER values"""
-    #This function exists because I used to use matrices
+    # This function exists because I used to use matrices
     return np.identity(n, dtype=float_type)
 
 
@@ -224,11 +228,12 @@ def to_column_vector(row_vector):
 
 
 def binomial_coeff(n, k):
-    return math.factorial(n)/(math.factorial(n-k)*math.factorial(k))
+    return math.factorial(n) / (math.factorial(n - k) * math.factorial(k))
 
 
 def sigmoid(x):
-    return 1/(1+math.exp(-1*x))
+    return 1 / (1 + math.exp(-1 * x))
+
 
 def stop_for_every_warning(func):
     warnings.filterwarnings("error")
@@ -239,13 +244,12 @@ def stop_for_every_warning(func):
         traceback.print_exc()
 
 
-
 def sample_index_with_weights(probabilities):
     return random.choices(range(len(probabilities)), probabilities, k=1)[0]
 
 
 def chi_squared(observed, expected):
-    return ((observed-expected)**2)/expected
+    return ((observed - expected) ** 2) / expected
 
 
 def sample_from_grid_of_weights(probabilities):
@@ -261,8 +265,11 @@ def reattempt_until(generator, condition_to_satisfy):
         if condition_to_satisfy(candidate):
             return candidate
 
+
 def as_row_matrix(array_input):
     return np.reshape(array_input, (array_input.shape[0], 1))
+
+
 def as_column_matrix(array_input):
     return np.reshape(array_input, (1, array_input.shape[0]))
 
@@ -270,17 +277,17 @@ def as_column_matrix(array_input):
 def row_wise_self_outer_product(input_matrix):
     return np.einsum('ij,ik->ijk', input_matrix, input_matrix, optimize=True).reshape(input_matrix.shape[0], -1)
 
+
 def flat_outer_product(input_array):
     return np.outer(input_array, input_array).ravel()
 
 
-
 def weighted_sum(a, weight_a, b, weight_b):
-    return a*weight_a+b*weight_b
+    return a * weight_a + b * weight_b
 
 
 def arithmetic_weighted_average(a, weight_a, b, weight_b):
-    return weighted_sum(a, weight_a, b, weight_b) / (weight_a+weight_b)
+    return weighted_sum(a, weight_a, b, weight_b) / (weight_a + weight_b)
 
 
 def geometric_weighted_average(a, weight_a, b, weight_b):
@@ -288,12 +295,29 @@ def geometric_weighted_average(a, weight_a, b, weight_b):
 
 
 def harmonic_weighted_average(a, weight_a, b, weight_b):
-    return (weight_a+weight_b) / ((weight_a / a) + (weight_b / b))
+    return (weight_a + weight_b) / ((weight_a / a) + (weight_b / b))
 
 
 def remap(x, starting_rage, ending_range):
     (starting_min, starting_max) = starting_rage
     (ending_min, ending_max) = ending_range
 
-    in_zero_one_range = (x-starting_min)/(starting_max-starting_min)
-    return in_zero_one_range*(ending_max-ending_min)+ending_min
+    in_zero_one_range = (x - starting_min) / (starting_max - starting_min)
+    return in_zero_one_range * (ending_max - ending_min) + ending_min
+
+
+def remap_array_in_zero_one(input_array):
+    """remaps the values in the given array to be between 0 and 1"""
+    min_value = np.min(input_array)
+    max_value = np.max(input_array)
+
+    if (min_value == max_value):
+        return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
+
+    return (input_array - min_value) / (max_value - min_value)
+
+
+def remap_second_value(input_list):
+    (original, to_remap) = utils.unzip(input_list)
+    return [(from_original, remapped) for (from_original, remapped)
+            in zip(original, remap_array_in_zero_one(to_remap))]
