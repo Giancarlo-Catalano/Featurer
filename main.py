@@ -17,6 +17,8 @@ def test_FeatureDiscoverer(problem):
 
     ss = problem.get_search_space()
     random_candidates = [ss.get_random_candidate() for _ in range(6000)]
+
+
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
     complexity_damping = 2
@@ -51,10 +53,8 @@ def test_FeatureDiscoverer(problem):
 
 
     print("Obtaining the good and bad features")
-    good_features       = fd.get_important_features(on_commonality=False, inverted=False)
-    bad_features        = fd.get_important_features(on_commonality=False, inverted=True)
-    popular_features    = fd.get_important_features(on_commonality=True, inverted=False)
-    unpopular_features  = fd.get_important_features(on_commonality=True, inverted=True)
+    (good_features, bad_features) = fd.get_important_features(on_commonality=False)
+    (popular_features, unpopular_features)    = fd.get_important_features(on_commonality=True)
 
 
     print("The good features are")

@@ -45,7 +45,7 @@ class FeatureDiscoverer:
 
     def select_simple_features(self, input_features):
         """returns the simpler of the input features"""
-        ideal_size = self.search_space.total_cardinality  # *self.merging_power
+        ideal_size = self.search_space.total_cardinality*self.merging_power
         current_size = len(input_features)
 
         if current_size <= ideal_size:
@@ -146,30 +146,43 @@ class FeatureDiscoverer:
         return np.array([get_explainability_of_feature(featureH) for featureH in featureH_pool])
 
     def get_scores_of_features(self, featureH_pool, on_commonality=False, with_inverse_fitness=False):
-        """returns the scores for each feature, which consider both the average_fitness and the """
+        """returns a pair (score_goodness, score_badness), where the goodness is fitness if on_commonality = False"""
+        """if on_commonality is True, goodness is the popularity in the candidate population"""
         fitness_percentiles = None
         if on_commonality:
             fitness_percentiles = self.get_commonality_for_each_feature(featureH_pool)
         else:
             fitness_percentiles = self.get_percentile_of_average_fitness_of_features(featureH_pool)
 
-        if with_inverse_fitness:
-            fitness_percentiles = 1 - fitness_percentiles
+        inverse_fitness = 1-fitness_percentiles
 
         explainability_scores = self.get_explainability_of_features(featureH_pool)
-        weighted_sum = explainability_scores * self.importance_of_explainability \
+        weighted_sum_normal = explainability_scores * self.importance_of_explainability \
                        + fitness_percentiles * self.importance_of_fitness
 
-        return weighted_sum
+
+        weighted_sum_inverted = explainability_scores * self.importance_of_explainability \
+                       + inverse_fitness * self.importance_of_fitness
+
+        return list(zip(weighted_sum_normal, weighted_sum_inverted))
 
     def generate_explainable_features(self):
         self.enumerated_explainable_features = self.explore_features(at_most=self.merging_power)
 
-    def get_important_features(self, on_commonality=False, inverted=False):
+    def get_important_features(self, on_commonality=False):
+        """returns a pair (list_of_good, list_of_bad), where the lists contain features of size at most self.merging_power"""
         scores = self.get_scores_of_features(self.enumerated_explainable_features,
-                                             on_commonality=on_commonality,
-                                             with_inverse_fitness=inverted)
+                                             on_commonality=on_commonality)
 
-        sorted_by_score = sorted(zip(self.enumerated_explainable_features, scores), key=utils.second, reverse=True)
+        features_with_scores = [(feature, goodness, badness)
+                                for (feature, (goodness, badness))
+                                in zip(self.enumerated_explainable_features, scores)]
+
+        sorted_by_goodness = sorted(features_with_scores, key=utils.second, reverse=True)
+        sorted_by_badness  = sorted(features_with_scores, key=utils.third, reverse=True)
+
         amount_to_keep = self.search_space.total_cardinality  # freshly pulled out of my arse!
-        return sorted_by_score[:amount_to_keep]
+
+        good_features = [(feature, goodness) for (feature, goodness, _) in sorted_by_goodness[:amount_to_keep]]
+        bad_features = [(feature, badness) for (feature, _, badness) in sorted_by_badness[:amount_to_keep]]
+        return (good_features, bad_features)

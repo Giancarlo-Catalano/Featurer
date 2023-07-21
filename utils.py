@@ -28,6 +28,15 @@ def first(pair):
 def second(pair):
     return pair[1]
 
+def third(triplet):
+    return triplet[2]
+
+
+def remove_from_tuple(input, which):
+    return tuple(input[:which], input[(which+1):])
+def remove_from_zipped_list(zipped, which):
+    return [remove_from_tuple(input_tuple, which) for input_tuple in zipped]
+
 
 def sort_using_scores(elements, scores, increasing=False):
     zipped = list(zip(elements, scores))
