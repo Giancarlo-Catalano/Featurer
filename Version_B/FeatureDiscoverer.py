@@ -28,40 +28,15 @@ class FeatureDiscoverer:
         self.complexity_damping = complexity_damping
 
         self.trivial_featuresH = self.hot_encoder.get_hot_encoded_trivial_features()
-        self.flat_clash_matrix = self.get_flat_feature_clash_matrix()
+        self.flat_clash_matrix = HotEncoding.get_search_space_flat_clash_matrix(self.search_space)
 
     @property
     def importance_of_fitness(self):
         return 1.0-self.importance_of_explainability
 
-    def get_flat_feature_clash_matrix(self):
-        """returns a matrix where element i j is a boolean indicating
-           whether the features i and j can coexist in the same individual
-           (for implementation reasons, 0 = yes, 1 = no, unfortunately
-        """
-        """TODO: currently it does n^2 checks, but it could do roughly half of them
-                because can_merge is a commutative relation"""
-
-        def features_clash(featureH_a, featureH_b):
-            merged_feature = HotEncoding.merge_features(featureH_a, featureH_b)
-            is_invalid = not HotEncoding.feature_is_valid_in_search_space(merged_feature, self.search_space)
-            return is_invalid
-
-        amount_of_features = len(self.trivial_featuresH)
-        clash_matrix = np.zeros((amount_of_features, amount_of_features), dtype=np.float)
-        for (index_row, feature_row) in enumerate(self.trivial_featuresH):
-            for (index_column, feature_column) in enumerate(self.trivial_featuresH):
-                clash_matrix[index_row, index_column] += float(features_clash(feature_row, feature_column))
-
-        return clash_matrix.ravel()
-
     def select_valid_features(self, input_features):
         """removes the features which are invalid because of toestepping"""
-        def fast_features_are_valid(featureH_matrix):
-            flat_outer_for_each_feature = utils.row_wise_self_outer_product(featureH_matrix)
-            return (flat_outer_for_each_feature @ self.flat_clash_matrix)
-
-        clash_results = fast_features_are_valid(np.array(input_features))
+        clash_results = HotEncoding.fast_features_are_invalid(np.array(input_features), self.flat_clash_matrix)
 
         return [feature for (feature, clashes)
                         in zip(input_features, clash_results)

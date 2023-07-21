@@ -1,10 +1,12 @@
+import HotEncoding
+import SearchSpace
 import utils
 from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK
 
 import Version_B.FeatureDiscoverer
 
 trap5 = TrapK.TrapK(5, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
+checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 
@@ -18,7 +20,7 @@ def test_FeatureDiscoverer(problem):
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
     complexity_damping = 2
-    merging_power = 5
+    merging_power = 2
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,
                                                        candidateC_population=random_candidates,
@@ -60,8 +62,16 @@ def test_FeatureDiscoverer(problem):
     print_list_of_features(bad_features, with_scores=True)
 
 
+def test_fast_clash_test(search_space: SearchSpace.SearchSpace):
+    print(f"The search space is {search_space}")
+    clash_matrix = HotEncoding.get_search_space_flat_clash_matrix(search_space)
+    print(f"The clash matrix is \n{clash_matrix}")
+
+
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(trap5)
+    test_FeatureDiscoverer(checkerboard)
+    # ss = SearchSpace.SearchSpace((2, 5, 3, 2))
+    # test_fast_clash_test(ss)
 
