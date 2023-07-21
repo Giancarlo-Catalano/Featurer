@@ -159,21 +159,26 @@ class FeatureDiscoverer:
 
         return np.array([get_explainability_of_feature(featureH) for featureH in featureH_pool])
 
-    def get_scores_of_features(self, featureH_pool):
+    def get_scores_of_features(self, featureH_pool, with_inverse_fitness = False):
         """returns the scores for each feature, which consider both the average_fitness and the """
         fitness_percentiles = self.get_percentile_of_average_fitness_of_features(featureH_pool)
+        if with_inverse_fitness:
+            fitness_percentiles = 1-fitness_percentiles
         explainability_scores = self.get_explainability_of_features(featureH_pool)
         weighted_sum = explainability_scores * self.importance_of_explainability \
                        + fitness_percentiles * self.importance_of_fitness
 
         return weighted_sum
 
-    def discover_features(self):
-        """returns the best mergings of the given pool of features"""
-        discovered_features = self.explore_features(at_most=self.merging_power)
-        scores = self.get_scores_of_features(discovered_features)
 
-        sorted_by_score = sorted(zip(discovered_features, scores), key=utils.second, reverse=True)
-        amount_to_keep = self.search_space.total_cardinality**2  # freshly pulled out of my arse!
-        # return [merged_feature for (merged_feature, _) in sorted_by_score[:amount_to_keep]]
+    def generate_explainable_features(self):
+        self.enumerated_explainable_features = self.explore_features(at_most=self.merging_power)
+
+
+    def get_important_features(self, with_inverse_fitness=False):
+        scores = self.get_scores_of_features(self.enumerated_explainable_features, with_inverse_fitness=with_inverse_fitness)
+
+        sorted_by_score = sorted(zip(self.enumerated_explainable_features, scores), key=utils.second, reverse=True)
+        amount_to_keep = self.search_space.total_cardinality ** 2  # freshly pulled out of my arse!
         return sorted_by_score[:amount_to_keep]
+

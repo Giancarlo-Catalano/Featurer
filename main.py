@@ -3,8 +3,8 @@ from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK
 
 import Version_B.FeatureDiscoverer
 
-trap5 = TrapK.TrapK(5, 4)
-checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
+trap5 = TrapK.TrapK(5, 3)
+checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 
@@ -44,14 +44,20 @@ def test_FeatureDiscoverer(problem):
     # print_list_of_features(trivial_featuresH)
 
     print("Exploring features...")
-    new_features = fd.discover_features()
-    new_features.sort(key=utils.second)
-    print("The generated features are:")
-    print_list_of_features(new_features, with_scores=True)
+    fd.generate_explainable_features()
 
-    # print("And if we try to generate yet new ones... we should get lots of duplicates...")
-    # redundant_features = fd.get_next_wave_of_features(new_features, trivial_featuresH)
-    # print_list_of_features(redundant_features)
+
+    print("Obtaining the good and bad features")
+    good_features = fd.get_important_features(with_inverse_fitness=False)
+    bad_features = fd.get_important_features(with_inverse_fitness=True)
+
+    good_features.sort(key=utils.second, reverse=False)
+    bad_features.sort(key=utils.second, reverse=False)
+
+    print("The good features are")
+    print_list_of_features(good_features, with_scores=True)
+    print("The bad features are")
+    print_list_of_features(bad_features, with_scores=True)
 
 
 
