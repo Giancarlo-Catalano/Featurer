@@ -6,7 +6,7 @@ from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK
 import Version_B.FeatureDiscoverer
 
 trap5 = TrapK.TrapK(5, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
+checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 
@@ -16,12 +16,12 @@ def test_FeatureDiscoverer(problem):
 
 
     ss = problem.get_search_space()
-    random_candidates = [ss.get_random_candidate() for _ in range(6000)]
+    random_candidates = [ss.get_random_candidate() for _ in range(600)]
 
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
-    complexity_damping = 2
+    complexity_damping = 4
     merging_power = 2
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,

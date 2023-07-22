@@ -321,3 +321,8 @@ def remap_second_value(input_list):
     (original, to_remap) = utils.unzip(input_list)
     return [(from_original, remapped) for (from_original, remapped)
             in zip(original, remap_array_in_zero_one(to_remap))]
+
+
+def boost_range(x):
+    """the input array is in [0, 1], and the result will have values lower than 0.5 lowered, greater than 0.5 increased"""
+    return 3 * x ** 2 - 2 * x ** 3  # this is the solution to integral([x*(1-x)]^k) for k=1

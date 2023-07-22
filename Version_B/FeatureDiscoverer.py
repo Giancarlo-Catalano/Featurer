@@ -5,6 +5,10 @@ import HotEncoding
 import utils
 
 
+from Version_B import VariateModels
+from Version_B.ExplainabiliyCriteria import ExplainabilityCriteria
+
+
 class FeatureDiscoverer:
     search_space: SearchSpace.SearchSpace
     hot_encoder: HotEncoding.HotEncoder
@@ -23,8 +27,9 @@ class FeatureDiscoverer:
         self.explainable_features = None
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
+        self.amount_of_candidates = len(candidateC_population)
         self.candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidateC_population)
-        self.fitness_scores = np.array(fitness_scores)
+        self.fitness_of_candidates = np.array(fitness_scores)
         self.merging_power = merging_power
         self.complexity_function = complexity_function
         self.importance_of_explainability = importance_of_explainability
@@ -32,6 +37,8 @@ class FeatureDiscoverer:
 
         self.trivial_featuresH = self.hot_encoder.get_hot_encoded_trivial_features()
         self.flat_clash_matrix = HotEncoding.get_search_space_flat_clash_matrix(self.search_space)
+
+        self.variate_model_builder = VariateModels.VariateModels(self.search_space)
 
     @property
     def importance_of_fitness(self):
@@ -105,59 +112,8 @@ class FeatureDiscoverer:
         self.explainable_features = self.explore_features(at_most=self.merging_power)
         explainable_featuresC = [self.hot_encoder.feature_from_hot_encoding(fH) for fH in self.explainable_features]
         self.explainability_of_features = np.array([self.get_explainability_of_feature(fC) for fC in explainable_featuresC])
-        self.expected_frequency_of_features = np.array([self.get_expected_frequency_of_feature(fC) for fC in explainable_featuresC])
+        self.expected_frequency_of_features = np.array([self.get_expected_frequency_of_feature(fC) * self.amount_of_candidates for fC in explainable_featuresC])
 
-    @staticmethod
-    def boost_range(x):
-        """the input array is in [0, 1], and the result will have values lower than 0.5 lowered, greater than 0.5 increased"""
-        return 3 * x ** 2 - 2 * x ** 3  # this is the solution to integral([x*(1-x)]^k) for k=1
-
-    def which_candidates_contain_which_features(self, featureH_pool):
-        """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
-        feature_matrix = np.transpose(np.array(featureH_pool))
-        positive_when_absent = (1 - self.candidate_matrix) @ feature_matrix
-        return 1 - np.minimum(positive_when_absent, 1)
-
-    def get_average_fitnesses_for_features(self, featureH_pool):
-        """returns an array with the scores of the given features, adjusted by complexity and statistical significance"""
-
-        feature_presence_matrix = self.which_candidates_contain_which_features(featureH_pool)
-        count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
-        sum_of_fitness_for_each_feature = np.sum(feature_presence_matrix * utils.to_column_vector(self.fitness_scores),
-                                                 axis=0)
-
-        average_fitnesses = np.array([total / float(count) if count > 0 else 0.0 for total, count in
-                                      zip(sum_of_fitness_for_each_feature, count_for_each_feature)])
-
-        # then we remap the fitnesses to be between 0 and 1
-        unboosted = utils.remap_array_in_zero_one(average_fitnesses)  # forces them to be between 0 and 1
-        return self.boost_range(unboosted)
-
-    def get_fitness_unfitness_scores(self):
-        """returns a pair (score_goodness, score_badness), where the goodness is fitness if on_commonality = False"""
-        """if on_commonality is True, goodness is the popularity in the candidate population"""
-        fitness_percentiles = self.get_average_fitnesses_for_features(self.explainable_features)
-        return (fitness_percentiles, 1 - fitness_percentiles)
-
-    def get_frequency_of_each_feature(self, featureH_pool):
-        """returns an array indicating how common each feature is, as a percentage in [0, 1]"""
-
-        feature_presence_matrix = self.which_candidates_contain_which_features(featureH_pool)
-        count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
-        return utils.remap_array_in_zero_one(count_for_each_feature)
-
-    def get_popularity_unpopularity_scores(self):
-        """returns a pair (list_of_good, list_of_bad), where the lists contain features of size at most self.merging_power"""
-        observed_frequencies = self.get_frequency_of_each_feature(self.explainable_features)
-        expected_frequencies = self.expected_frequency_of_features
-
-        goodness_badness_pairs = [(x_2, 0.0) if is_popular else (0.0, x_2)
-                                  for (x_2, is_popular)
-                                  in zip(utils.chi_squared(observed_frequencies, expected_frequencies),
-                                         observed_frequencies > expected_frequencies)]
-
-        (goodness_scores, badness_scores) = utils.unzip(goodness_badness_pairs)
-        return (goodness_scores, badness_scores)
 
     def get_weighed_sum_with_explainability_scores(self, good_and_bad_scores):
         (goodness_scores, badness_scores) = good_and_bad_scores
@@ -168,7 +124,7 @@ class FeatureDiscoverer:
                                + badness_scores * self.importance_of_fitness
         return (goodness_weighted_sum, badness_weighted_sum)
 
-    def get_explainable_features(self, criteria='all'):
+    def get_explainable_features(self, criteria='fitness'):
         amount_to_keep = self.search_space.total_cardinality
 
         def get_best_using_scores(criteria_scores):
@@ -180,12 +136,25 @@ class FeatureDiscoverer:
             return self.explainable_features
 
         scores = None
+        feature_presence_matrix = self.variate_model_builder\
+                                      .get_feature_presence_matrix(self.candidate_matrix, self.explainable_features)
         if criteria == 'fitness':
-            scores = self.get_fitness_unfitness_scores()
+            scores = self.variate_model_builder\
+                         .get_fitness_unfitness_scores(feature_presence_matrix,
+                                                       self.fitness_of_candidates)
         elif criteria == 'popularity':
-            scores = self.get_popularity_unpopularity_scores()
+            scores = self.variate_model_builder\
+                         .get_popularity_unpopularity_scores(feature_presence_matrix,
+                                                             self.expected_frequency_of_features)
 
-        (goodness, badness) = scores
+        (goodness, badness) = self.get_weighed_sum_with_explainability_scores(scores)
+
+        # DEBUG
+        print("All the features, with their fitness scores, are:")
+        for (featureH, good_score, bad_score, explainability) in zip(self.explainable_features, scores[0], scores[1], self.explainability_of_features):
+            featureC = self.hot_encoder.feature_from_hot_encoding(featureH)
+            print(f"{featureC} : g = {good_score:.3f}, b = {bad_score:.3f}, e = {explainability:.3f}")
+
         return (get_best_using_scores(goodness), get_best_using_scores(badness))
 
 
