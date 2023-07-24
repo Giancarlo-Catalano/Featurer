@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 import SearchSpace
@@ -6,7 +8,6 @@ import utils
 
 
 from Version_B import VariateModels
-from Version_B.ExplainabiliyCriteria import ExplainabilityCriteria
 
 
 class FeatureDiscoverer:
@@ -52,6 +53,52 @@ class FeatureDiscoverer:
                 in zip(input_features, clash_results)
                 if not clashes]
 
+
+    def get_explainability_threshold_to_filter_features(self, min_complexity, max_complexity, current_size, ideal_size):
+        """We intend to filter the features to keep a certain amount of them,
+        This returns a threshold on the explainability that can be used to achieve this effect, approximately."""
+
+        #assumes that current size is greater than ideal size
+        harshness = (ideal_size / current_size) ** (self.merging_power * 2)
+        threshold = utils.weighted_sum(min_complexity, 1 - harshness,
+                                       max_complexity, harshness)
+        return threshold
+
+
+    def cull_organised_by_weight(self, organised_by_weight):
+        """ in explore_features, we need to cull the features to keep the most explainable ones"""
+        current_size = np.sum([len(weight_category) for weight_category in organised_by_weight])
+        ideal_size = self.search_space.total_cardinality ** (math.log2(self.merging_power)+1)
+        # TODO find a good default value, and set this from the outside (perhaps use a "urgency" parameter, I've got notes back home!)
+
+        # if it's already small enough, you can use the original
+        if current_size <= ideal_size:
+            return organised_by_weight
+        def complexity_of_featureH(featureH):
+            return self.get_complexity_of_feature(self.hot_encoder.feature_from_hot_encoding(featureH))
+
+        # calculate the complexities once, and use them to 1) calculate the range, 2) to filter
+        complexities_organised_by_weight = [np.array([complexity_of_featureH(fH) for fH in weight_category])
+                                            for weight_category in organised_by_weight]
+
+        # calculating the range and then the threshold
+        (min_complexity, max_complexity) = utils.get_min_max_of_arrays(complexities_organised_by_weight)
+
+        threshold = self.get_explainability_threshold_to_filter_features(min_complexity, max_complexity,
+                                                                         current_size, ideal_size)
+
+        def cull_weight_category(original_items, complexities_in_category):
+            return [from_original for (from_original, complexity) in zip(original_items, complexities_in_category)
+                    if complexity <= threshold]
+
+        # cull each category
+        return [cull_weight_category(original, complexities) for (original, complexities)
+                in zip(organised_by_weight, complexities_organised_by_weight)]
+
+
+
+
+
     def select_simple_features(self, input_features):
         """returns the simpler of the input features"""
         ideal_size = self.search_space.total_cardinality * self.merging_power
@@ -89,21 +136,24 @@ class FeatureDiscoverer:
                 # new_features = self.select_simple_features(new_features)
 
                 organised_by_weight[weight_category + 1].extend(new_features)
-                organised_by_weight[weight_category + 1] = \
-                    self.select_simple_features(organised_by_weight[weight_category + 1])
 
         for feature in self.trivial_featuresH:
             consider_feature(feature)
+            organised_by_weight = self.cull_organised_by_weight(organised_by_weight)
 
         return utils.concat(
             organised_by_weight[1:])
 
+
+    def get_complexity_of_feature(self, featureC):
+        raw_complexity = self.complexity_function(featureC)
+        dampened_complexity = (1.0 / self.complexity_damping) * (raw_complexity - 0.5) + 0.5
+        return dampened_complexity
+
     def get_explainability_of_feature(self, featureC):
             """ returns a score in [0,1] describing how explainable the feature is,
                 based on the given complexity function"""
-            raw_complexity = self.complexity_function(featureC)
-            dampened_complexity = (1.0 / self.complexity_damping) * (raw_complexity - 0.5) + 0.5
-            return 1.0 - dampened_complexity
+            return 1.0-self.get_complexity_of_feature(featureC)
 
     def get_expected_frequency_of_feature(self, featureC):  # this might be replaced from the outside in the future
         return self.search_space.probability_of_feature_in_uniform(featureC)
@@ -148,12 +198,6 @@ class FeatureDiscoverer:
                                                              self.expected_frequency_of_features)
 
         (goodness, badness) = self.get_weighed_sum_with_explainability_scores(scores)
-
-        # DEBUG
-        print("All the features, with their fitness scores, are:")
-        for (featureH, good_score, bad_score, explainability) in zip(self.explainable_features, scores[0], scores[1], self.explainability_of_features):
-            featureC = self.hot_encoder.feature_from_hot_encoding(featureH)
-            print(f"{featureC} : g = {good_score:.3f}, b = {bad_score:.3f}, e = {explainability:.3f}")
 
         return (get_best_using_scores(goodness), get_best_using_scores(badness))
 

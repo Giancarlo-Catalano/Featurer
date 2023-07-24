@@ -326,3 +326,17 @@ def remap_second_value(input_list):
 def boost_range(x):
     """the input array is in [0, 1], and the result will have values lower than 0.5 lowered, greater than 0.5 increased"""
     return 3 * x ** 2 - 2 * x ** 3  # this is the solution to integral([x*(1-x)]^k) for k=1
+
+
+def min_max(array_of_values):
+    if (len(array_of_values) == 0):
+        raise Exception("utils.min_max was called on an empty array")
+    return (np.min(array_of_values), np.max(array_of_values))
+
+def get_min_max_of_arrays(arrays):
+    """returns the min and max of concat(arrays), without actually contanenating them"""
+    min_maxes = [min_max(single_array) for single_array in arrays if len(single_array)>0]
+    if len(min_maxes) == 0:
+        raise("utils.get_min_max_of_arrays received either an empty lists or all the arrays are empty")
+    (mins, maxes) = utils.unzip(min_maxes)
+    return (np.min(mins), np.max(maxes))
