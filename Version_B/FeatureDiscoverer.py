@@ -96,9 +96,6 @@ class FeatureDiscoverer:
                 in zip(organised_by_weight, complexities_organised_by_weight)]
 
 
-
-
-
     def select_simple_features(self, input_features):
         """returns the simpler of the input features"""
         ideal_size = self.search_space.total_cardinality * self.merging_power
