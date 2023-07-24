@@ -32,9 +32,8 @@ class OneMaxProblem:
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """returns area of bounding box / area of board"""
-        bounds = self.get_bounding_box(feature)
-        bounds_area = bounds[1]-bounds[0]
-        normal_score = bounds_area/self.amount_of_bits
+        amount_of_set_values = sum([1 if value is not None else 0 for value in feature.values])
+        normal_score = amount_of_set_values/self.amount_of_bits
         return normal_score
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):

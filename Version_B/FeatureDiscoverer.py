@@ -58,7 +58,7 @@ class FeatureDiscoverer:
         This returns a threshold on the explainability that can be used to achieve this effect, approximately."""
 
         # assumes that current size is greater than ideal size
-        harshness = (ideal_size / current_size) ** (self.merging_power * 2)
+        harshness = (ideal_size / current_size)
         threshold = utils.weighted_sum(min_complexity, 1 - harshness,
                                        max_complexity, harshness)
         return threshold
@@ -66,7 +66,7 @@ class FeatureDiscoverer:
     def cull_organised_by_weight(self, organised_by_weight):
         """ in explore_features, we need to cull the features to keep the most explainable ones"""
         current_size = np.sum([len(weight_category) for weight_category in organised_by_weight])
-        ideal_size = self.search_space.total_cardinality ** (math.log2(self.merging_power) + 1)
+        ideal_size = self.search_space.total_cardinality ** (self.merging_power/2)  # ** (math.log2(self.merging_power) + 1)
         # TODO find a good default value, and set this from the outside 
         #  (perhaps use a "urgency" parameter, I've got notes back home!)
 
@@ -113,9 +113,10 @@ class FeatureDiscoverer:
 
                 organised_by_weight[weight_category + 1].extend(new_features)
 
-        for feature in self.trivial_featuresH:
+        for (iteration, feature) in enumerate(self.trivial_featuresH):
             consider_feature(feature)
-            organised_by_weight = self.cull_organised_by_weight(organised_by_weight)
+            if self.merging_power>1 and iteration > self.merging_power*2:  # very arbitrary! but prevents weird edge cases
+                organised_by_weight = self.cull_organised_by_weight(organised_by_weight)
 
         return utils.concat(
             organised_by_weight[1:])

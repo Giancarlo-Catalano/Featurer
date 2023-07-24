@@ -16,13 +16,13 @@ def test_FeatureDiscoverer(problem):
 
 
     ss = problem.get_search_space()
-    random_candidates = [ss.get_random_candidate() for _ in range(600)]
+    random_candidates = [ss.get_random_candidate() for _ in range(6000)]
 
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
-    complexity_damping = 2
-    merging_power = 5
+    complexity_damping = 1
+    merging_power = 1
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,
                                                        candidateC_population=random_candidates,
@@ -70,5 +70,5 @@ def test_FeatureDiscoverer(problem):
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(trap5)
+    test_FeatureDiscoverer(binval)
 
