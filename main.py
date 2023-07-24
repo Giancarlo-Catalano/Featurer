@@ -22,7 +22,7 @@ def test_FeatureDiscoverer(problem):
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
     complexity_damping = 2
-    merging_power = 4
+    merging_power = 5
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=ss,
                                                        candidateC_population=random_candidates,
@@ -70,5 +70,5 @@ def test_FeatureDiscoverer(problem):
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(checkerboard)
+    test_FeatureDiscoverer(trap5)
 

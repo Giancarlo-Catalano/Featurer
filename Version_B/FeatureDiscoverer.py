@@ -6,7 +6,6 @@ import SearchSpace
 import HotEncoding
 import utils
 
-
 from Version_B import VariateModels
 
 
@@ -24,6 +23,7 @@ class FeatureDiscoverer:
     def __init__(self, search_space, candidateC_population, fitness_scores, merging_power, complexity_function,
                  complexity_damping=2,
                  importance_of_explainability=0.5):
+        self.expected_frequency_of_features = None
         self.explainability_of_features = None
         self.explainable_features = None
         self.search_space = search_space
@@ -46,34 +46,34 @@ class FeatureDiscoverer:
         return 1.0 - self.importance_of_explainability
 
     def select_valid_features(self, input_features):
-        """removes the features which are invalid because of toestepping"""
+        """removes the features which are invalid because of toe-stepping"""
         clash_results = HotEncoding.fast_features_are_invalid(np.array(input_features), self.flat_clash_matrix)
 
         return [feature for (feature, clashes)
                 in zip(input_features, clash_results)
                 if not clashes]
 
-
     def get_explainability_threshold_to_filter_features(self, min_complexity, max_complexity, current_size, ideal_size):
         """We intend to filter the features to keep a certain amount of them,
         This returns a threshold on the explainability that can be used to achieve this effect, approximately."""
 
-        #assumes that current size is greater than ideal size
+        # assumes that current size is greater than ideal size
         harshness = (ideal_size / current_size) ** (self.merging_power * 2)
         threshold = utils.weighted_sum(min_complexity, 1 - harshness,
                                        max_complexity, harshness)
         return threshold
 
-
     def cull_organised_by_weight(self, organised_by_weight):
         """ in explore_features, we need to cull the features to keep the most explainable ones"""
         current_size = np.sum([len(weight_category) for weight_category in organised_by_weight])
-        ideal_size = self.search_space.total_cardinality ** (math.log2(self.merging_power)+1)
-        # TODO find a good default value, and set this from the outside (perhaps use a "urgency" parameter, I've got notes back home!)
+        ideal_size = self.search_space.total_cardinality ** (math.log2(self.merging_power) + 1)
+        # TODO find a good default value, and set this from the outside 
+        #  (perhaps use a "urgency" parameter, I've got notes back home!)
 
         # if it's already small enough, you can use the original
         if current_size <= ideal_size:
             return organised_by_weight
+
         def complexity_of_featureH(featureH):
             return self.get_complexity_of_feature(self.hot_encoder.feature_from_hot_encoding(featureH))
 
@@ -94,27 +94,6 @@ class FeatureDiscoverer:
         # cull each category
         return [cull_weight_category(original, complexities) for (original, complexities)
                 in zip(organised_by_weight, complexities_organised_by_weight)]
-
-
-    def select_simple_features(self, input_features):
-        """returns the simpler of the input features"""
-        ideal_size = self.search_space.total_cardinality * self.merging_power
-        current_size = len(input_features)
-
-        if current_size <= ideal_size:
-            # print(f"A list of {len(featureH_list)} was spared")
-            return input_features
-
-        complexity_scores = np.array([self.complexity_function(self.hot_encoder.feature_from_hot_encoding(featureH))
-                                      for featureH in input_features])
-
-        # we then select the top importance_of_explainability of the population, scored by explainability
-        harshness = (ideal_size / current_size) ** (self.merging_power * 2)
-        threshold = utils.weighted_sum(np.min(complexity_scores), 1 - harshness,
-                                       np.max(complexity_scores), harshness)
-
-        return [featureH for (featureH, complexity) in zip(input_features, complexity_scores)
-                if complexity <= threshold]
 
     def explore_features(self, at_most):
         """returns *all* the *valid* merges obtained by choosing at_most features from feature_pool"""
@@ -141,16 +120,15 @@ class FeatureDiscoverer:
         return utils.concat(
             organised_by_weight[1:])
 
-
     def get_complexity_of_feature(self, featureC):
         raw_complexity = self.complexity_function(featureC)
         dampened_complexity = (1.0 / self.complexity_damping) * (raw_complexity - 0.5) + 0.5
         return dampened_complexity
 
     def get_explainability_of_feature(self, featureC):
-            """ returns a score in [0,1] describing how explainable the feature is,
+        """ returns a score in [0,1] describing how explainable the feature is,
                 based on the given complexity function"""
-            return 1.0-self.get_complexity_of_feature(featureC)
+        return 1.0 - self.get_complexity_of_feature(featureC)
 
     def get_expected_frequency_of_feature(self, featureC):  # this might be replaced from the outside in the future
         return self.search_space.probability_of_feature_in_uniform(featureC)
@@ -158,9 +136,10 @@ class FeatureDiscoverer:
     def generate_explainable_features(self):
         self.explainable_features = self.explore_features(at_most=self.merging_power)
         explainable_featuresC = [self.hot_encoder.feature_from_hot_encoding(fH) for fH in self.explainable_features]
-        self.explainability_of_features = np.array([self.get_explainability_of_feature(fC) for fC in explainable_featuresC])
-        self.expected_frequency_of_features = np.array([self.get_expected_frequency_of_feature(fC) * self.amount_of_candidates for fC in explainable_featuresC])
-
+        self.explainability_of_features = np.array(
+            [self.get_explainability_of_feature(fC) for fC in explainable_featuresC])
+        self.expected_frequency_of_features = np.array(
+            [self.get_expected_frequency_of_feature(fC) * self.amount_of_candidates for fC in explainable_featuresC])
 
     def get_weighed_sum_with_explainability_scores(self, good_and_bad_scores):
         (goodness_scores, badness_scores) = good_and_bad_scores
@@ -183,22 +162,17 @@ class FeatureDiscoverer:
             return self.explainable_features
 
         scores = None
-        feature_presence_matrix = self.variate_model_builder\
-                                      .get_feature_presence_matrix(self.candidate_matrix, self.explainable_features)
+        feature_presence_matrix = self.variate_model_builder \
+            .get_feature_presence_matrix(self.candidate_matrix, self.explainable_features)
         if criteria == 'fitness':
-            scores = self.variate_model_builder\
-                         .get_fitness_unfitness_scores(feature_presence_matrix,
-                                                       self.fitness_of_candidates)
+            scores = self.variate_model_builder \
+                .get_fitness_unfitness_scores(feature_presence_matrix,
+                                              self.fitness_of_candidates)
         elif criteria == 'popularity':
-            scores = self.variate_model_builder\
-                         .get_popularity_unpopularity_scores(feature_presence_matrix,
-                                                             self.expected_frequency_of_features)
+            scores = self.variate_model_builder \
+                .get_popularity_unpopularity_scores(feature_presence_matrix,
+                                                    self.expected_frequency_of_features)
 
         (goodness, badness) = self.get_weighed_sum_with_explainability_scores(scores)
 
         return (get_best_using_scores(goodness), get_best_using_scores(badness))
-
-
-
-
-
