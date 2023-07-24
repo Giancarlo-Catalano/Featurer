@@ -43,24 +43,58 @@ class VariateModels:
         observed_amounts = np.sum(feature_presence_matrix, axis=0)
         return self.clean_criteria_scores_given_expectations(observed_amounts, expected_amounts)
 
-    def get_cooccurrence_matrix_for_fitness_unfitness(self, feature_presence_matrix, fitness_list):
+    def get_bivariate_fitness_observations(self, feature_presence_matrix, fitness_list: np.ndarray):
         row_wise_outer_product = utils.row_wise_self_outer_product(feature_presence_matrix)
         weighted_sum_by_fitness = np.sum(row_wise_outer_product * utils.to_column_vector(fitness_list),
-                                         axis=0)
+                                         axis=0)  # gravity sum
+
         count_for_each_pair_of_features = np.sum(row_wise_outer_product, axis=0)
         average_fitnesses = np.array([total / float(count) if count > 0 else 0.0 for total, count in
                                       zip(weighted_sum_by_fitness, count_for_each_pair_of_features)])
-        # the scores are unnormalised, but they get normalised when we change the range anyway
-        cooccurrence_matrix = utils.remap_array_in_zero_one(average_fitnesses)
-        cooccurrence_matrix = utils.boost_range(cooccurrence_matrix)
 
+        # average fitnesses needs to be re ranged and then reshaped
+        cooccurrence_matrix = utils.remap_array_in_zero_one_ignore_zeros(average_fitnesses)  # TODO this is also looking at the zeros, whereas it should really ignore them!
         amount_of_features = feature_presence_matrix.shape[1]
-        cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
-        return (cooccurrence_matrix, 1 - cooccurrence_matrix)
+        return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
 
-    # TODO 24 / 7
-    #    Calculate fitness relevance by using chi-squared(fitness, average)
-    #    implement bivariate models, should be easy
+    def get_bivariate_popularity_observations(self, feature_presence_matrix):
+        row_wise_outer_product = utils.row_wise_self_outer_product(feature_presence_matrix)
+        count_for_each_pair_of_features = np.sum(row_wise_outer_product, axis=0)
+
+        # average fitnesses needs to be re ranged and then reshaped
+        cooccurrence_matrix = utils.remap_array_in_zero_one(count_for_each_pair_of_features)
+        amount_of_features = feature_presence_matrix.shape[1]
+        return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
+
+    def get_univariate_fitness_model(self, feature_presence_matrix, fitness_list):
+        count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
+        sum_of_fitness_for_each_feature = np.sum(feature_presence_matrix * utils.to_column_vector(fitness_list),
+                                                 axis=0)
+
+        average_fitnesses = np.array([total / float(count) if count > 0 else 0.0 for total, count in
+                                      zip(sum_of_fitness_for_each_feature, count_for_each_feature)])
+
+        return utils.remap_array_in_zero_one(average_fitnesses)
+
+    def get_univariate_popularity_model(self, feature_presence_matrix):
+        count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
+        return utils.remap_array_in_zero_one(count_for_each_feature)
+
+    def get_expected_bivariate_model_from_marginals(self, marginals):
+        return np.outer(marginals, marginals)
+
+
+    def get_surrogate_score_from_bivariate_model(self, candidateC, bivariate_model_matrix, model_features):
+        candidateH = self.hot_encoder.to_hot_encoding(candidateC)
+        candidates_features = self.get_feature_presence_matrix(candidateH, model_features)
+        row = candidates_features
+        column = utils.as_column_matrix(candidates_features)
+        sum_of_cells = ((row @ bivariate_model_matrix) @ column)[0]
+        amount_of_cells = np.sum(candidates_features) ** 2
+        if amount_of_cells == 0:
+            return 0.0
+        return sum_of_cells / amount_of_cells
+
 
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space

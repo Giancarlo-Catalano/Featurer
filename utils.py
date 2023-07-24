@@ -267,11 +267,10 @@ def reattempt_until(generator, condition_to_satisfy):
 
 
 def as_row_matrix(array_input):
-    return np.reshape(array_input, (array_input.shape[0], 1))
-
+    return np.reshape(array_input, (1, array_input.shape[0]))
 
 def as_column_matrix(array_input):
-    return np.reshape(array_input, (1, array_input.shape[0]))
+    return np.reshape(array_input, (array_input.shape[0], 1))
 
 
 def row_wise_self_outer_product(input_matrix):
@@ -315,6 +314,22 @@ def remap_array_in_zero_one(input_array):
         return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
 
     return (input_array - min_value) / (max_value - min_value)
+
+
+def remap_array_in_zero_one_ignore_zeros(input_array):
+
+    def is_zero(x):
+        return x < 0.01
+    min_value = np.min([datapoint for datapoint in input_array if not is_zero(datapoint)])
+    max_value = np.max(input_array)
+
+    if (min_value == max_value):
+        return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
+
+    def remap(original):
+        return (original-min_value) / (max_value-min_value)
+
+    return np.array([0.0 if is_zero(datapoint) else remap(datapoint) for datapoint in input_array])
 
 
 def remap_second_value(input_list):

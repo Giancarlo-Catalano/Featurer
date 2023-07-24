@@ -77,8 +77,8 @@ class HotEncoder:
     def feature_from_hot_encoding(self, hot_encoded):
         return SearchSpace.Feature(self.decode_tuple(hot_encoded))
 
-    def to_hot_encoded_matrix(self, population):
-        return np.array([self.to_hot_encoding(c) for c in population])
+    def to_hot_encoded_matrix(self, populationC):
+        return np.array([self.to_hot_encoding(c) for c in populationC])
 
     def get_hot_encoded_trivial_features(self):
         return [self.to_hot_encoding(feature) for feature in self.search_space.get_all_trivial_features()]
