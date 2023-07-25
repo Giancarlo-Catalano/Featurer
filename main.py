@@ -5,7 +5,7 @@ import numpy as np
 import HotEncoding
 import SearchSpace
 import utils
-from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK
+from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK, BT
 
 import Version_B.FeatureDiscoverer
 from Version_B import VariateModels
@@ -14,6 +14,7 @@ trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
+BT = BT.BTProblem(4, 3)
 
 
 def test_FeatureDiscoverer(problem):
@@ -129,5 +130,5 @@ def test_FeatureDiscoverer(problem):
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(binval)
+    test_FeatureDiscoverer(BT)
 
