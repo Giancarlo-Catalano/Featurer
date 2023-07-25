@@ -47,9 +47,13 @@ class FeatureDiscoverer:
 
     def select_valid_features(self, input_features):
         """removes the features which are invalid because of toe-stepping"""
-        clash_results = HotEncoding.fast_features_are_invalid(np.array(input_features), self.flat_clash_matrix)
+        if len(input_features) == 0:
+            return input_features
 
-        return [feature for (feature, clashes)
+        (without_complexities, _) = utils.unzip(input_features)
+        clash_results = HotEncoding.fast_features_are_invalid(np.array(without_complexities), self.flat_clash_matrix)
+
+        return [feature_and_score for (feature_and_score, clashes)
                 in zip(input_features, clash_results)
                 if not clashes]
 
@@ -74,39 +78,42 @@ class FeatureDiscoverer:
         if current_size <= ideal_size:
             return organised_by_weight
 
-        def complexity_of_featureH(featureH):
-            return self.get_complexity_of_feature(self.hot_encoder.feature_from_hot_encoding(featureH))
-
-        # calculate the complexities once, and use them to 1) calculate the range, 2) to filter
-        complexities_organised_by_weight = [np.array([complexity_of_featureH(fH) for fH in weight_category])
-                                            for weight_category in organised_by_weight]
 
         # calculating the range and then the threshold
-        (min_complexity, max_complexity) = utils.get_min_max_of_arrays(complexities_organised_by_weight)
+        def min_max_of_category(category):
+            return utils.min_max([score for feature, score in category])
+
+        min_max_pairs = [min_max_of_category(category) for category in organised_by_weight if len(category) > 0]
+        (mins, maxs) = utils.unzip(min_max_pairs)
+        min_complexity = np.min(mins)
+        max_complexity = np.max(maxs)
 
         threshold = self.get_explainability_threshold_to_filter_features(min_complexity, max_complexity,
                                                                          current_size, ideal_size)
 
-        def cull_weight_category(original_items, complexities_in_category):
-            return [from_original for (from_original, complexity) in zip(original_items, complexities_in_category)
-                    if complexity <= threshold]
+        def cull_weight_category(original_items):
+            return [feature_and_complexity for feature_and_complexity in original_items
+                    if utils.second(feature_and_complexity) <= threshold]
 
         # cull each category
-        return [cull_weight_category(original, complexities) for (original, complexities)
-                in zip(organised_by_weight, complexities_organised_by_weight)]
+        return [cull_weight_category(original) for original in organised_by_weight]
 
     def explore_features(self, at_most):
+
+        def feature_with_complexity(feature):
+            return (feature, self.get_complexity_of_featureH(feature))
+
         """returns *all* the *valid* merges obtained by choosing at_most features from feature_pool"""
         organised_by_weight = list(list() for _ in range(at_most + 1))
-        organised_by_weight[0].append(self.hot_encoder.empty_feature)
+        organised_by_weight[0].append(feature_with_complexity(self.hot_encoder.empty_feature))
 
         def consider_feature(trivial_feature):
             for weight_category in reversed(range(at_most)):  # NOTE: the lack of +1
                 if len(organised_by_weight[weight_category]) == 0:
                     continue  # grrr I hate this keyword... why not call it skip?
 
-                new_features = np.array([HotEncoding.merge_features(old_feature, trivial_feature)
-                                         for old_feature in organised_by_weight[weight_category]])
+                new_features = np.array([feature_with_complexity(HotEncoding.merge_features(old_feature, trivial_feature))
+                                         for (old_feature, _) in organised_by_weight[weight_category]])
 
                 new_features = self.select_valid_features(new_features)
                 # new_features = self.select_simple_features(new_features)
@@ -118,18 +125,22 @@ class FeatureDiscoverer:
             if self.merging_power>1 and iteration > self.merging_power*2:  # very arbitrary! but prevents weird edge cases
                 organised_by_weight = self.cull_organised_by_weight(organised_by_weight)
 
-        return utils.concat(
-            organised_by_weight[1:])
+        return utils.unzip(utils.concat(organised_by_weight[1:]))[0]
 
-    def get_complexity_of_feature(self, featureC):
+
+
+    def get_complexity_of_featureC(self, featureC):
         raw_complexity = self.complexity_function(featureC)
         dampened_complexity = (1.0 / self.complexity_damping) * (raw_complexity - 0.5) + 0.5
         return dampened_complexity
 
+    def get_complexity_of_featureH(self, featureH):
+        return self.get_complexity_of_featureC(self.hot_encoder.feature_from_hot_encoding(featureH))
+
     def get_explainability_of_feature(self, featureC):
         """ returns a score in [0,1] describing how explainable the feature is,
                 based on the given complexity function"""
-        return 1.0 - self.get_complexity_of_feature(featureC)
+        return 1.0 - self.get_complexity_of_featureC(featureC)
 
     def get_expected_frequency_of_feature(self, featureC):  # this might be replaced from the outside in the future
         return self.search_space.probability_of_feature_in_uniform(featureC)
@@ -160,7 +171,7 @@ class FeatureDiscoverer:
             return with_scores[:amount_to_keep]
 
         if criteria == 'all':
-            return self.explainable_features
+            return list(zip(self.explainable_features, self.explainability_of_features))
 
         scores = None
         feature_presence_matrix = self.variate_model_builder \

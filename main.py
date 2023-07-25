@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 
 import HotEncoding
@@ -83,18 +85,16 @@ def test_FeatureDiscoverer(problem):
     inverted = False
     selected_features = None
     if criteria == 'fitness':
-        selected_features = fit_features
-    elif criteria == 'unfitness':
-        selected_features = unfit_features
+        selected_features = fit_features+unfit_features
     elif criteria == 'popularity':
-        selected_features = popular_features
-    elif criteria == 'unpopularity':
-        selected_features = unpopular_features
+        selected_features = popular_features+unpopular_features
+    elif criteria == 'all':
+        selected_features = fd.get_explainable_features(criteria = 'all')
+        selected_features = [random.choice(selected_features) for _ in range(search_space.total_cardinality*2)]
     else:
         print("You mistyped.")
         return
 
-    selected_features = fit_features + unfit_features
     (selected_features, _) = utils.unzip(selected_features)
 
     print(f"Your selected criteria is {criteria}")
@@ -105,16 +105,18 @@ def test_FeatureDiscoverer(problem):
     feature_presence_matrix = variate_models.get_feature_presence_matrix(candidate_matrix, featureH_pool)
 
     # we obtain the appropriate model
-    model_matrix = None
-    if criteria == 'fitness':
-        model_matrix = variate_models.get_bivariate_fitness_observations(feature_presence_matrix, np.array(scores))
-    elif criteria == 'popularity':
-        model_matrix = variate_models.get_bivariate_popularity_observations(feature_presence_matrix)
+    model_matrix = variate_models.get_bivariate_fitness_observations(feature_presence_matrix, np.array(scores))
 
     def get_surrogate_score(candidateC):
         return variate_models.get_surrogate_score_from_bivariate_model(candidateC, model_matrix, selected_features)
 
     print("Surrogate evaluation section ####################################")
+    amount_of_features = len(selected_features)
+    print(f"Some info: we are considering {amount_of_features} features")
+    print(f"\t This means that the feature detection matrix is {search_space.total_cardinality} x {amount_of_features}")
+    print(f"\t And the surrogate score matrix is {amount_of_features} x {amount_of_features}")
+
+    print("Some test data: ")
     for candidateC in candidates_to_score:
         surrogate_score = get_surrogate_score(candidateC)
         real_score = problem.score_of_candidate(candidateC)
@@ -127,5 +129,5 @@ def test_FeatureDiscoverer(problem):
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(checkerboard)
+    test_FeatureDiscoverer(binval)
 
