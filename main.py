@@ -10,11 +10,11 @@ from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK, BT
 import Version_B.FeatureDiscoverer
 from Version_B import VariateModels
 
-trap5 = TrapK.TrapK(5, 3)
+trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-BT = BT.BTProblem(4, 3)
+BT = BT.BTProblem(20, 3)
 
 
 def test_FeatureDiscoverer(problem):
@@ -28,7 +28,7 @@ def test_FeatureDiscoverer(problem):
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
     complexity_damping = 1
-    merging_power = 2
+    merging_power = 3
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=search_space,
                                                        candidateC_population=random_candidates,
@@ -82,13 +82,13 @@ def test_FeatureDiscoverer(problem):
                           [search_space.get_random_candidate() for _ in range(amount_to_surrogate_score)]
 
     # choose the criteria
-    criteria = 'fitness'
+    criteria = 'popularity'
     inverted = False
     selected_features = None
     if criteria == 'fitness':
         selected_features = fit_features+unfit_features
     elif criteria == 'popularity':
-        selected_features = popular_features+unpopular_features
+        selected_features = popular_features
     elif criteria == 'all':
         selected_features = fd.get_explainable_features(criteria = 'all')
         selected_features = [random.choice(selected_features) for _ in range(search_space.total_cardinality*2)]
@@ -117,13 +117,15 @@ def test_FeatureDiscoverer(problem):
     print(f"\t This means that the feature detection matrix is {search_space.total_cardinality} x {amount_of_features}")
     print(f"\t And the surrogate score matrix is {amount_of_features} x {amount_of_features}")
 
-    print("Some test data: ")
+    """print("Some test data: ")
     for candidateC in candidates_to_score:
         surrogate_score = get_surrogate_score(candidateC)
         real_score = problem.score_of_candidate(candidateC)
         #problem.pretty_print_feature(candidateC)
         print(f"{surrogate_score}\t{real_score}")
         #print()
+        
+    """
 
 
 

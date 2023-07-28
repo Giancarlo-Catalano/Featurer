@@ -102,3 +102,6 @@ def merge_many_features(list_of_hot_features):
 
 def features_are_equal(raw_a, raw_b):
     return np.array_equal(raw_a, raw_b)
+
+
+

@@ -127,7 +127,7 @@ class BTProblem:
             chosen_schedule = worker.available_schedules[val]
             return f"{worker.name} with rota #{val}:{chosen_schedule.__repr__()}"
 
-        return "\n".join([repr_of_var_val(var, val) for var, val in enumerate(feature.values) if val is not None])
+        print("\n".join([repr_of_var_val(var, val) for (var, val) in enumerate(feature.values) if val is not None]))
 
 
 

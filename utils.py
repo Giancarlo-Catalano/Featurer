@@ -1,3 +1,4 @@
+import copy
 import itertools
 import math
 import random
@@ -31,14 +32,6 @@ def second(pair):
 
 def third(triplet):
     return triplet[2]
-
-
-def remove_from_tuple(input, which):
-    return tuple(input[:which], input[(which + 1):])
-
-
-def remove_from_zipped_list(zipped, which):
-    return [remove_from_tuple(input_tuple, which) for input_tuple in zipped]
 
 
 def sort_using_scores(elements, scores, increasing=False):
@@ -254,7 +247,7 @@ def chi_squared(observed, expected):
 
 def sample_from_grid_of_weights(probabilities):
     rows = len(probabilities)
-    flattened_probabilities = utils.concat(probabilities)
+    flattened_probabilities = concat(probabilities)
     aggregated_index = sample_index_with_weights(flattened_probabilities)
     return divmod(aggregated_index, rows)
 
@@ -333,14 +326,14 @@ def remap_array_in_zero_one_ignore_zeros(input_array):
 
 
 def remap_second_value(input_list):
-    (original, to_remap) = utils.unzip(input_list)
+    (original, to_remap) = unzip(input_list)
     return [(from_original, remapped) for (from_original, remapped)
             in zip(original, remap_array_in_zero_one(to_remap))]
 
 
 def boost_range(x):
     """the input array is in [0, 1], and the result will have values lower than 0.5 lowered, greater than 0.5 increased"""
-    return 3 * x ** 2 - 2 * x ** 3  # this is the solution to integral([x*(1-x)]^k) for k=1
+    return (3 * x ** 2) - (2 * x ** 3)  # this is the solution to integral([x*(1-x)]^k) for k=1
 
 
 def min_max(array_of_values):
@@ -353,5 +346,33 @@ def get_min_max_of_arrays(arrays):
     min_maxes = [min_max(single_array) for single_array in arrays if len(single_array)>0]
     if len(min_maxes) == 0:
         raise("utils.get_min_max_of_arrays received either an empty lists or all the arrays are empty")
-    (mins, maxes) = utils.unzip(min_maxes)
+    (mins, maxes) = unzip(min_maxes)
     return (np.min(mins), np.max(maxes))
+
+
+def nth_power_flat_outer_product(array: np.ndarray, n: int):
+    current_result = array.copy()
+    if (n<1):
+        raise Exception("in nth_power_flat_outer_product, n<1")
+
+    for _ in range(n-1):
+        current_result = np.outer(current_result, array).ravel()
+
+    return current_result
+
+
+def row_wise_nth_power_self_outer_product(input_matrix, n:int):
+    current_result = input_matrix.copy()
+    if (n < 1):
+        raise Exception("in nth_power_flat_outer_product, n<1")
+
+    for _ in range(n - 1):
+        current_result = utils.row_wise_self_outer_product(current_result, input_matrix)
+
+    return current_result
+
+
+
+
+
+

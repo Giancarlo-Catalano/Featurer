@@ -112,8 +112,8 @@ class FeatureDiscoverer:
                 if len(organised_by_weight[weight_category]) == 0:
                     continue  # grrr I hate this keyword... why not call it skip?
 
-                new_features = np.array([feature_with_complexity(HotEncoding.merge_features(old_feature, trivial_feature))
-                                         for (old_feature, _) in organised_by_weight[weight_category]])
+                new_features = [feature_with_complexity(HotEncoding.merge_features(old_feature, trivial_feature))
+                                         for (old_feature, _) in organised_by_weight[weight_category]]
 
                 new_features = self.select_valid_features(new_features)
                 # new_features = self.select_simple_features(new_features)

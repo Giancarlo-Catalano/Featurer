@@ -4,6 +4,72 @@ import utils
 import numpy as np
 
 
+class FeatureDetector:
+    """An object which can be used to quickly detect which features are present in a list of candidates"""
+    search_space: SearchSpace.SearchSpace
+    hot_encoder: HotEncoding.HotEncoder
+    detection_matrix: np.ndarray
+
+    def __init__(self, search_space, featureH_pool):
+        self.search_space = search_space
+        self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
+        self.detection_matrix = np.transpose(np.array(featureH_pool))
+
+    def __repr__(self):
+        (total_cardinality, amount_of_features) = self.detection_matrix
+        return f"FeatureDetector(detection_matrix : ({total_cardinality} x {amount_of_features})"
+
+    def get_feature_presence_matrix_from_candidate_matrix(self, candidate_matrix):
+        """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
+        positive_when_absent = (1 - candidate_matrix) @ self.detection_matrix
+        return 1 - np.minimum(positive_when_absent, 1)
+
+    def get_feature_presence_matrix_from_candidates(self, candidatesC):
+        """this might get used especially to process training data in batches"""
+        candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidatesC)
+        return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix)
+
+
+
+class FeatureValidator:
+    """ An object throgh which you can quickly check which candidates / features are valid in the given search space"""
+    search_space: SearchSpace.SearchSpace
+    hot_encoder: HotEncoding.HotEncoder
+    clash_matrix: np.ndarray
+
+    def get_search_space_flat_clash_matrix(search_space: SearchSpace.SearchSpace):
+        unflattened = np.zeros((search_space.total_cardinality, search_space.total_cardinality))
+
+        def set_clash_matrix_for_variable(var_index):
+            var_start = search_space.precomputed_offsets[var_index]
+            var_end = search_space.precomputed_offsets[var_index + 1]
+            unflattened[var_start:var_end, var_start:var_end] = 1 - np.identity(search_space.cardinalities[var_index])
+
+        for var_index in range(search_space.dimensions):
+            set_clash_matrix_for_variable(var_index)
+
+        return unflattened.ravel()
+
+    def __init__(self, search_space):
+        self.search_space = search_space
+        self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
+        self.clash_matrix = self.get_search_space_flat_clash_matrix(self.search_space)
+
+    def __repr__(self):
+        rows = self.search_space.total_cardinality
+        return f"FeatureValidator(detection_matrix : ({rows} x {rows})"
+
+    def get_feature_clashing(self, featuresH) -> np.ndarray:
+        """
+
+        :param featuresH: a list of featureH
+        :return: a np.array, where 1 indicates that the feature is INvalid, and 0 if it is valid
+        """
+        featureH_matrix = np.array(featuresH)
+        flat_outer_for_each_feature = utils.row_wise_self_outer_product(featureH_matrix)
+        return flat_outer_for_each_feature @ self.clash_matrix
+
+
 class VariateModels:
     # features: a list of featuresH
     # correlation matrices
@@ -94,6 +160,7 @@ class VariateModels:
         if amount_of_cells == 0:
             return 0.0
         return sum_of_cells / amount_of_cells
+
 
 
     def __init__(self, search_space: SearchSpace.SearchSpace):
