@@ -367,7 +367,7 @@ def row_wise_nth_power_self_outer_product(input_matrix, n:int):
         raise Exception("in nth_power_flat_outer_product, n<1")
 
     for _ in range(n - 1):
-        current_result = utils.row_wise_self_outer_product(current_result, input_matrix)
+        current_result = np.einsum('ij,ik->ijk', current_result, input_matrix, optimize=True).reshape(input_matrix.shape[0], -1)
 
     return current_result
 

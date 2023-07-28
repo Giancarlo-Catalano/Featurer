@@ -15,9 +15,14 @@ class FeatureDetector:
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.detection_matrix = np.transpose(np.array(featureH_pool))
 
+
+    @property
+    def amount_of_features(self):
+        return self.detection_matrix.shape[1]
+
     def __repr__(self):
-        (total_cardinality, amount_of_features) = self.detection_matrix
-        return f"FeatureDetector(detection_matrix : ({total_cardinality} x {amount_of_features})"
+        (total_cardinality, amount_of_features) = self.detection_matrix.shape
+        return f"FeatureDetector(detection_matrix : {total_cardinality} x {amount_of_features})"
 
     def get_feature_presence_matrix_from_candidate_matrix(self, candidate_matrix):
         """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
@@ -29,6 +34,10 @@ class FeatureDetector:
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidatesC)
         return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix)
 
+
+    def get_feature_presence_from_candidate(self, candidateC):
+        candidate_matrix = self.hot_encoder.to_hot_encoded_matrix([candidateC])
+        return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix).ravel()
 
 
 class FeatureValidator:

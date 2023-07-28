@@ -9,6 +9,7 @@ from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK, BT
 
 import Version_B.FeatureDiscoverer
 from Version_B import VariateModels
+from Version_B.SurrogateScorer import SurrogateScorer
 
 trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
@@ -17,13 +18,26 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
 
 
-def test_FeatureDiscoverer(problem):
-    print(f"The problem is {problem}")
-
-
+def get_problem_training_data(problem, sample_size):
     search_space = problem.get_search_space()
     random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
 
+    scores = [problem.score_of_candidate(c) for c in random_candidates]
+    return (random_candidates, scores)
+
+
+def pretty_print_features(problem, features):
+    hot_encoder = HotEncoding.HotEncoder(problem.get_search_space())
+    for featureH in features:
+        featureC = hot_encoder.feature_from_hot_encoding(featureH)
+        problem.pretty_print_feature(featureC)
+        print()
+
+def test_FeatureDiscoverer(problem):
+    print(f"The problem is {problem}")
+
+    search_space = problem.get_search_space()
+    random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.5
@@ -37,13 +51,14 @@ def test_FeatureDiscoverer(problem):
                                                        complexity_function=problem.get_complexity_of_feature,
                                                        complexity_damping=complexity_damping,
                                                        importance_of_explainability=importance_of_explainability)
-    def print_list_of_features(featuresH, with_scores = False):
+
+    def print_list_of_features(featuresH, with_scores=False):
         to_show = 6
         if not with_scores:
             for featureH in featuresH[:to_show]:
-                print("-"*10)
+                print("-" * 10)
                 problem.pretty_print_feature(fd.hot_encoder.feature_from_hot_encoding(featureH))
-                print("-"*10)
+                print("-" * 10)
         else:
             featuresH.sort(key=utils.second, reverse=True)
             for featureH, score in featuresH[:to_show]:
@@ -58,11 +73,9 @@ def test_FeatureDiscoverer(problem):
     print("Exploring features...")
     fd.generate_explainable_features()
 
-
     print("Obtaining the good and bad features")
-    (fit_features, unfit_features)          = fd.get_explainable_features(criteria='fitness')
+    (fit_features, unfit_features) = fd.get_explainable_features(criteria='fitness')
     (popular_features, unpopular_features) = fd.get_explainable_features(criteria='popularity')
-
 
     print("The good features are")
     print_list_of_features(fit_features, with_scores=True)
@@ -73,12 +86,11 @@ def test_FeatureDiscoverer(problem):
     print("The unpopular features are")
     print_list_of_features(unpopular_features, with_scores=True)
 
-
     # this section is for surrogate scoring
     hot_encoder = HotEncoding.HotEncoder(search_space)
     variate_models: VariateModels.VariateModels = VariateModels.VariateModels(search_space)
     amount_to_surrogate_score = 1000
-    candidates_to_score = random_candidates[:amount_to_surrogate_score] +\
+    candidates_to_score = random_candidates[:amount_to_surrogate_score] + \
                           [search_space.get_random_candidate() for _ in range(amount_to_surrogate_score)]
 
     # choose the criteria
@@ -86,12 +98,12 @@ def test_FeatureDiscoverer(problem):
     inverted = False
     selected_features = None
     if criteria == 'fitness':
-        selected_features = fit_features+unfit_features
+        selected_features = fit_features + unfit_features
     elif criteria == 'popularity':
         selected_features = popular_features
     elif criteria == 'all':
-        selected_features = fd.get_explainable_features(criteria = 'all')
-        selected_features = [random.choice(selected_features) for _ in range(search_space.total_cardinality*2)]
+        selected_features = fd.get_explainable_features(criteria='all')
+        selected_features = [random.choice(selected_features) for _ in range(search_space.total_cardinality * 2)]
     else:
         print("You mistyped.")
         return
@@ -128,9 +140,54 @@ def test_FeatureDiscoverer(problem):
     """
 
 
+def test_surrogate_scorer(problem):
+    print(f"The problem is {problem}")
+
+    search_space = problem.get_search_space()
+    (training_candidates, training_scores) = get_problem_training_data(problem, 1000)
+
+    # parameters
+    importance_of_explainability = 0.5
+    complexity_damping = 1
+    merging_power = 5
+
+    feature_discoverer = Version_B.FeatureDiscoverer.\
+                        FeatureDiscoverer(search_space=search_space, candidateC_population=training_candidates,
+                                          fitness_scores=training_scores, merging_power=merging_power,
+                                          complexity_function=problem.get_complexity_of_feature,
+                                          complexity_damping=complexity_damping,
+                                          importance_of_explainability=importance_of_explainability)
+
+    print("Exploring features...")
+    feature_discoverer.generate_explainable_features()
+    print("Obtaining the fit and unfit features")
+    (fit_features, unfit_features) = feature_discoverer.get_explainable_features(criteria='fitness')
+    fit_features = utils.unzip(fit_features)[0]
+    unfit_features = utils.unzip(unfit_features)[0]
+
+    print("The fit features are:")
+    pretty_print_features(problem, fit_features)
+
+    print("The unfit features are:")
+    pretty_print_features(problem, unfit_features)
+
+    print("Instantiating the surrogate scorer")
+    scorer = SurrogateScorer(2, search_space, fit_features+unfit_features)  # TODO fix the diagonal exclusion mechanism
+    print("And now we train the model")
+    scorer.train(training_candidates, training_scores)
+
+    print(f"The model is now {scorer}")
+
+    (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
+
+    for (test_candidate, test_score) in zip(test_candidates, test_scores):
+        surrogate_score_kind = scorer.get_surrogate_score_of_fitness(test_candidate, picky=False)
+        surrogate_score_picky = scorer.get_surrogate_score_of_fitness(test_candidate, picky=True)
+
+        print(f"{test_score}\t{surrogate_score_kind}\t{surrogate_score_picky}")
+
 
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(checkerboard)
-
+    test_surrogate_scorer(binval)

@@ -1,17 +1,19 @@
 import itertools
 
-import VariateModels
+import Version_B.VariateModels
 import utils
 import SearchSpace
 import HotEncoding
 import numpy as np
+
+from Version_B.VariateModels import VariateModels
 
 
 class SurrogateScorer:
     model_power: int
     hot_encoder: HotEncoding.HotEncoder
     search_space: SearchSpace.SearchSpace
-    feature_detector: VariateModels.FeatureDetector
+    feature_detector: Version_B.VariateModels.FeatureDetector
 
     #features
     #sum_of_scores_matrix
@@ -32,7 +34,7 @@ class SurrogateScorer:
             for index in list_of_indices:
                 if seen_already[index]:
                     return True
-                seen_already = True
+                seen_already[index] = True
             return False
 
 
@@ -41,12 +43,12 @@ class SurrogateScorer:
 
         return np.array(result_as_list, dtype=np.float)
 
-    def __init__(self, model_power, search_space, featuresH):
+    def __init__(self, model_power: int, search_space: SearchSpace.SearchSpace, featuresH: list):
         self.model_power = model_power
         self.search_space = search_space
-        self.feature_detector = VariateModels.FeatureDetector(search_space, featuresH)
+        self.feature_detector = Version_B.VariateModels.FeatureDetector(search_space, featuresH)
 
-        self.variate_model_generator = VariateModels.VariateModels(self.search_space)
+        self.variate_model_generator = Version_B.VariateModels.VariateModels(self.search_space)
         self.redundant_cell_matrix = self.get_diagonal_cell_matrix(len(featuresH), model_power)
 
         # these are filled during training
@@ -60,9 +62,8 @@ class SurrogateScorer:
         if self.S_matrix is None:
             result += "\n\tUntrained"
         else:
-            (s_rows, s_cols) = self.S_matrix.shape
-            (p_rows, p_cols) = self.P_matrix.shape
-            result += f"\n\tTrained, with S: {s_rows} x {s_cols}, P: {p_rows} x {p_cols}"
+            shape_of_big_matrices = " x ".join([str(self.feature_detector.amount_of_features)]*self.model_power)
+            result += f"\n\tTrained, with S: {shape_of_big_matrices}, P: {shape_of_big_matrices}"
 
         return result
 
@@ -76,14 +77,14 @@ class SurrogateScorer:
         outer_power = utils.row_wise_nth_power_self_outer_product(feature_presence_matrix, self.model_power)
 
         # set S and P
-        self.S_matrix = np.sum(outer_power * utils.to_column_vector(fitness_list), axis=0)
+        self.S_matrix = np.sum(outer_power * utils.to_column_vector(np.array(fitness_list)), axis=0)
         self.P_matrix = np.sum(outer_power, axis=0)
 
-    def get_surrogate_score_of_fitness(self, candidateC, picky=True):
-        candidate_feature_vector = self.feature_detector.get_feature_presence_matrix_from_candidates(candidateC)
+    def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, picky=True):
+        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
-        sum_of_fitnesses = np.dot(candidate_feature_vector, self.S_matrix)
-        sum_of_weights = np.dot(candidate_feature_vector, self.P_matrix)
+        sum_of_fitnesses = np.dot(outer_power, self.S_matrix)
+        sum_of_weights = np.dot(outer_power, self.P_matrix)
         if picky:
             relevant_redundant_cells = outer_power * self.redundant_cell_matrix
             sum_of_redundant_fitnesses = np.dot(relevant_redundant_cells, self.S_matrix)
