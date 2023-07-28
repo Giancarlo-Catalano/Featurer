@@ -37,7 +37,7 @@ class FeatureValidator:
     hot_encoder: HotEncoding.HotEncoder
     clash_matrix: np.ndarray
 
-    def get_search_space_flat_clash_matrix(search_space: SearchSpace.SearchSpace):
+    def get_search_space_flat_clash_matrix(self, search_space: SearchSpace.SearchSpace):
         unflattened = np.zeros((search_space.total_cardinality, search_space.total_cardinality))
 
         def set_clash_matrix_for_variable(var_index):

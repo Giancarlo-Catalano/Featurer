@@ -37,8 +37,7 @@ class FeatureDiscoverer:
         self.complexity_damping = complexity_damping
 
         self.trivial_featuresH = self.hot_encoder.get_hot_encoded_trivial_features()
-        self.flat_clash_matrix = HotEncoding.get_search_space_flat_clash_matrix(self.search_space)
-
+        self.feature_validator = VariateModels.FeatureValidator(self.search_space)
         self.variate_model_builder = VariateModels.VariateModels(self.search_space)
 
     @property
@@ -51,7 +50,7 @@ class FeatureDiscoverer:
             return input_features
 
         (without_complexities, _) = utils.unzip(input_features)
-        clash_results = HotEncoding.fast_features_are_invalid(np.array(without_complexities), self.flat_clash_matrix)
+        clash_results = self.feature_validator.get_feature_clashing(np.array(without_complexities))
 
         return [feature_and_score for (feature_and_score, clashes)
                 in zip(input_features, clash_results)

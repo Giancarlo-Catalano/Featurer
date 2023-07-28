@@ -1,6 +1,5 @@
 import itertools
 
-import FeatureDiscoverer
 import VariateModels
 import utils
 import SearchSpace
@@ -12,6 +11,7 @@ class SurrogateScorer:
     model_power: int
     hot_encoder: HotEncoding.HotEncoder
     search_space: SearchSpace.SearchSpace
+    feature_detector: VariateModels.FeatureDetector
 
     #features
     #sum_of_scores_matrix
@@ -44,57 +44,46 @@ class SurrogateScorer:
     def __init__(self, model_power, search_space, featuresH):
         self.model_power = model_power
         self.search_space = search_space
-        self.features = featuresH
+        self.feature_detector = VariateModels.FeatureDetector(search_space, featuresH)
 
         self.variate_model_generator = VariateModels.VariateModels(self.search_space)
-        self.redundant_cell_matrix = self.get_diagonal_cell_matrix(len(self.features), model_power)
+        self.redundant_cell_matrix = self.get_diagonal_cell_matrix(len(featuresH), model_power)
 
         # these are filled during training
         self.S_matrix = None
         self.P_matrix = None
 
 
-    def __repr(self):
+    def __repr__(self):
         # in the future these things should come from the subclasses themselves
-        rows_in_feature_detector = self.search_space.total_cardinality
-        columns_in_feature_detector = len(self.features)
+        result = f"SurrogateScorer: \n\t{self.feature_detector.__repr__()}"
+        if self.S_matrix is None:
+            result += "\n\tUntrained"
+        else:
+            (s_rows, s_cols) = self.S_matrix.shape
+            (p_rows, p_cols) = self.P_matrix.shape
+            result += f"\n\tTrained, with S: {s_rows} x {s_cols}, P: {p_rows} x {p_cols}"
 
+        return result
 
-
-    def train(self, candidateC_list, fitness_list):
+    def train(self, candidatesC, fitness_list):
         """this will set the values for S and P"""
 
         # obtain which features are present in which candidates
-        candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidateC_list)
-        feature_presence_matrix = self.variate_model_generator.get_feature_presence_matrix(candidate_matrix, self.features)
+        feature_presence_matrix = self.feature_detector.get_feature_presence_matrix_from_candidates(candidatesC)
 
         # get self-interactions by using flat outer powers
         outer_power = utils.row_wise_nth_power_self_outer_product(feature_presence_matrix, self.model_power)
 
         # set S and P
-        self.S_matrix = np.sum(outer_power * utils.to_column_vector(fitness_list),
-                                         axis=0)
+        self.S_matrix = np.sum(outer_power * utils.to_column_vector(fitness_list), axis=0)
         self.P_matrix = np.sum(outer_power, axis=0)
 
     def get_surrogate_score_of_fitness(self, candidateC, picky=True):
-        # obtain candidateH, place in a row matrix if necessary
-        # obtain nth flat outer power of candidate H
-        # sum_of_fitnesses = flat_outer dot_product self.S
-        # sum_of_weights = flat_outer dot_product self.P
-        # if picky, remove the diagonal entries
-            # relevant_diagonal_cells = flat_outer * self.diagonal_cells  NOTE the normal multiplication
-            # sum_of_diagonal_fitnesses = relevant_diagonal_cells dot_product self.S
-            # sum_of_diagonal_weights = relevant_diagonal_cells dot_product self.P
-            # sum_of_fitnesses -= sum_of_diagonal_fitnesses
-            # sum_of_weights -= sum_of_diagonal_weights
-        # if sum_of_weights == 0, return 0
-        # return sum_of_fitnesses / sum_of_weights
-
-
-        candidateH = self.hot_encoder.to_hot_encoding(candidateC)
-        outer_power = utils.nth_power_flat_outer_product(candidateH, self.model_power)
-        sum_of_fitnesses = np.dot(candidateH, self.S_matrix)
-        sum_of_weights = np.dot(candidateH, self.P_matrix)
+        candidate_feature_vector = self.feature_detector.get_feature_presence_matrix_from_candidates(candidateC)
+        outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
+        sum_of_fitnesses = np.dot(candidate_feature_vector, self.S_matrix)
+        sum_of_weights = np.dot(candidate_feature_vector, self.P_matrix)
         if picky:
             relevant_redundant_cells = outer_power * self.redundant_cell_matrix
             sum_of_redundant_fitnesses = np.dot(relevant_redundant_cells, self.S_matrix)
@@ -105,7 +94,3 @@ class SurrogateScorer:
         if sum_of_weights == 0.0:
             return 0.0
         return sum_of_fitnesses/sum_of_weights
-
-
-
-# TODO make a CandidateValidator class, and a FeatureDetector class

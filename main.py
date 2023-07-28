@@ -132,5 +132,5 @@ def test_FeatureDiscoverer(problem):
 
 
 if __name__ == '__main__':
-    test_FeatureDiscoverer(BT)
+    test_FeatureDiscoverer(checkerboard)
 
