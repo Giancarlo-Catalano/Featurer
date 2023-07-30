@@ -85,6 +85,12 @@ class SurrogateScorer:
 
         self.S_over_P_matrix = np.array([0 if p == 0.0 else s / p for (s, p) in zip(self.S_matrix, self.P_matrix)])
 
+
+    def make_picky(self):
+        """Provides a simple way to PERMANENTLY force picky surrogate scoring. Much simpler in general"""
+        self.S_matrix *= (1.0 - self.redundant_cell_matrix)
+        self.P_matrix *= (1.0 - self.redundant_cell_matrix)
+
     def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, picky=True):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
