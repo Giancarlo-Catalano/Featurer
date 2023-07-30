@@ -40,7 +40,7 @@ def test_FeatureDiscoverer(problem):
     random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
-    importance_of_explainability = 0.5
+    importance_of_explainability = 0.75
     complexity_damping = 1
     merging_power = 3
 
@@ -147,9 +147,9 @@ def test_surrogate_scorer(problem):
     (training_candidates, training_scores) = get_problem_training_data(problem, 1000)
 
     # parameters
-    importance_of_explainability = 0.5
+    importance_of_explainability = 0.8
     complexity_damping = 1
-    merging_power = 5
+    merging_power = 3
 
     feature_discoverer = Version_B.FeatureDiscoverer.\
                         FeatureDiscoverer(search_space=search_space, candidateC_population=training_candidates,
@@ -172,22 +172,45 @@ def test_surrogate_scorer(problem):
     pretty_print_features(problem, unfit_features)
 
     print("Instantiating the surrogate scorer")
-    scorer = SurrogateScorer(2, search_space, fit_features+unfit_features)  # TODO fix the diagonal exclusion mechanism
+    scorer = SurrogateScorer(model_power=2,
+                             search_space=search_space,
+                             featuresH=fit_features+unfit_features)
     print("And now we train the model")
     scorer.train(training_candidates, training_scores)
 
     print(f"The model is now {scorer}")
 
-    (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
 
-    for (test_candidate, test_score) in zip(test_candidates, test_scores):
-        surrogate_score_kind = scorer.get_surrogate_score_of_fitness(test_candidate, picky=False)
-        surrogate_score_picky = scorer.get_surrogate_score_of_fitness(test_candidate, picky=True)
+    def sanity_check():
+        test_candidate = search_space.get_random_candidate()
+        test_score = problem.score_of_candidate(test_candidate)
+        surrogate_score = scorer.get_surrogate_score_of_fitness(test_candidate, picky=True)
 
-        print(f"{test_score}\t{surrogate_score_kind}\t{surrogate_score_picky}")
+        print(f"For a randomly generated candidate with actual score {test_score}, the surrogate score is {surrogate_score}")
 
+    def print_data_for_analysis():
+        (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
+
+        for (test_candidate, test_score) in zip(test_candidates, test_scores):
+            surrogate_score_kind = scorer.old_get_surrogate_score_of_fitness(test_candidate, picky=False)
+            surrogate_score_picky = scorer.old_get_surrogate_score_of_fitness(test_candidate, picky=True)
+
+            print(f"{test_score}\t{surrogate_score_kind}\t{surrogate_score_picky}")
+
+    sanity_check()
 
 
 
 if __name__ == '__main__':
     test_surrogate_scorer(binval)
+
+
+# TODO
+# fix model power > 2 not producing the correct diagonal exclusion matrix
+# rewrite the picky / not picky implementation, perhaps just subtract the diagonal!
+# investigate why the scores are so bad
+        # is it because not enough features are used?
+        # test by changing the arrangement of the cells in binval
+# implement variance modelling
+# implement variance weighted modelling
+# write proof of KNN equivalence
