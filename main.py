@@ -149,7 +149,7 @@ def test_surrogate_scorer(problem):
     # parameters
     importance_of_explainability = 0.8
     complexity_damping = 1
-    merging_power = 3
+    merging_power = 5
 
     feature_discoverer = Version_B.FeatureDiscoverer.\
                         FeatureDiscoverer(search_space=search_space, candidateC_population=training_candidates,
@@ -177,6 +177,7 @@ def test_surrogate_scorer(problem):
                              featuresH=fit_features+unfit_features)
     print("And now we train the model")
     scorer.train(training_candidates, training_scores)
+    scorer.make_picky()
 
     print(f"The model is now {scorer}")
 
@@ -184,7 +185,8 @@ def test_surrogate_scorer(problem):
     def sanity_check():
         test_candidate = search_space.get_random_candidate()
         test_score = problem.score_of_candidate(test_candidate)
-        surrogate_score = scorer.get_surrogate_score_of_fitness(test_candidate, picky=True)
+        surrogate_score = scorer.get_surrogate_score_of_fitness(test_candidate)
+        surrogate_mistrustful_score = scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
 
         print(f"For a randomly generated candidate with actual score {test_score}, the surrogate score is {surrogate_score}")
 
@@ -192,17 +194,17 @@ def test_surrogate_scorer(problem):
         (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
 
         for (test_candidate, test_score) in zip(test_candidates, test_scores):
-            surrogate_score_kind = scorer.old_get_surrogate_score_of_fitness(test_candidate, picky=False)
-            surrogate_score_picky = scorer.old_get_surrogate_score_of_fitness(test_candidate, picky=True)
-
-            print(f"{test_score}\t{surrogate_score_kind}\t{surrogate_score_picky}")
+            surrogate_score = scorer.old_get_surrogate_score_of_fitness(test_candidate)
+            surrogate_mistrustful_score = scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
+            print(f"{test_score}\t{surrogate_score}\t{surrogate_mistrustful_score}")
 
     sanity_check()
+    print_data_for_analysis()
 
 
 
 if __name__ == '__main__':
-    test_surrogate_scorer(binval)
+    test_surrogate_scorer(trap5)
 
 
 # TODO

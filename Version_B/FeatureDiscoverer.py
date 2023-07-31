@@ -139,7 +139,7 @@ class FeatureDiscoverer:
     def get_explainability_of_feature(self, featureC):
         """ returns a score in [0,1] describing how explainable the feature is,
                 based on the given complexity function"""
-        return 1.0 - self.get_complexity_of_featureC(featureC)
+        return 1.0 / self.get_complexity_of_featureC(featureC)
 
     def get_expected_frequency_of_feature(self, featureC):  # this might be replaced from the outside in the future
         return self.search_space.probability_of_feature_in_uniform(featureC)
@@ -154,11 +154,16 @@ class FeatureDiscoverer:
 
     def get_weighed_sum_with_explainability_scores(self, good_and_bad_scores):
         (goodness_scores, badness_scores) = good_and_bad_scores
-        goodness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
-                                + goodness_scores * self.importance_of_fitness
+        # goodness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
+        #                        + goodness_scores * self.importance_of_fitness
 
-        badness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
-                               + badness_scores * self.importance_of_fitness
+
+        # EXPERIMENTAL!! TODO revert this eventually!
+        goodness_weighted_sum = self.explainability_of_features * goodness_scores
+        badness_weighted_sum = self.explainability_of_features * badness_scores
+
+        # badness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
+        #                        + badness_scores * self.importance_of_fitness
         return (goodness_weighted_sum, badness_weighted_sum)
 
     def get_explainable_features(self, criteria='fitness'):

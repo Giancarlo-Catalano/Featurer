@@ -52,6 +52,7 @@ class SurrogateScorer:
         # these are filled during training
         self.S_matrix = None
         self.P_matrix = None
+        self.trust_values = None
 
         self.S_over_P_matrix = None
 
@@ -62,9 +63,19 @@ class SurrogateScorer:
             result += "\n\tUntrained"
         else:
             shape_of_big_matrices = " x ".join([str(self.feature_detector.amount_of_features)] * self.model_power)
-            result += f"\n\tTrained, with S: {shape_of_big_matrices}, P: {shape_of_big_matrices}"
+            result += f"\n\tTrained, with S: {shape_of_big_matrices}, P: {shape_of_big_matrices}, and trust values"
 
         return result
+
+    def get_trust_values(self, feature_presence_matrix, fitness_array):
+        """returns a list that associates a value from 0 to 1 for each feature
+        that value represents how "significant" the presence of that feature is,
+        which depends on its variance"""
+        """ trust = 1 means it's really reliable, trust = 0 means that it's useless"""
+
+        standard_deviations = self.variate_model_generator.get_fitness_unstability_scores(feature_presence_matrix,
+                                                                                          fitness_array)
+        return 1.0 - (standard_deviations / np.max(standard_deviations))
 
     def train(self, candidatesC, fitness_list):
         """this will set the values for S and P"""
@@ -79,41 +90,36 @@ class SurrogateScorer:
         # get self-interactions by using flat outer powers
         outer_power = utils.row_wise_nth_power_self_outer_product(feature_presence_matrix, self.model_power)
 
+        fitness_array = np.array(fitness_list)
+
         # set S and P
-        self.S_matrix = np.sum(outer_power * utils.to_column_vector(np.array(fitness_list)), axis=0)
+        self.S_matrix = np.sum(outer_power * utils.to_column_vector(fitness_array), axis=0)
         self.P_matrix = np.sum(outer_power, axis=0)
 
-        self.S_over_P_matrix = np.array([0 if p == 0.0 else s / p for (s, p) in zip(self.S_matrix, self.P_matrix)])
+        self.trust_values = self.get_trust_values(feature_presence_matrix, fitness_array)
 
+        self.S_over_P_matrix = np.array([0 if p == 0.0 else s / p for (s, p) in zip(self.S_matrix, self.P_matrix)])
 
     def make_picky(self):
         """Provides a simple way to PERMANENTLY force picky surrogate scoring. Much simpler in general"""
         self.S_matrix *= (1.0 - self.redundant_cell_matrix)
         self.P_matrix *= (1.0 - self.redundant_cell_matrix)
 
-    def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, picky=True):
+    def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, based_on_trust=False):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
+        if (based_on_trust):
+            candidate_feature_vector *= self.trust_values
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
         sum_of_fitnesses = np.dot(outer_power, self.S_matrix)
         sum_of_weights = np.dot(outer_power, self.P_matrix)
-        if picky:
-            relevant_redundant_cells = outer_power * self.redundant_cell_matrix
-            sum_of_redundant_fitnesses = np.dot(relevant_redundant_cells, self.S_matrix)
-            sum_of_redundant_weights = np.dot(relevant_redundant_cells, self.P_matrix)
-            sum_of_fitnesses -= sum_of_redundant_fitnesses
-            sum_of_weights -= sum_of_redundant_weights
 
         if sum_of_weights == 0.0:
             return 0.0
         return sum_of_fitnesses / sum_of_weights
 
-    def old_get_surrogate_score_of_fitness(self, candidateC, picky=True):
+    def old_get_surrogate_score_of_fitness(self, candidateC):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
-
-        if picky:
-            outer_power *= (1.0 - self.redundant_cell_matrix)
-
         sum_of_fitnesses = np.dot(outer_power, self.S_over_P_matrix)
 
         sum_of_outer_power = np.sum(outer_power)

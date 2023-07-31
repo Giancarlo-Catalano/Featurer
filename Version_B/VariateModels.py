@@ -15,7 +15,6 @@ class FeatureDetector:
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.detection_matrix = np.transpose(np.array(featureH_pool))
 
-
     @property
     def amount_of_features(self):
         return self.detection_matrix.shape[1]
@@ -33,7 +32,6 @@ class FeatureDetector:
         """this might get used especially to process training data in batches"""
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidatesC)
         return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix)
-
 
     def get_feature_presence_from_candidate(self, candidateC):
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix([candidateC])
@@ -97,8 +95,10 @@ class VariateModels:
         (goodness, badness) = utils.unzip([(x_2, 0.0) if is_good else (0.0, x_2)
                                            for (x_2, is_good)
                                            in chi_squared_and_is_good])
-        return (utils.remap_array_in_zero_one(goodness),
-                utils.remap_array_in_zero_one(badness))
+
+        result = (utils.remap_array_in_zero_one(goodness), utils.remap_array_in_zero_one(badness))
+        # TODO result appears to have values outside of 0-1 !!!
+        return result
 
     def get_fitness_unfitness_scores(self, feature_presence_matrix, fitness_list) -> (np.ndarray, np.ndarray):
         """returns the univariate model according to the fitness"""
@@ -118,6 +118,25 @@ class VariateModels:
         observed_amounts = np.sum(feature_presence_matrix, axis=0)
         return self.clean_criteria_scores_given_expectations(observed_amounts, expected_amounts)
 
+    def get_fitness_unstability_scores(self, feature_presence_matrix, fitness_list):
+        def standard_deviation(observed_array, presence_array):
+            mean = np.mean(observed_array)
+            amount = np.sum(presence_array)
+            numerator = np.sum(np.square(observed_array - presence_array * mean))
+            standard_deviation = np.sqrt((numerator) / (amount - 1))
+            return standard_deviation / mean
+
+
+        observations = feature_presence_matrix * utils.to_column_vector(
+            fitness_list)  # TODO this is calculated elsewhere, perhaps it can be cached?
+
+        result_list = []
+
+        for observed_fitnesses, presences in zip(observations.T, feature_presence_matrix.T):
+            result_list.append(standard_deviation(observed_fitnesses, presences))
+
+        return np.array(result_list)
+
     def get_bivariate_fitness_observations(self, feature_presence_matrix, fitness_list: np.ndarray):
         row_wise_outer_product = utils.row_wise_self_outer_product(feature_presence_matrix)
         weighted_sum_by_fitness = np.sum(row_wise_outer_product * utils.to_column_vector(fitness_list),
@@ -128,7 +147,8 @@ class VariateModels:
                                       zip(weighted_sum_by_fitness, count_for_each_pair_of_features)])
 
         # average fitnesses needs to be re ranged and then reshaped
-        cooccurrence_matrix = utils.remap_array_in_zero_one_ignore_zeros(average_fitnesses)  # TODO this is also looking at the zeros, whereas it should really ignore them!
+        cooccurrence_matrix = utils.remap_array_in_zero_one_ignore_zeros(
+            average_fitnesses)  # TODO this is also looking at the zeros, whereas it should really ignore them!
         amount_of_features = feature_presence_matrix.shape[1]
         return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
 
@@ -141,7 +161,7 @@ class VariateModels:
         amount_of_features = feature_presence_matrix.shape[1]
         return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
 
-    def get_univariate_fitness_model(self, feature_presence_matrix, fitness_list):
+    def get_average_fitness_of_features(self, feature_presence_matrix, fitness_list):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
         sum_of_fitness_for_each_feature = np.sum(feature_presence_matrix * utils.to_column_vector(fitness_list),
                                                  axis=0)
@@ -149,15 +169,14 @@ class VariateModels:
         average_fitnesses = np.array([total / float(count) if count > 0 else 0.0 for total, count in
                                       zip(sum_of_fitness_for_each_feature, count_for_each_feature)])
 
-        return utils.remap_array_in_zero_one(average_fitnesses)
+        return average_fitnesses
 
     def get_univariate_popularity_model(self, feature_presence_matrix):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
-        return utils.remap_array_in_zero_one(count_for_each_feature)
+        return count_for_each_feature
 
     def get_expected_bivariate_model_from_marginals(self, marginals):
         return np.outer(marginals, marginals)
-
 
     def get_surrogate_score_from_bivariate_model(self, candidateC, bivariate_model_matrix, model_features):
         candidateH = self.hot_encoder.to_hot_encoding(candidateC)
@@ -169,8 +188,6 @@ class VariateModels:
         if amount_of_cells == 0:
             return 0.0
         return sum_of_cells / amount_of_cells
-
-
 
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space
