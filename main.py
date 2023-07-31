@@ -147,7 +147,7 @@ def test_surrogate_scorer(problem):
     (training_candidates, training_scores) = get_problem_training_data(problem, 1000)
 
     # parameters
-    importance_of_explainability = 0.8
+    importance_of_explainability = 0.5
     complexity_damping = 1
     merging_power = 5
 

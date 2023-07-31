@@ -154,16 +154,16 @@ class FeatureDiscoverer:
 
     def get_weighed_sum_with_explainability_scores(self, good_and_bad_scores):
         (goodness_scores, badness_scores) = good_and_bad_scores
-        # goodness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
-        #                        + goodness_scores * self.importance_of_fitness
+        goodness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
+                               + goodness_scores * self.importance_of_fitness
 
 
-        # EXPERIMENTAL!! TODO revert this eventually!
-        goodness_weighted_sum = self.explainability_of_features * goodness_scores
-        badness_weighted_sum = self.explainability_of_features * badness_scores
+        # EXPERIMENTAL!!
+        # goodness_weighted_sum = self.explainability_of_features * goodness_scores
+        # badness_weighted_sum = self.explainability_of_features * badness_scores
 
-        # badness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
-        #                        + badness_scores * self.importance_of_fitness
+        badness_weighted_sum = self.explainability_of_features * self.importance_of_explainability \
+                               + badness_scores * self.importance_of_fitness
         return (goodness_weighted_sum, badness_weighted_sum)
 
     def get_explainable_features(self, criteria='fitness'):
