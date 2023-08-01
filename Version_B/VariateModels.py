@@ -97,7 +97,6 @@ class VariateModels:
                                            in chi_squared_and_is_good])
 
         result = (utils.remap_array_in_zero_one(goodness), utils.remap_array_in_zero_one(badness))
-        # TODO result appears to have values outside of 0-1 !!!
         return result
 
     def get_fitness_unfitness_scores(self, feature_presence_matrix, fitness_list) -> (np.ndarray, np.ndarray):
@@ -120,10 +119,13 @@ class VariateModels:
 
     def get_fitness_unstability_scores(self, feature_presence_matrix, fitness_list):
         def standard_deviation(observed_array, presence_array):
-            mean = np.mean(observed_array)
             amount = np.sum(presence_array)
+            if amount < 2:
+                return 0.0
+            mean = np.sum(observed_array)/amount
+            # i have to multiply by the presence array, to only remove the appropriate cases.
             numerator = np.sum(np.square(observed_array - presence_array * mean))
-            standard_deviation = np.sqrt((numerator) / (amount - 1))
+            standard_deviation = np.sqrt(numerator / (amount - 1))
             return standard_deviation / mean
 
 

@@ -147,7 +147,7 @@ def test_surrogate_scorer(problem):
     (training_candidates, training_scores) = get_problem_training_data(problem, 1000)
 
     # parameters
-    importance_of_explainability = 0.5
+    importance_of_explainability = 0.2
     complexity_damping = 1
     merging_power = 5
 
@@ -162,6 +162,7 @@ def test_surrogate_scorer(problem):
     feature_discoverer.generate_explainable_features()
     print("Obtaining the fit and unfit features")
     (fit_features, unfit_features) = feature_discoverer.get_explainable_features(criteria='fitness')
+    (cool_features, uncool_features) = feature_discoverer.get_explainable_features(criteria='popularity')
     fit_features = utils.unzip(fit_features)[0]
     unfit_features = utils.unzip(unfit_features)[0]
 

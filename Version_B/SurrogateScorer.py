@@ -75,7 +75,7 @@ class SurrogateScorer:
 
         standard_deviations = self.variate_model_generator.get_fitness_unstability_scores(feature_presence_matrix,
                                                                                           fitness_array)
-        return 1.0 - (standard_deviations / np.max(standard_deviations))
+        return 1-(standard_deviations / np.max(standard_deviations))
 
     def train(self, candidatesC, fitness_list):
         """this will set the values for S and P"""
@@ -107,7 +107,7 @@ class SurrogateScorer:
 
     def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, based_on_trust=False):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
-        if (based_on_trust):
+        if based_on_trust:
             candidate_feature_vector *= self.trust_values
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
         sum_of_fitnesses = np.dot(outer_power, self.S_matrix)
