@@ -43,8 +43,9 @@ class Sampler:
         self.bivariate_matrix = 1 - self.bivariate_matrix
 
     def train_for_uniformity(self):
+        """Basically the values are 1 when the trivial features can coexist"""
         amount_of_features = len(self.features)
-        self.bivariate_matrix = np.ones((amount_of_features, amount_of_features), dtype=float)
+        self.bivariate_matrix = 1-self.validator.clash_matrix.reshape((amount_of_features, -1))
 
     def get_starting_pseudo_candidate(self):
         distribution_grid = np.ndarray.tolist(self.bivariate_matrix)
@@ -80,6 +81,7 @@ class Sampler:
         return HotEncoding.merge_features(pseudo_candidateH, new_feature)
 
     def specialise(self, pseudo_candidateH: np.ndarray):
+        """this was decommissioned because it would get stuck!"""
         before_specialisation = pseudo_candidateH.copy()
 
         attempts = 0
@@ -104,7 +106,8 @@ class ESTEEM_Sampler:
 
     importance_of_novelty: float
 
-    def __init__(self, search_space, fit_features, unfit_features, unpopular_features, importance_of_novelty=0.5):
+    def __init__(self, search_space, fit_features, unfit_features, unpopular_features,
+                 importance_of_novelty=0.5):
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.fit_features = fit_features
@@ -117,6 +120,7 @@ class ESTEEM_Sampler:
         self.uniform_sampler = Sampler(self.search_space, self.hot_encoder.get_hot_encoded_trivial_features(), self.validator)
         self.ick_detector = Version_B.VariateModels.FeatureDetector(self.search_space, unfit_features)
 
+        self.importance_of_randomness = 0.0
         self.importance_of_novelty = importance_of_novelty
 
     def train(self, candidateC_pool, fitness_list):
@@ -139,10 +143,9 @@ class ESTEEM_Sampler:
     @property
     def model_of_choice(self):
         """returns a model, which can be the fit one or the novelty one, randomly"""
-        chance_of_randomness = 0.2
-        if random.random() < chance_of_randomness:
+        if random.random() < self.importance_of_randomness:
             return self.uniform_sampler
-        if random.random() < self.importance_of_novelty:
+        elif random.random() < self.importance_of_novelty:
             return self.novelty_sampler
         else:
             return self.fit_sampler
@@ -150,13 +153,37 @@ class ESTEEM_Sampler:
     def sample(self):
         """ Generates a new candidate by using the many models within"""
 
+        # General process:
+
+        """
+           current_solution = generate a starting solution
+           
+           repeat until current_solution is complete:
+                tentative_specialisation = (a model).specialise(current_solution)
+                
+                if (tentative_specialisation is valid 
+                    and does not contain any really bad features
+                    current_solution = tentative_specialisation
+                    
+            return current_solution
+        """
+
         current_state = self.model_of_choice.get_starting_pseudo_candidate()
+
+        attempts = 0
+        too_many_attempts = self.search_space.total_cardinality
         while True:
+            # the uniform sampler helps prevent getting stuck in "invalid basins"
+            self.importance_of_randomness = attempts / too_many_attempts
+            if attempts > too_many_attempts:
+                print("What is happening?")
             if self.candidate_is_complete(current_state):
                 break
             tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
             if self.validator.is_candidate_valid(tentative_specialisation) and \
                     not self.gives_me_the_ick(tentative_specialisation):
                 current_state = tentative_specialisation
+
+            attempts += 1
 
         return self.hot_encoder.candidate_from_hot_encoding(current_state)
