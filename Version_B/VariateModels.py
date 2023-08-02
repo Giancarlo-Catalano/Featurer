@@ -28,17 +28,25 @@ class FeatureDetector:
         positive_when_absent = (1 - candidate_matrix) @ self.detection_matrix
         return 1 - np.minimum(positive_when_absent, 1)
 
+
+    def candidateH_contains_any_features(self, candidateH):
+        feature_presence_vector = self.get_feature_presence_from_candidateH(candidateH)
+        return sum(feature_presence_vector) > 0.0
+
     def get_feature_presence_matrix_from_candidates(self, candidatesC):
         """this might get used especially to process training data in batches"""
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidatesC)
         return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix)
 
-    def get_feature_presence_from_candidate(self, candidateC):
+    def get_feature_presence_from_candidateC(self, candidateC):
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix([candidateC])
         return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix).ravel()
 
+    def get_feature_presence_from_candidateH(self, candidateH):
+        return self.get_feature_presence_matrix_from_candidate_matrix(utils.as_row_matrix(candidateH)).ravel()
 
-class FeatureValidator:
+
+class CandidateValidator:
     """ An object throgh which you can quickly check which candidates / features are valid in the given search space"""
     search_space: SearchSpace.SearchSpace
     hot_encoder: HotEncoding.HotEncoder
@@ -68,13 +76,19 @@ class FeatureValidator:
 
     def get_feature_clashing(self, featuresH) -> np.ndarray:
         """
-
+        You give it a collection of features, and it tells you which ones are invalid
         :param featuresH: a list of featureH
         :return: a np.array, where 1 indicates that the feature is INvalid, and 0 if it is valid
         """
         featureH_matrix = np.array(featuresH)
         flat_outer_for_each_feature = utils.row_wise_self_outer_product(featureH_matrix)
         return flat_outer_for_each_feature @ self.clash_matrix
+
+
+    def is_candidate_valid(self, candidateH) -> bool:
+        candidate_matrix = utils.as_row_matrix(candidateH)
+        flat_outer = utils.flat_outer_product(candidate_matrix)
+        return np.dot(flat_outer, self.clash_matrix) == 0.0
 
 
 class VariateModels:
@@ -139,7 +153,7 @@ class VariateModels:
 
         return np.array(result_list)
 
-    def get_bivariate_fitness_observations(self, feature_presence_matrix, fitness_list: np.ndarray):
+    def get_bivariate_fitness_qualities(self, feature_presence_matrix, fitness_list: np.ndarray):
         row_wise_outer_product = utils.row_wise_self_outer_product(feature_presence_matrix)
         weighted_sum_by_fitness = np.sum(row_wise_outer_product * utils.to_column_vector(fitness_list),
                                          axis=0)  # gravity sum
@@ -150,11 +164,11 @@ class VariateModels:
 
         # average fitnesses needs to be re ranged and then reshaped
         cooccurrence_matrix = utils.remap_array_in_zero_one_ignore_zeros(
-            average_fitnesses)  # TODO this is also looking at the zeros, whereas it should really ignore them!
+            average_fitnesses)  # NOTE that it ignores the zeros, which are the cases where features cannot exist together.
         amount_of_features = feature_presence_matrix.shape[1]
         return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
 
-    def get_bivariate_popularity_observations(self, feature_presence_matrix):
+    def get_bivariate_popularity_qualities(self, feature_presence_matrix):
         row_wise_outer_product = utils.row_wise_self_outer_product(feature_presence_matrix)
         count_for_each_pair_of_features = np.sum(row_wise_outer_product, axis=0)
 
@@ -179,17 +193,6 @@ class VariateModels:
 
     def get_expected_bivariate_model_from_marginals(self, marginals):
         return np.outer(marginals, marginals)
-
-    def get_surrogate_score_from_bivariate_model(self, candidateC, bivariate_model_matrix, model_features):
-        candidateH = self.hot_encoder.to_hot_encoding(candidateC)
-        candidates_features = self.get_feature_presence_matrix(candidateH, model_features)
-        row = candidates_features
-        column = utils.as_column_matrix(candidates_features)
-        sum_of_cells = ((row @ bivariate_model_matrix) @ column)[0]
-        amount_of_cells = np.sum(candidates_features) ** 2
-        if amount_of_cells == 0:
-            return 0.0
-        return sum_of_cells / amount_of_cells
 
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space

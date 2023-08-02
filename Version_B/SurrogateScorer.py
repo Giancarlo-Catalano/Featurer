@@ -115,7 +115,7 @@ class SurrogateScorer:
             raise Exception(f"In set_deviation, the kind is invalid: {kind}")
 
     def get_deviation_score(self, candidateC, based_on_trust=False):
-        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
+        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidateC(candidateC)
         if based_on_trust:
             candidate_feature_vector *= self.trust_values
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
@@ -130,7 +130,7 @@ class SurrogateScorer:
         self.P_matrix *= (1.0 - self.redundant_cell_matrix)
 
     def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, based_on_trust=False):
-        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
+        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidateC(candidateC)
         if based_on_trust:
             candidate_feature_vector *= self.trust_values
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
@@ -140,7 +140,7 @@ class SurrogateScorer:
         return (sum_of_fitnesses / sum_of_weights) if sum_of_weights > 0.0 else 0.0
 
     def flat_average_get_surrogate_score(self, candidateC, based_on_trust=False):
-        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
+        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidateC(candidateC)
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
 
         sum_of_fitnesses = np.dot(outer_power, self.S_over_P_matrix)

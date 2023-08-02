@@ -37,7 +37,7 @@ class FeatureDiscoverer:
         self.complexity_damping = complexity_damping
 
         self.trivial_featuresH = self.hot_encoder.get_hot_encoded_trivial_features()
-        self.feature_validator = VariateModels.FeatureValidator(self.search_space)
+        self.feature_validator = VariateModels.CandidateValidator(self.search_space)
         self.variate_model_builder = VariateModels.VariateModels(self.search_space)
 
     @property
