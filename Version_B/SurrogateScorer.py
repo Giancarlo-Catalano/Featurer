@@ -53,6 +53,7 @@ class SurrogateScorer:
         self.S_matrix = None
         self.P_matrix = None
         self.trust_values = None
+        self.mean_of_training_fitness = None
 
         self.S_over_P_matrix = None
 
@@ -77,6 +78,10 @@ class SurrogateScorer:
                                                                                           fitness_array)
         return 1-(standard_deviations / np.max(standard_deviations))
 
+
+    def subtract_mean(self, mean):
+        self.S_matrix -= mean* self.P_matrix
+
     def train(self, candidatesC, fitness_list):
         """this will set the values for S and P"""
         if self.feature_detector.amount_of_features > 100:
@@ -98,12 +103,18 @@ class SurrogateScorer:
 
         self.trust_values = self.get_trust_values(feature_presence_matrix, fitness_array)
 
+        self.mean_of_training_fitness = np.mean(fitness_list)
+
         self.S_over_P_matrix = np.array([0 if p == 0.0 else s / p for (s, p) in zip(self.S_matrix, self.P_matrix)])
 
     def make_picky(self):
         """Provides a simple way to PERMANENTLY force picky surrogate scoring. Much simpler in general"""
         self.S_matrix *= (1.0 - self.redundant_cell_matrix)
         self.P_matrix *= (1.0 - self.redundant_cell_matrix)
+
+
+
+
 
     def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, based_on_trust=False):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
@@ -115,13 +126,18 @@ class SurrogateScorer:
 
         if sum_of_weights == 0.0:
             return 0.0
-        return sum_of_fitnesses / sum_of_weights
 
-    def old_get_surrogate_score_of_fitness(self, candidateC):
+
+        KNN_result = sum_of_fitnesses / sum_of_weights
+
+
+        return 2.0*KNN_result-self.mean_of_training_fitness
+
+    def flat_average_get_surrogate_score(self, candidateC, based_on_trust = False):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
-        sum_of_fitnesses = np.dot(outer_power, self.S_over_P_matrix)
 
+        sum_of_fitnesses = np.dot(outer_power, self.S_over_P_matrix)
         sum_of_outer_power = np.sum(outer_power)
         if sum_of_outer_power == 0.0:
             return 0.0

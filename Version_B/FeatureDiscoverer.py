@@ -115,13 +115,12 @@ class FeatureDiscoverer:
                                          for (old_feature, _) in organised_by_weight[weight_category]]
 
                 new_features = self.select_valid_features(new_features)
-                # new_features = self.select_simple_features(new_features)
 
                 organised_by_weight[weight_category + 1].extend(new_features)
 
         for (iteration, feature) in enumerate(self.trivial_featuresH):
             consider_feature(feature)
-            if self.merging_power>1 and iteration > self.merging_power*2:  # very arbitrary! but prevents weird edge cases
+            if self.merging_power > 1 and iteration > self.merging_power*2:  # very arbitrary! but prevents weird edge cases
                 organised_by_weight = self.cull_organised_by_weight(organised_by_weight)
 
         return utils.unzip(utils.concat(organised_by_weight[1:]))[0]
@@ -169,26 +168,42 @@ class FeatureDiscoverer:
     def get_explainable_features(self, criteria='fitness'):
         amount_to_keep = self.search_space.total_cardinality
 
-        def get_best_using_scores(criteria_scores):
-            with_scores = list(zip(self.explainable_features, criteria_scores))
-            with_scores.sort(key=utils.second, reverse=True)
-            return with_scores[:amount_to_keep]
-
         if criteria == 'all':
             return list(zip(self.explainable_features, self.explainability_of_features))
 
-        scores = None
+        goodness_scores = None
+        badness_scores = None
         feature_presence_matrix = self.variate_model_builder \
             .get_feature_presence_matrix(self.candidate_matrix, self.explainable_features)
         if criteria == 'fitness':
-            scores = self.variate_model_builder \
+            (goodness_score, badness_score) = self.variate_model_builder \
                 .get_fitness_unfitness_scores(feature_presence_matrix,
                                               self.fitness_of_candidates)
         elif criteria == 'popularity':
-            scores = self.variate_model_builder \
+            (goodness_score, badness_score) = self.variate_model_builder \
                 .get_popularity_unpopularity_scores(feature_presence_matrix,
                                                     self.expected_frequency_of_features)
+        else:
+            raise Exception(f"Invalid criteria passed to feature discoverer: criteria = {criteria}!")
 
-        (goodness, badness) = self.get_weighed_sum_with_explainability_scores(scores)
+        features_with_scores = [(feature, explainability_score, good_score, bad_score)
+                                for (feature, explainability_score, good_score, bad_score)
+                                in zip(self.explainable_features, self.explainability_of_features,
+                                       goodness_score, badness_score)]
 
-        return (get_best_using_scores(goodness), get_best_using_scores(badness))
+        def overall_score(explainability, criteria_score):
+            return utils.weighted_sum(explainability, self.importance_of_explainability,
+                                      criteria_score, 1.0-self.importance_of_fitness)
+
+        good_features = [(feature, overall_score(explainability, good_score)) for (feature, explainability, good_score, _)
+                         in features_with_scores if good_score > 0.0]
+
+        bad_features = [(feature, overall_score(explainability, bad_score)) for (feature, explainability, _, bad_score)
+                         in features_with_scores if bad_score > 0.0]
+
+        def keep_the_best(features_and_scores):
+            features_and_scores.sort(key=utils.second, reverse=True)
+            return features_and_scores[:amount_to_keep]
+
+
+        return (keep_the_best(good_features), keep_the_best(bad_features))

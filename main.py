@@ -13,7 +13,7 @@ from Version_B.SurrogateScorer import SurrogateScorer
 
 trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
-onemax = OneMax.OneMaxProblem(12)
+onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
 
@@ -42,7 +42,7 @@ def test_FeatureDiscoverer(problem):
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     importance_of_explainability = 0.75
     complexity_damping = 1
-    merging_power = 3
+    merging_power = 5
 
     fd = Version_B.FeatureDiscoverer.FeatureDiscoverer(search_space=search_space,
                                                        candidateC_population=random_candidates,
@@ -147,7 +147,7 @@ def test_surrogate_scorer(problem):
     (training_candidates, training_scores) = get_problem_training_data(problem, 1000)
 
     # parameters
-    importance_of_explainability = 0.2
+    importance_of_explainability = 0.5
     complexity_damping = 1
     merging_power = 5
 
@@ -162,23 +162,41 @@ def test_surrogate_scorer(problem):
     feature_discoverer.generate_explainable_features()
     print("Obtaining the fit and unfit features")
     (fit_features, unfit_features) = feature_discoverer.get_explainable_features(criteria='fitness')
-    (cool_features, uncool_features) = feature_discoverer.get_explainable_features(criteria='popularity')
-    fit_features = utils.unzip(fit_features)[0]
-    unfit_features = utils.unzip(unfit_features)[0]
+    (pop_features, unpop_features) = feature_discoverer.get_explainable_features(criteria='popularity')
 
-    print("The fit features are:")
-    pretty_print_features(problem, fit_features)
+    # DEBUG
+    def debug_print_list_of_feature(criteria, feature_list):
+        just_features = utils.unzip(feature_list)[0]
+        print(f"The features selected using the {criteria} are")
+        hot_encoder = HotEncoding.HotEncoder(search_space)
+        for featureH in just_features:
+            featureC = hot_encoder.feature_from_hot_encoding(featureH)
+            problem.pretty_print_feature(featureC)
+            print()
 
-    print("The unfit features are:")
-    pretty_print_features(problem, unfit_features)
+    debug_print_list_of_feature("fit", fit_features)
+    debug_print_list_of_feature("unfit", unfit_features)
+    debug_print_list_of_feature("pop", pop_features)
+    debug_print_list_of_feature("unpop", unpop_features)
+
+    def select_features_from_group_with_scores(features_with_scores, how_many):
+        return utils.unzip(features_with_scores)[0][:how_many]
+
+    to_keep_per_criteria = 50 // 3
+    selected_features = utils.concat([select_features_from_group_with_scores(criteria_group, to_keep_per_criteria)
+                                      for criteria_group in [fit_features, unfit_features, pop_features]])
+
+
+    print("The selected features are:")
+    pretty_print_features(problem, selected_features)
 
     print("Instantiating the surrogate scorer")
     scorer = SurrogateScorer(model_power=2,
                              search_space=search_space,
-                             featuresH=fit_features+unfit_features)
+                             featuresH=selected_features)
     print("And now we train the model")
     scorer.train(training_candidates, training_scores)
-    scorer.make_picky()
+    # scorer.make_picky()
 
     print(f"The model is now {scorer}")
 
@@ -195,7 +213,7 @@ def test_surrogate_scorer(problem):
         (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
 
         for (test_candidate, test_score) in zip(test_candidates, test_scores):
-            surrogate_score = scorer.old_get_surrogate_score_of_fitness(test_candidate)
+            surrogate_score = scorer.get_surrogate_score_of_fitness(test_candidate)
             surrogate_mistrustful_score = scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
             print(f"{test_score}\t{surrogate_score}\t{surrogate_mistrustful_score}")
 
@@ -209,11 +227,6 @@ if __name__ == '__main__':
 
 
 # TODO
-# fix model power > 2 not producing the correct diagonal exclusion matrix
-# rewrite the picky / not picky implementation, perhaps just subtract the diagonal!
 # investigate why the scores are so bad
         # is it because not enough features are used?
         # test by changing the arrangement of the cells in binval
-# implement variance modelling
-# implement variance weighted modelling
-# write proof of KNN equivalence
