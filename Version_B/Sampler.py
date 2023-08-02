@@ -42,6 +42,10 @@ class Sampler:
         # as this will measure popularity, we "invert it" to measure unpopularity
         self.bivariate_matrix = 1 - self.bivariate_matrix
 
+    def train_for_uniformity(self):
+        amount_of_features = len(self.features)
+        self.bivariate_matrix = np.ones((amount_of_features, amount_of_features), dtype=float)
+
     def get_starting_pseudo_candidate(self):
         distribution_grid = np.ndarray.tolist(self.bivariate_matrix)
 
@@ -91,6 +95,7 @@ class Sampler:
 class ESTEEM_Sampler:
     fit_sampler: Sampler
     novelty_sampler: Sampler
+    uniform_sampler: Sampler
     ick_detector: Version_B.VariateModels.FeatureDetector
     validator: Version_B.VariateModels.CandidateValidator
 
@@ -109,6 +114,7 @@ class ESTEEM_Sampler:
         self.validator = Version_B.VariateModels.CandidateValidator(self.search_space)
         self.fit_sampler = Sampler(self.search_space, self.fit_features, self.validator)
         self.novelty_sampler = Sampler(self.search_space, self.unpopular_features, self.validator)
+        self.uniform_sampler = Sampler(self.search_space, self.hot_encoder.get_hot_encoded_trivial_features(), self.validator)
         self.ick_detector = Version_B.VariateModels.FeatureDetector(self.search_space, unfit_features)
 
         self.importance_of_novelty = importance_of_novelty
@@ -118,6 +124,7 @@ class ESTEEM_Sampler:
         fitness_array = np.array(fitness_list)
         self.fit_sampler.train_for_fitness(candidateC_pool, fitness_array)
         self.novelty_sampler.train_for_novelty(candidateC_pool)
+        self.uniform_sampler.train_for_uniformity()
 
     def candidate_is_complete(self, candidateH):
         """returns true when the input is a fully fileld candidate"""
@@ -130,8 +137,11 @@ class ESTEEM_Sampler:
         return self.ick_detector.candidateH_contains_any_features(candidateH)
 
     @property
-    def model_which_might_be_for_novelty(self):
+    def model_of_choice(self):
         """returns a model, which can be the fit one or the novelty one, randomly"""
+        chance_of_randomness = 0.2
+        if random.random() < chance_of_randomness:
+            return self.uniform_sampler
         if random.random() < self.importance_of_novelty:
             return self.novelty_sampler
         else:
@@ -140,12 +150,13 @@ class ESTEEM_Sampler:
     def sample(self):
         """ Generates a new candidate by using the many models within"""
 
-        current_state = self.model_which_might_be_for_novelty.get_starting_pseudo_candidate()
+        current_state = self.model_of_choice.get_starting_pseudo_candidate()
         while True:
             if self.candidate_is_complete(current_state):
                 break
-            tentative_specialisation = self.model_which_might_be_for_novelty.specialise(current_state)
-            if not self.gives_me_the_ick(tentative_specialisation):
+            tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
+            if self.validator.is_candidate_valid(tentative_specialisation) and \
+                    not self.gives_me_the_ick(tentative_specialisation):
                 current_state = tentative_specialisation
 
         return self.hot_encoder.candidate_from_hot_encoding(current_state)
