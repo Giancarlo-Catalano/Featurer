@@ -149,7 +149,7 @@ def test_surrogate_scorer(problem):
     # parameters
     importance_of_explainability = 0.5
     complexity_damping = 1
-    merging_power = 5
+    merging_power = 2
 
     feature_discoverer = Version_B.FeatureDiscoverer.\
                         FeatureDiscoverer(search_space=search_space, candidateC_population=training_candidates,
@@ -182,30 +182,61 @@ def test_surrogate_scorer(problem):
     def select_features_from_group_with_scores(features_with_scores, how_many):
         return utils.unzip(features_with_scores)[0][:how_many]
 
-    to_keep_per_criteria = 50 // 3
-    selected_features = utils.concat([select_features_from_group_with_scores(criteria_group, to_keep_per_criteria)
-                                      for criteria_group in [fit_features, unfit_features, pop_features]])
+    to_keep_per_criteria = 30
 
+    selected_fit_features = select_features_from_group_with_scores(fit_features, to_keep_per_criteria)
+    selected_unfit_features = select_features_from_group_with_scores(unfit_features, to_keep_per_criteria)
+    selected_pop_features = select_features_from_group_with_scores(pop_features, to_keep_per_criteria)
+
+    to_keep_for_overall_selection = 50 // 3
+    selected_features = utils.concat(group[:to_keep_for_overall_selection] for group
+                                     in [selected_fit_features, selected_unfit_features, selected_pop_features])
 
     print("The selected features are:")
     pretty_print_features(problem, selected_features)
 
     print("Instantiating the surrogate scorer")
-    scorer = SurrogateScorer(model_power=2,
+    trad_scorer = SurrogateScorer(model_power=2,
                              search_space=search_space,
                              featuresH=selected_features)
     print("And now we train the model")
-    scorer.train(training_candidates, training_scores)
+    trad_scorer.train(training_candidates, training_scores)
     # scorer.make_picky()
 
-    print(f"The model is now {scorer}")
+    print(f"The model is now {trad_scorer}")
+
+
+    print("We also train some other models")
+    fit_scorer = SurrogateScorer(model_power=2,
+                                  search_space=search_space,
+                                  featuresH=selected_fit_features)
+    unfit_scorer = SurrogateScorer(model_power=2,
+                                 search_space=search_space,
+                                 featuresH=selected_unfit_features)
+
+    pop_scorer = SurrogateScorer(model_power=2,
+                                 search_space=search_space,
+                                 featuresH=selected_pop_features)
+
+    fit_scorer.train(training_candidates, training_scores)
+    unfit_scorer.train(training_candidates, training_scores)
+    pop_scorer.train(training_candidates, training_scores)
+    fit_scorer.set_deviation(kind='positive')
+    unfit_scorer.set_deviation(kind='negative')
+
+    def get_deviated_score(candidateC, based_on_trust=False):
+        neutral_score = pop_scorer.get_surrogate_score_of_fitness(candidateC, based_on_trust)
+        positive_score = fit_scorer.get_surrogate_score_of_fitness(candidateC, based_on_trust)
+        negative_score = unfit_scorer.get_surrogate_score_of_fitness(candidateC, based_on_trust)
+
+        return neutral_score + positive_score - negative_score
 
 
     def sanity_check():
         test_candidate = search_space.get_random_candidate()
         test_score = problem.score_of_candidate(test_candidate)
-        surrogate_score = scorer.get_surrogate_score_of_fitness(test_candidate)
-        surrogate_mistrustful_score = scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
+        surrogate_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate)
+        surrogate_mistrustful_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
 
         print(f"For a randomly generated candidate with actual score {test_score}, the surrogate score is {surrogate_score}")
 
@@ -213,9 +244,18 @@ def test_surrogate_scorer(problem):
         (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
 
         for (test_candidate, test_score) in zip(test_candidates, test_scores):
-            surrogate_score = scorer.get_surrogate_score_of_fitness(test_candidate)
-            surrogate_mistrustful_score = scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
-            print(f"{test_score}\t{surrogate_score}\t{surrogate_mistrustful_score}")
+            surrogate_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate)
+            surrogate_mistrustful_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
+
+            deviation_score = get_deviated_score(test_candidate, based_on_trust=False)
+            deviation_score_mistrustful = get_deviated_score(test_candidate, based_on_trust=True)
+            print(f"{test_score}"
+                  f"\t{surrogate_score}"
+                  f"\t{surrogate_mistrustful_score}"
+                  f"\t{deviation_score}"
+                  f"\t{deviation_score_mistrustful}")
+
+
 
     sanity_check()
     print_data_for_analysis()
@@ -223,7 +263,7 @@ def test_surrogate_scorer(problem):
 
 
 if __name__ == '__main__':
-    test_surrogate_scorer(trap5)
+    test_surrogate_scorer(BT)
 
 
 # TODO

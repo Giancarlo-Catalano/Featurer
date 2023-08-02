@@ -76,11 +76,10 @@ class SurrogateScorer:
 
         standard_deviations = self.variate_model_generator.get_fitness_unstability_scores(feature_presence_matrix,
                                                                                           fitness_array)
-        return 1-(standard_deviations / np.max(standard_deviations))
-
+        return 1 - (standard_deviations / np.max(standard_deviations))
 
     def subtract_mean(self, mean):
-        self.S_matrix -= mean* self.P_matrix
+        self.S_matrix -= mean * self.P_matrix
 
     def train(self, candidatesC, fitness_list):
         """this will set the values for S and P"""
@@ -107,14 +106,28 @@ class SurrogateScorer:
 
         self.S_over_P_matrix = np.array([0 if p == 0.0 else s / p for (s, p) in zip(self.S_matrix, self.P_matrix)])
 
+    def set_deviation(self, kind='neutral'):
+        if kind == 'positive':
+            self.S_matrix = self.S_matrix - (self.mean_of_training_fitness * self.P_matrix)
+        elif kind == 'negative':
+            self.S_matrix = (self.mean_of_training_fitness * self.P_matrix) - self.S_matrix
+        else:
+            raise Exception(f"In set_deviation, the kind is invalid: {kind}")
+
+    def get_deviation_score(self, candidateC, based_on_trust=False):
+        candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
+        if based_on_trust:
+            candidate_feature_vector *= self.trust_values
+        outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
+        sum_of_fitnesses = np.dot(outer_power, self.S_matrix)
+        sum_of_weights = np.dot(outer_power, self.P_matrix)
+
+        return (sum_of_fitnesses / sum_of_weights) if sum_of_weights > 0.0 else 0.0
+
     def make_picky(self):
         """Provides a simple way to PERMANENTLY force picky surrogate scoring. Much simpler in general"""
         self.S_matrix *= (1.0 - self.redundant_cell_matrix)
         self.P_matrix *= (1.0 - self.redundant_cell_matrix)
-
-
-
-
 
     def get_surrogate_score_of_fitness(self, candidateC: SearchSpace.Candidate, based_on_trust=False):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
@@ -124,16 +137,9 @@ class SurrogateScorer:
         sum_of_fitnesses = np.dot(outer_power, self.S_matrix)
         sum_of_weights = np.dot(outer_power, self.P_matrix)
 
-        if sum_of_weights == 0.0:
-            return 0.0
+        return (sum_of_fitnesses / sum_of_weights) if sum_of_weights > 0.0 else 0.0
 
-
-        KNN_result = sum_of_fitnesses / sum_of_weights
-
-
-        return 2.0*KNN_result-self.mean_of_training_fitness
-
-    def flat_average_get_surrogate_score(self, candidateC, based_on_trust = False):
+    def flat_average_get_surrogate_score(self, candidateC, based_on_trust=False):
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidate(candidateC)
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
 
