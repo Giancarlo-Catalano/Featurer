@@ -30,13 +30,20 @@ class TrapK:
             return (0, 0)
         return (min(used_columns), max(used_columns)+1)
 
+    def get_unconcatted_groups(self, feature):
+        return [SearchSpace.Feature(feature.values[(self.k*i):self.k*(i+1)]) for i in range(self.amount_of_groups)]
+
+    def get_complexity_of_unconcatted_feature(self, u_feature):
+        bounding_box = self.get_bounding_box(u_feature)
+        return (bounding_box[1]-bounding_box[0])
+
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """returns area of bounding box / area of board"""
-        bounds = self.get_bounding_box(feature)
-        bounds_area = bounds[1]-bounds[0]
-        normal_score = bounds_area/self.amount_of_bits
-        return 0.20*(normal_score-0.5)+0.5
+        occupied_areas = [self.get_complexity_of_unconcatted_feature(uf)
+                    for uf in self.get_unconcatted_groups(feature)]
+
+        return sum([area if area == 0 else self.k+area for area in occupied_areas])
 
 
     def divide_candidate_in_groups(self, candidate: SearchSpace.Candidate):

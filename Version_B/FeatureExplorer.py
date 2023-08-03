@@ -75,6 +75,16 @@ class IntermediateFeatureGroup:
         return cls(trivial_features, weight)
 
 
+    def cull_by_complexity(self, complexity_function, wanted_size):
+        if wanted_size > len(self.intermediate_features):
+            return
+        with_complexity = [(intermediate, complexity_function(intermediate.feature))
+                           for intermediate in self.intermediate_features]
+
+        with_complexity.sort(key=utils.second)
+        self.intermediate_features = set(intermediate for (intermediate, score) in with_complexity[:wanted_size])
+
+
 def mix_intermediate_feature_groups(first_group: IntermediateFeatureGroup, second_group: IntermediateFeatureGroup):
     new_weight = first_group.weight + second_group.weight
     new_elements = []
@@ -94,35 +104,39 @@ class GroupManager:
         self.groups_by_weight = [IntermediateFeatureGroup.get_0_weight_group(),
                                  IntermediateFeatureGroup.get_trivial_weight_group(search_space)]
 
-    def get_group(self, weight):
+    def get_group(self, weight) -> IntermediateFeatureGroup:
         return self.groups_by_weight[weight]
 
     def get_necessary_weights_to_obtain(self, target_weight):
         half_total = target_weight // 2
         return (half_total, half_total + (target_weight % 2))
 
-    def make_incremented_weight_category(self):
+    def make_incremented_weight_category(self, feature_complexity_function):
         new_weight = len(self.groups_by_weight)
         left_weight, right_weight = self.get_necessary_weights_to_obtain(new_weight)
 
-        self.groups_by_weight.append(mix_intermediate_feature_groups(
-            self.get_group(left_weight), self.get_group(right_weight)))
+        new_group = mix_intermediate_feature_groups(
+            self.get_group(left_weight), self.get_group(right_weight))
+
+        ideal_size = len(self.get_group(right_weight).intermediate_features)*2
+        new_group.cull_by_complexity(feature_complexity_function, ideal_size)
+        self.groups_by_weight.append(new_group)
 
 
-def develop_groups_to_weight(search_space: SearchSpace.SearchSpace, max_weight: int) -> GroupManager:
+def develop_groups_to_weight(search_space: SearchSpace.SearchSpace, max_weight: int, feature_complexity_function) -> GroupManager:
     current_group_manager = GroupManager(search_space)
     for _ in range(2, max_weight+1):
-        current_group_manager.make_incremented_weight_category()
+        current_group_manager.make_incremented_weight_category(feature_complexity_function)
 
     return current_group_manager
 
 
-def get_all_features_of_weight_at_most(search_space: SearchSpace.SearchSpace, max_weight: int):
-    groups: GroupManager = develop_groups_to_weight(search_space, max_weight)
+def get_all_features_of_weight_at_most(search_space: SearchSpace.SearchSpace, max_weight: int, feature_complexity_function):
+    groups: GroupManager = develop_groups_to_weight(search_space, max_weight, feature_complexity_function)
 
     result = []
     for weight_category in groups.groups_by_weight[1:]:
-        result.extend(weight_category.intermediate_features)
+        result.extend(intermediate.feature for intermediate in weight_category.intermediate_features)
 
     return result
 
