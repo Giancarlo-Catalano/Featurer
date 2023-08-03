@@ -98,7 +98,7 @@ class ESTEEM_Sampler:
     fit_sampler: Sampler
     novelty_sampler: Sampler
     uniform_sampler: Sampler
-    ick_detector: Version_B.VariateModels.FeatureDetector
+    unfit_feature_detector: Version_B.VariateModels.FeatureDetector
     validator: Version_B.VariateModels.CandidateValidator
 
     search_space: SearchSpace.SearchSpace
@@ -118,7 +118,7 @@ class ESTEEM_Sampler:
         self.fit_sampler = Sampler(self.search_space, self.fit_features, self.validator)
         self.novelty_sampler = Sampler(self.search_space, self.unpopular_features, self.validator)
         self.uniform_sampler = Sampler(self.search_space, self.hot_encoder.get_hot_encoded_trivial_features(), self.validator)
-        self.ick_detector = Version_B.VariateModels.FeatureDetector(self.search_space, unfit_features)
+        self.unfit_feature_detector = Version_B.VariateModels.FeatureDetector(self.search_space, unfit_features)
 
         self.importance_of_randomness = 0.0
         self.importance_of_novelty = importance_of_novelty
@@ -136,9 +136,9 @@ class ESTEEM_Sampler:
         amount_of_nones = sum([1 if val is None else 0 for val in combinatorial_candidate.values])
         return amount_of_nones == 0
 
-    def gives_me_the_ick(self, candidateH):
+    def contains_worst_features(self, candidateH):
         """returns true when the candidate contains features recognised by the unfit feature detector"""
-        return self.ick_detector.candidateH_contains_any_features(candidateH)
+        return self.unfit_feature_detector.candidateH_contains_any_features(candidateH)
 
     @property
     def model_of_choice(self):
@@ -173,15 +173,13 @@ class ESTEEM_Sampler:
         attempts = 0
         too_many_attempts = self.search_space.total_cardinality
         while True:
-            # the uniform sampler helps prevent getting stuck in "invalid basins"
+            # the uniform sampler helps prevent getting stuck in "invalidity basins"
             self.importance_of_randomness = attempts / too_many_attempts
-            if attempts > too_many_attempts:
-                print("What is happening?")
             if self.candidate_is_complete(current_state):
                 break
             tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
             if self.validator.is_candidate_valid(tentative_specialisation) and \
-                    not self.gives_me_the_ick(tentative_specialisation):
+                    not self.contains_worst_features(tentative_specialisation):
                 current_state = tentative_specialisation
 
             attempts += 1

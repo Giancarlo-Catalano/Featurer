@@ -175,7 +175,7 @@ def test_surrogate_scorer(problem):
 
 def test_sampler(problem):
     search_space = problem.get_search_space()
-    training_data = get_problem_training_data(problem, 100)
+    training_data = get_problem_training_data(problem, 120)
     (fit_features, unfit_features, pop_features, unpop_features) = get_explainable_features(problem, training_data)
 
     sampler = ESTEEM_Sampler(search_space, fit_features, unfit_features, unpop_features, importance_of_novelty=0.3)

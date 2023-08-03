@@ -69,7 +69,7 @@ class FeatureDiscoverer:
     def cull_organised_by_weight(self, organised_by_weight):
         """ in explore_features, we need to cull the features to keep the most explainable ones"""
         current_size = np.sum([len(weight_category) for weight_category in organised_by_weight])
-        ideal_size = self.search_space.total_cardinality ** (self.merging_power/2)  # ** (math.log2(self.merging_power) + 1)
+        ideal_size = self.search_space.total_cardinality ** 2  # ** (self.merging_power/2)  # ** (math.log2(self.merging_power) + 1)
         # TODO find a good default value, and set this from the outside 
         #  (perhaps use a "urgency" parameter, I've got notes back home!)
 
