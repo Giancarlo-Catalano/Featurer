@@ -11,6 +11,7 @@ import Version_B.FeatureDiscoverer
 from Version_B import VariateModels
 from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
+import Version_B.FeatureExplorer
 
 trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
@@ -172,7 +173,6 @@ def test_surrogate_scorer(problem):
     sanity_check()
     print_data_for_analysis()
 
-
 def test_sampler(problem):
     search_space = problem.get_search_space()
     training_data = get_problem_training_data(problem, 120)
@@ -188,13 +188,19 @@ def test_sampler(problem):
         problem.pretty_print_feature(new_candidate)
         print(f"Has score {actual_score}\n")
 
+def test_explorer(search_space):
+    print("Testing the explainable feature explorer")
+    print(f"The search space is {search_space}")
 
 
+    explainable_features = Version_B.FeatureExplorer.get_all_features_of_weight_at_most(search_space, 5)
+    print(f"The found explainble features are {len(explainable_features)}")
+    # for f in explainable_features:
+    #     print(f"{f}")
 
 
 if __name__ == '__main__':
-    test_sampler(trap5)
-
+    test_explorer(SearchSpace.SearchSpace([2]*20))
 
 # TODO
 # investigate why the scores are so bad

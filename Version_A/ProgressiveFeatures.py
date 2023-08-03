@@ -66,7 +66,7 @@ class ProgressiveFeatures:
         combinations_to_merge = itertools.combinations(trivial_features, weight_of_initial_feature)
         initial_features = []
         for combination in combinations_to_merge:
-            merged = self.search_space.merge_features_safe(combination)
+            merged = self.search_space.merge_features(combination)
             if merged is not None:
                 initial_features.append(merged)
         return initial_features
@@ -148,7 +148,7 @@ class ProgressiveFeatures:
         for merging_instructions in itertools.combinations(enumerate(self.pool_of_features), clique_size):
             (indices, merge_items) = utils.unzip(merging_instructions)
 
-            merged_combinatorial = self.search_space.merge_features_safe(merge_items)
+            merged_combinatorial = self.search_space.merge_features(merge_items)
             if (merged_combinatorial is not None) and (merged_combinatorial not in self.pool_of_features):
                 feature_form = self.merging_instructions_to_feature_vector(indices)
                 # TODO here I should recalculate which features are present...
