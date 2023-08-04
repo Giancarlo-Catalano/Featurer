@@ -99,10 +99,12 @@ def mix_intermediate_feature_groups(first_group: IntermediateFeatureGroup, secon
 
 class GroupManager:
     groups_by_weight: list  # groups_by_weight[n] is the group of weight n
+    ideal_size_of_group: int
 
-    def __init__(self, search_space):
+    def __init__(self, search_space: SearchSpace.SearchSpace):
         self.groups_by_weight = [IntermediateFeatureGroup.get_0_weight_group(),
                                  IntermediateFeatureGroup.get_trivial_weight_group(search_space)]
+        self.ideal_size_of_group = search_space.total_cardinality*search_space.dimensions
 
     def get_group(self, weight) -> IntermediateFeatureGroup:
         return self.groups_by_weight[weight]
@@ -118,8 +120,7 @@ class GroupManager:
         new_group = mix_intermediate_feature_groups(
             self.get_group(left_weight), self.get_group(right_weight))
 
-        ideal_size = len(self.get_group(right_weight).intermediate_features)*2
-        new_group.cull_by_complexity(feature_complexity_function, ideal_size)
+        new_group.cull_by_complexity(feature_complexity_function, self.ideal_size_of_group)
         self.groups_by_weight.append(new_group)
 
 
@@ -160,46 +161,6 @@ class FeatureExplorer:
     def importance_of_fitness(self):
         return 1.0 - self.importance_of_explainability
 
-    def get_explainability_threshold_to_filter_features(self, min_complexity, max_complexity, current_size, ideal_size):
-        """We intend to filter the features to keep a certain amount of them,
-        This returns a threshold on the explainability that can be used to achieve this effect, approximately."""
-
-        # assumes that current size is greater than ideal size
-        harshness = (ideal_size / current_size)
-        threshold = utils.weighted_sum(min_complexity, 1 - harshness,
-                                       max_complexity, harshness)
-        return threshold
-
-    def cull_organised_by_weight(self, organised_by_weight):
-        """ in explore_features, we need to cull the features to keep the most explainable ones"""
-        current_size = np.sum([len(weight_category) for weight_category in organised_by_weight])
-        ideal_size = self.search_space.total_cardinality ** 2  # ** (self.merging_power/2)  # ** (math.log2(self.merging_power) + 1)
-        # TODO find a good default value, and set this from the outside
-        #  (perhaps use a "urgency" parameter, I've got notes back home!)
-
-        # if it's already small enough, you can use the original
-        if current_size <= ideal_size:
-            return organised_by_weight
-
-        # calculating the range and then the threshold
-        def min_max_of_category(category):
-            return utils.min_max([score for feature, score in category])
-
-        min_max_pairs = [min_max_of_category(category) for category in organised_by_weight if len(category) > 0]
-        (mins, maxs) = utils.unzip(min_max_pairs)
-        min_complexity = np.min(mins)
-        max_complexity = np.max(maxs)
-
-        threshold = self.get_explainability_threshold_to_filter_features(min_complexity, max_complexity,
-                                                                         current_size, ideal_size)
-
-        def cull_weight_category(original_items):
-            return [feature_and_complexity for feature_and_complexity in original_items
-                    if utils.second(feature_and_complexity) <= threshold]
-
-        # cull each category
-        return [cull_weight_category(original) for original in organised_by_weight]
-
     def get_complexity_of_featureC(self, featureC):
         return self.complexity_function(featureC)
 
@@ -208,9 +169,21 @@ class FeatureExplorer:
                 based on the given complexity function"""
         return 1.0 / self.get_complexity_of_featureC(featureC)
 
-    def get_expected_frequency_of_feature(self, featureC):  # this might be replaced from the outside in the future
-        return self.search_space.probability_of_feature_in_uniform(featureC)
 
     def get_explainabilities(self, features):
         return np.array([self.get_explainability_of_feature(feature) for feature in features])
+
+
+
+    # TODO
+
+    # "Train the model" to recognise popular, unpopular, fit and unfit features
+    # first, we pass a candidate population, with fitnesses
+    # from that we obtain the feature presence matrix, stored in self
+    # using the feature presence matrix and the fitnesses we can
+    #   calculate the average fitnesses, check which they are greater than expected, then force [0, 1]
+    #   calculate the frequency, check when they are greater than expected, then force [0, 1]
+    # using these scores, determine which features are fit (fitness average is high) etc,
+    # separate the fit and unfit features (they should be disjoint), and the pop and unpop
+    # calculate their weighted averages with the explainabilities.
 
