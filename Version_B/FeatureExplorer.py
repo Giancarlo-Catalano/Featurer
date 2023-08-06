@@ -154,12 +154,13 @@ class FeatureExplorer:
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.merging_power = merging_power
         self.importance_of_explainability = 0.5
+        self.complexity_function = complexity_function
 
         self.variate_model_generator = Version_B.VariateModels.VariateModels(self.search_space)
 
-    @property
-    def importance_of_fitness(self):
-        return 1.0 - self.importance_of_explainability
+        self.explanainable_features = get_all_features_of_weight_at_most(self.search_space,
+                                                                         self.merging_power,
+                                                                         self.complexity_function)
 
     def get_complexity_of_featureC(self, featureC):
         return self.complexity_function(featureC)
@@ -170,8 +171,82 @@ class FeatureExplorer:
         return 1.0 / self.get_complexity_of_featureC(featureC)
 
 
-    def get_explainabilities(self, features):
-        return np.array([self.get_explainability_of_feature(feature) for feature in features])
+    def get_average_fitnesses_and_frequencies(self, candidateC_population, fitness_list, features):
+        candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidateC_population)
+        featuresH = [self.hot_encoder.to_hot_encoding(featureC) for featureC in features]
+        feature_presence_matrix = self.variate_model_generator.get_feature_presence_matrix(candidate_matrix, featuresH)
+        fitness_array = np.array(fitness_list)
+
+        average_fitnesses = self.variate_model_generator.\
+            get_average_fitness_of_features(feature_presence_matrix, fitness_array)
+        frequencies = self.variate_model_generator.get_observed_frequency_of_features(feature_presence_matrix)
+
+        return average_fitnesses, frequencies
+
+    def classify_features_by_prodigy(self, candidateC_population, fitness_list):
+        average_fitnesses, frequencies = self.get_average_fitnesses_and_frequencies(candidateC_population,
+                                                                                    fitness_list,
+                                                                                    self.explanainable_features)
+        average_overall_fitness = np.mean(fitness_list)
+        expected_frequencies = np.array([self.search_space.probability_of_feature_in_uniform(featureC)
+                                for featureC in self.explanainable_features])*len(fitness_list)
+
+        fit_features, unfit_features, popular_features, unpopular_features = [], [], [], []
+        fit_scores, unfit_scores, popular_scores, unpopular_scores = [], [], [], []
+
+        for featureC, average_fitness, observed_frequency, expected_frequency in zip(self.explanainable_features, average_fitnesses, frequencies, expected_frequencies):
+            is_fit = average_fitness > average_overall_fitness
+            is_popular = observed_frequency > expected_frequency
+            fitness_significance = abs(average_fitness-average_overall_fitness)
+            frequency_significance = utils.chi_squared(observed_frequency, expected_frequency)
+
+            if is_fit:
+                fit_features.append(featureC)
+                fit_scores.append(fitness_significance)
+            else:
+                unfit_features.append(featureC)
+                unfit_scores.append(fitness_significance)
+
+            if is_popular:
+                popular_features.append(featureC)
+                popular_scores.append(frequency_significance)
+            else:
+                unpopular_features.append(featureC)
+                unpopular_scores.append(frequency_significance)
+
+        return ((fit_features, fit_scores),
+                (unfit_features, unfit_scores),
+                (popular_features, popular_scores),
+                (unpopular_features, unpopular_scores))
+
+    def combine_prodigy_score_with_explainabilities(self, features_and_prodigy_scores):
+        (features, scores) = features_and_prodigy_scores
+        explainabilities = np.array([self.get_explainability_of_feature(feature) for feature in features])
+        score_array = utils.remap_array_in_zero_one(np.array(scores))
+
+        return zip(features, utils.weighted_sum(explainabilities, self.importance_of_explainability,
+                                  score_array, 1.0-self.importance_of_explainability))
+
+    def get_important_explainable_features(self, candidateC_population, fitness_list):
+        fits, unfits, populars, unpopulars = self.classify_features_by_prodigy(candidateC_population, fitness_list)
+
+        fit_prodigies = self.combine_prodigy_score_with_explainabilities(fits)
+        unfit_prodigies = self.combine_prodigy_score_with_explainabilities(unfits)
+        popular_prodigies = self.combine_prodigy_score_with_explainabilities(populars)
+        unpopular_prodigies = self.combine_prodigy_score_with_explainabilities(unpopulars)
+
+        def sort_by_criteria(zipped_prodigies_with_scores):
+            return sorted(zipped_prodigies_with_scores, key=utils.second, reverse=True)
+
+        fit_prodigies = sort_by_criteria(fit_prodigies)
+        unfit_prodigies = sort_by_criteria(unfit_prodigies)
+        popular_prodigies = sort_by_criteria(popular_prodigies)
+        unpopular_prodigies = sort_by_criteria(unpopular_prodigies)
+
+        return fit_prodigies, unfit_prodigies, popular_prodigies, unpopular_prodigies
+
+
+
 
 
 

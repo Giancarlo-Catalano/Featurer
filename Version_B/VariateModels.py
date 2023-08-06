@@ -177,9 +177,9 @@ class VariateModels:
         amount_of_features = feature_presence_matrix.shape[1]
         return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
 
-    def get_average_fitness_of_features(self, feature_presence_matrix, fitness_list):
+    def get_average_fitness_of_features(self, feature_presence_matrix, fitness_array):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
-        sum_of_fitness_for_each_feature = np.sum(feature_presence_matrix * utils.to_column_vector(fitness_list),
+        sum_of_fitness_for_each_feature = np.sum(feature_presence_matrix * utils.to_column_vector(fitness_array),
                                                  axis=0)
 
         average_fitnesses = np.array([total / float(count) if count > 0 else 0.0 for total, count in
@@ -187,7 +187,7 @@ class VariateModels:
 
         return average_fitnesses
 
-    def get_univariate_popularity_model(self, feature_presence_matrix):
+    def get_observed_frequency_of_features(self, feature_presence_matrix):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
         return count_for_each_feature
 

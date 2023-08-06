@@ -13,7 +13,7 @@ from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
 
-trap5 = TrapK.TrapK(5, 4)
+trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
@@ -30,12 +30,22 @@ def get_problem_training_data(problem, sample_size):
     return (random_candidates, scores)
 
 
-def pretty_print_features(problem, features):
+def pretty_print_features(problem, input_list_of_features, with_scores = False, combinatorial = False):
     hot_encoder = HotEncoding.HotEncoder(problem.get_search_space())
-    for featureH in features:
-        featureC = hot_encoder.feature_from_hot_encoding(featureH)
+    def print_feature_only(feature):
+        featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
         problem.pretty_print_feature(featureC)
-        print()
+
+    def print_with_or_without_score(maybe_pair):
+        if with_scores:
+            feature, score = maybe_pair
+            print_feature_only(feature)
+            print(f"(has score {score:.2f})")
+        else:
+            print_feature_only(maybe_pair)
+
+    for maybe_pair in input_list_of_features:
+        print_with_or_without_score(maybe_pair)
 
 
 def get_explainable_features(problem, training_data):
@@ -193,11 +203,30 @@ def test_explorer(problem):
     print("Testing the explainable feature explorer")
     print(f"The problem is {problem}")
 
-    explainable_features = Version_B.FeatureExplorer.get_all_features_of_weight_at_most(search_space, 5, problem.get_complexity_of_feature)
-    print(f"The found explainable features are {len(explainable_features)}:")
-    for f in explainable_features:
-        problem.pretty_print_feature(f)
-        print()
+    print("Constructing the explorer")
+    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
+                                                         importance_of_explainability = 0.5)
+
+    training_samples, training_scores = get_problem_training_data(problem, 200)
+
+    print("Then we obtain the meaningful features")
+    (fit_features_and_scores), (unfit_features_and_scores), (popular_features_and_scores), (unpopular_features_and_scores) = \
+        explorer.get_important_explainable_features(training_samples, training_scores)
+
+    print("The fit features are")
+    pretty_print_features(problem, fit_features_and_scores, combinatorial=True, with_scores=True)
+
+    print("\n\nThe unfit features are")
+    pretty_print_features(problem, unfit_features_and_scores, combinatorial=True, with_scores=True)
+
+    print("\n\nThe popular features are")
+    pretty_print_features(problem, popular_features_and_scores, combinatorial=True, with_scores=True)
+
+    print("\n\nThe unpopular features are")
+    pretty_print_features(problem, unpopular_features_and_scores, combinatorial=True, with_scores=True)
+
+
+
 
 
 if __name__ == '__main__':
