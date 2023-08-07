@@ -39,9 +39,7 @@ class CheckerBoardProblem(CombinatorialProblem.CombinatorialProblem):
         bounds_rows = bounds[1] - bounds[0]
         bounds_cols = bounds[3] - bounds[2]
         bounds_area = bounds_cols * bounds_rows
-        normal_score = bounds_area / self.total_area
-
-        return normal_score
+        return bounds_area
 
     def candidate_to_boolean_grid(self, candidate: SearchSpace.Candidate):
         candidate_bools = [val == 1 for val in candidate.values]

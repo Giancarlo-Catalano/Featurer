@@ -12,7 +12,7 @@ class CombinatorialProblem:
     def __repr__(self):
         return f"Generic Combinatorial Problem"
 
-    def get_amount_of_bits(self):
+    def get_amount_of_bits_when_hot_encoded(self):
         return self.search_space.total_cardinality
 
     def amount_of_set_values_in_feature(self, feature: SearchSpace.Feature):

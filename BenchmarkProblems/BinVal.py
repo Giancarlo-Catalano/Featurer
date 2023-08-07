@@ -27,8 +27,7 @@ class BinValProblem(CombinatorialProblem.CombinatorialProblem):
             return 0
         bounds = self.get_bounding_box(feature)
         bounds_area = bounds[1]-bounds[0]
-        normal_score = bounds_area/self.amount_of_bits
-        return normal_score
+        return bounds_area
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         digit_value = 1
