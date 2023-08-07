@@ -70,14 +70,14 @@ class IntermediateFeatureGroup:
                                for (var, val) in var_vals)
         return cls(trivial_features, weight)
 
-    def cull_by_complexity(self, complexity_function, wanted_size):
-        if wanted_size > len(self.intermediate_features):
-            return
-        with_complexity = [(intermediate, complexity_function(intermediate.feature))
-                           for intermediate in self.intermediate_features]
+def cull_by_complexity(intermediate_features, complexity_function, wanted_size) -> set:
+    if wanted_size > len(intermediate_features):
+        return intermediate_features
+    with_complexity = [(intermediate, complexity_function(intermediate.feature))
+                       for intermediate in intermediate_features]
 
-        with_complexity.sort(key=utils.second)
-        self.intermediate_features = set(intermediate for (intermediate, score) in with_complexity[:wanted_size])
+    with_complexity.sort(key=utils.second)
+    return set(intermediate for (intermediate, score) in with_complexity[:wanted_size])
 
 
 def mix_intermediate_feature_groups(first_group: IntermediateFeatureGroup, second_group: IntermediateFeatureGroup):
@@ -99,7 +99,8 @@ class GroupManager:
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.groups_by_weight = [IntermediateFeatureGroup.get_0_weight_group(),
                                  IntermediateFeatureGroup.get_trivial_weight_group(search_space)]
-        self.ideal_size_of_group = search_space.total_cardinality*search_space.dimensions
+        self.ideal_size_of_group = max(search_space.total_cardinality*search_space.dimensions, 100)
+        # this is because very small problems will attempt culling and erase a significant chunk of the entire space
 
     def get_group(self, weight) -> IntermediateFeatureGroup:
         return self.groups_by_weight[weight]
@@ -115,7 +116,7 @@ class GroupManager:
         new_group = mix_intermediate_feature_groups(
             self.get_group(left_weight), self.get_group(right_weight))
 
-        new_group.cull_by_complexity(feature_complexity_function, self.ideal_size_of_group)
+        new_group.intermediate_features = cull_by_complexity(new_group.intermediate_features, feature_complexity_function, self.ideal_size_of_group)
         self.groups_by_weight.append(new_group)
 
 
@@ -127,14 +128,15 @@ def develop_groups_to_weight(search_space: SearchSpace.SearchSpace, max_weight: 
     return current_group_manager
 
 
-def get_all_features_of_weight_at_most(search_space: SearchSpace.SearchSpace, max_weight: int, feature_complexity_function):
+def retrieve_explainable_features(search_space: SearchSpace.SearchSpace, max_weight: int, feature_complexity_function):
     groups: GroupManager = develop_groups_to_weight(search_space, max_weight, feature_complexity_function)
 
-    result = []
+    result = set()
     for weight_category in groups.groups_by_weight[1:]:
-        result.extend(intermediate.feature for intermediate in weight_category.intermediate_features)
+        result.update(weight_category.intermediate_features)
 
-    return result
+    # result = cull_by_complexity(result, feature_complexity_function, len(result))
+    return [intermediate.feature for intermediate in result]
 
 class FeatureExplorer:
     search_space: SearchSpace.SearchSpace
@@ -148,14 +150,14 @@ class FeatureExplorer:
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.merging_power = merging_power
-        self.importance_of_explainability = 0.5
+        self.importance_of_explainability = importance_of_explainability
         self.complexity_function = complexity_function
 
         self.variate_model_generator = Version_B.VariateModels.VariateModels(self.search_space)
 
-        self.explanainable_features = get_all_features_of_weight_at_most(self.search_space,
-                                                                         self.merging_power,
-                                                                         self.complexity_function)
+        self.explanainable_features = retrieve_explainable_features(self.search_space,
+                                                                    self.merging_power,
+                                                                    self.complexity_function)
 
     def get_complexity_of_featureC(self, featureC):
         return self.complexity_function(featureC)
@@ -219,10 +221,9 @@ class FeatureExplorer:
 
 
         # debug
-        print("In the given list of features, the values are as follows:")
-        for feature, explainability, criteria_score in zip(features, explainabilities, score_array):
-            print(f"For the feature {feature}, expl = {explainability}, score = {criteria_score}")
-
+        # print("In the given list of features, the values are as follows:")
+        # for feature, explainability, criteria_score in zip(features, explainabilities, score_array):
+        #     print(f"For the feature {feature}, expl = {explainability:.2f}, score = {criteria_score:.2f}")
         # end of debug
 
         return zip(features, utils.weighted_sum(explainabilities, self.importance_of_explainability,

@@ -87,6 +87,24 @@ class SearchSpace:
         return f"SearchSpace{self.cardinalities}"
 
 
+    def feature_is_complete(self, feature: Feature):
+        """returns true when the feature has all the variables set"""
+        used_vars = [False]*self.dimensions
+        for (var, _) in feature.var_vals:
+            used_vars[var] = True
+        return all(used_vars)
+
+
+    def feature_is_valid(self, feature: Feature):
+        value_for_each_var = [None] * self.dimensions
+        for (var, val) in feature.var_vals:
+            if value_for_each_var[var] is None:
+                value_for_each_var[var] = val
+            else:
+                return False
+        return True
+
+
 def merge_two_features(feature_a, feature_b):
     return Feature(feature_a.var_vals + feature_b.var_vals)
 

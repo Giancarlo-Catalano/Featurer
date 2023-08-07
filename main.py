@@ -13,13 +13,14 @@ from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
 
-trap5 = TrapK.TrapK(5, 4)
+trap5 = TrapK.TrapK(5, 1)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
 
-merging_power = 4
+merging_power = 5
+importance_of_explainability = 0.0
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
@@ -206,7 +207,7 @@ def test_explorer(problem):
 
     print("Constructing the explorer")
     explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
-                                                         importance_of_explainability = 0.5)
+                                                         importance_of_explainability = importance_of_explainability)
 
     training_samples, training_scores = get_problem_training_data(problem, 200)
 
@@ -231,7 +232,7 @@ def test_explorer(problem):
 
 
 if __name__ == '__main__':
-    test_explorer(checkerboard)
+    test_explorer(trap5)
 
 # TODO
 # investigate why the scores are so bad
