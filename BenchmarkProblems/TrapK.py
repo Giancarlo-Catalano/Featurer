@@ -43,7 +43,7 @@ class TrapK:
         occupied_areas = [self.get_complexity_of_unconcatted_feature(uf)
                     for uf in self.get_unconcatted_groups(feature)]
 
-        return sum([area if area == 0 else self.k+area for area in occupied_areas])
+        return utils.product([area + 1 for area in occupied_areas])
 
 
     def divide_candidate_in_groups(self, candidate: SearchSpace.Candidate):

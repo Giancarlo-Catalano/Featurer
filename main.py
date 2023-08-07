@@ -13,13 +13,13 @@ from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
 
-trap5 = TrapK.TrapK(5, 2)
+trap5 = TrapK.TrapK(5, 4)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
 
-merging_power = 5
+merging_power = 2
 
 
 def get_problem_training_data(problem, sample_size):
@@ -46,6 +46,7 @@ def pretty_print_features(problem, input_list_of_features, with_scores = False, 
 
     for maybe_pair in input_list_of_features:
         print_with_or_without_score(maybe_pair)
+        print()
 
 
 def get_explainable_features(problem, training_data):
@@ -230,7 +231,7 @@ def test_explorer(problem):
 
 
 if __name__ == '__main__':
-    test_explorer(trap5)
+    test_explorer(BT)
 
 # TODO
 # investigate why the scores are so bad

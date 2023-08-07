@@ -34,7 +34,7 @@ def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature
     # NOTE: the order of the arguments matters!
     new_start = left.start
     new_end = right.end
-    new_feature = SearchSpace.merge_two_features(left.feature, right.feature)
+    new_feature = SearchSpace.experimental_merge_two_features(left.feature, right.feature)
 
     return IntermediateFeature(new_start, new_end, new_feature)
 
@@ -168,7 +168,7 @@ class FeatureExplorer:
     def get_explainability_of_feature(self, featureC):
         """ returns a score in [0,1] describing how explainable the feature is,
                 based on the given complexity function"""
-        return 1.0 / self.get_complexity_of_featureC(featureC)
+        return 1.0 - self.get_complexity_of_featureC(featureC)
 
 
     def get_average_fitnesses_and_frequencies(self, candidateC_population, fitness_list, features):
@@ -220,9 +220,20 @@ class FeatureExplorer:
                 (unpopular_features, unpopular_scores))
 
     def combine_prodigy_score_with_explainabilities(self, features_and_prodigy_scores):
+        """each feature has a criteria score (fitness, unfitness, pop, unpop), and an explainability"""
+        """this function will combine them using a simple interpolation average"""
+        """this is where 'importance of explainability' gets used!'"""
         (features, scores) = features_and_prodigy_scores
         explainabilities = np.array([self.get_explainability_of_feature(feature) for feature in features])
         score_array = utils.remap_array_in_zero_one(np.array(scores))
+
+
+        # debug
+        print("In the given list of features, the values are as follows:")
+        for feature, explainability, criteria_score in zip(features, explainabilities, score_array):
+            print(f"For the feature {feature}, expl = {explainability}, score = {criteria_score}")
+
+        # end of debug
 
         return zip(features, utils.weighted_sum(explainabilities, self.importance_of_explainability,
                                   score_array, 1.0-self.importance_of_explainability))
@@ -249,16 +260,4 @@ class FeatureExplorer:
 
 
 
-
-    # TODO
-
-    # "Train the model" to recognise popular, unpopular, fit and unfit features
-    # first, we pass a candidate population, with fitnesses
-    # from that we obtain the feature presence matrix, stored in self
-    # using the feature presence matrix and the fitnesses we can
-    #   calculate the average fitnesses, check which they are greater than expected, then force [0, 1]
-    #   calculate the frequency, check when they are greater than expected, then force [0, 1]
-    # using these scores, determine which features are fit (fitness average is high) etc,
-    # separate the fit and unfit features (they should be disjoint), and the pop and unpop
-    # calculate their weighted averages with the explainabilities.
 

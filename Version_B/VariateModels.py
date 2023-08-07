@@ -132,6 +132,8 @@ class VariateModels:
         return self.clean_criteria_scores_given_expectations(observed_amounts, expected_amounts)
 
     def get_fitness_unstability_scores(self, feature_presence_matrix, fitness_list):
+        """highly experimental function, probably not useful"""
+        """calculates standard_deviation / mean for each feature"""
         def standard_deviation(observed_array, presence_array):
             amount = np.sum(presence_array)
             if amount < 2:

@@ -1,3 +1,4 @@
+import copy
 import itertools
 import math
 import random
@@ -91,6 +92,7 @@ class SearchSpace:
 
 
 def merge_two_features(feature_a: Feature, feature_b: Feature):
+    # TODO make this more efficient
     result: Feature = Feature([])
     # I'm sorry!!! but having (0 or None) was really confusing..
     for from_a, from_b in zip(feature_a.values, feature_b.values):
@@ -108,6 +110,16 @@ def merge_two_features(feature_a: Feature, feature_b: Feature):
                 result.values.append(from_a)
 
     return result
+
+
+def experimental_merge_two_features(feature_a: Feature, feature_b: Feature):
+    result_values = list(feature_a.values)
+    # I'm sorry!!! but having (0 or None) was really confusing..
+    for index, from_b in enumerate(feature_b.values):
+        if from_b is not None:
+            result_values[index] = from_b
+
+    return Feature(result_values)
 
 
 def merge_features(list_of_features):
