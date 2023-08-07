@@ -1,6 +1,5 @@
 import SearchSpace
 import CombinatorialProblem
-import utils
 
 
 class OneMaxProblem(CombinatorialProblem.CombinatorialProblem):
@@ -12,12 +11,6 @@ class OneMaxProblem(CombinatorialProblem.CombinatorialProblem):
 
     def __repr__(self):
         return f"OneMaxProblem(bits={self.amount_of_bits})"
-
-    def get_bounding_box(self, feature):
-        if len(feature.var_vals) == 0:
-            return 0, 0
-        used_columns = utils.unzip(feature.var_vals)
-        return min(used_columns), max(used_columns) + 1
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """returns area of bounding box / area of board"""

@@ -1,4 +1,5 @@
 import SearchSpace
+import utils
 
 
 class CombinatorialProblem:
@@ -18,6 +19,18 @@ class CombinatorialProblem:
     def amount_of_set_values_in_feature(self, feature: SearchSpace.Feature):
         return len(feature.var_vals)
 
+
+    def get_leftmost_and_rightmost_set_variable(self, feature):
+        if len(feature.var_vals):
+            return 0, 0
+
+        used_vars = utils.unzip(feature.var_vals)
+        return min(used_vars), max(used_vars)
+
+    def get_area_of_smallest_bounding_box(self, feature):
+        leftmost, rightmost = self.get_leftmost_and_rightmost_set_variable(feature)
+        return rightmost-leftmost+1
+
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """Returns a value which increases as the complexity increases"""
         # It should never be negative!
@@ -36,4 +49,3 @@ class CombinatorialProblem:
 
     def pretty_print_feature(self, feature):
         raise Exception("A class extending CombinatorialProblem does not implement .pretty_print_feature(f)!")
-

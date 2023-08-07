@@ -1,6 +1,5 @@
 import SearchSpace
 import CombinatorialProblem
-import utils
 
 
 class BinValProblem(CombinatorialProblem.CombinatorialProblem):
@@ -15,19 +14,8 @@ class BinValProblem(CombinatorialProblem.CombinatorialProblem):
     def __repr__(self):
         return f"BinValProblem(bits={self.amount_of_bits}, base = {self.base})"
 
-    def get_bounding_box(self, feature):
-        if len(feature.var_vals) == 0:
-            return (0, 0)
-        used_columns = utils.unzip(feature.var_vals)
-        return (min(used_columns), max(used_columns)+1)
-
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        """returns area of bounding box / area of board"""
-        if len(feature.var_vals) == 0:
-            return 0
-        bounds = self.get_bounding_box(feature)
-        bounds_area = bounds[1]-bounds[0]
-        return bounds_area
+        return super().get_area_of_smallest_bounding_box(feature)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         digit_value = 1
