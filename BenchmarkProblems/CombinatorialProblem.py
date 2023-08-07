@@ -12,8 +12,8 @@ class CombinatorialProblem:
     def __repr__(self):
         return f"Generic Combinatorial Problem"
 
-    def get_search_space(self) -> SearchSpace.SearchSpace:
-        return self.search_space
+    def get_amount_of_bits(self):
+        return self.search_space.total_cardinality
 
     def amount_of_set_values_in_feature(self, feature: SearchSpace.Feature):
         return len(feature.var_vals)

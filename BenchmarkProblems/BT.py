@@ -70,6 +70,7 @@ class BTProblem:
 
 
     def __init__(self, amount_of_workers, amount_of_choices):
+
         self.total_workers = amount_of_workers
         self.amount_of_choices = amount_of_choices
         self.workers = [Worker.random(amount_of_choices) for _ in range(amount_of_workers)]
