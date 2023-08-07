@@ -3,6 +3,7 @@ import random
 import SearchSpace
 import utils
 from enum import Enum
+import CombinatorialProblem
 
 
 class Weekday(Enum):
@@ -63,35 +64,26 @@ class Worker:
         return cls(random_name, options)
 
 
-class BTProblem:
+class BTProblem(CombinatorialProblem.CombinatorialProblem):
     total_workers: int
     amount_of_choices: int
     workers: list
 
 
     def __init__(self, amount_of_workers, amount_of_choices):
-
+        super().__init__(SearchSpace.SearchSpace([self.amount_of_choices] * self.total_workers))
         self.total_workers = amount_of_workers
         self.amount_of_choices = amount_of_choices
         self.workers = [Worker.random(amount_of_choices) for _ in range(amount_of_workers)]
 
-    @property
-    def amount_of_bits(self):
-        return self.total_workers*self.amount_of_choices
-
     def __repr__(self):
         return f"BTProblem:(" \
-               f"\n\tbits={self.amount_of_bits}" \
                f"\n\t workers: "+ \
                 "\n\t\t".join([worker.__repr__() for worker in self.workers])
 
-    def get_search_space(self):
-        return SearchSpace.SearchSpace([self.amount_of_choices] * self.total_workers)
-
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        amount_of_workers = len([set_schedule for set_schedule in feature.values if set_schedule is not None])
+        amount_of_workers = super().amount_of_set_values_in_feature(feature)
         return amount_of_workers/self.total_workers
-
 
     def get_resulting_roster(self, candidate: SearchSpace.Candidate):
         chosen_schedules = [worker.available_schedules[choice]
@@ -128,7 +120,7 @@ class BTProblem:
             chosen_schedule = worker.available_schedules[val]
             return f"{worker.name} with rota #{val}:{chosen_schedule.__repr__()}"
 
-        print("\n".join([repr_of_var_val(var, val) for (var, val) in enumerate(feature.values) if val is not None]))
+        print("\n".join([repr_of_var_val(var, val) for (var, val) in feature.var_vals]))
 
 
 

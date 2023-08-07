@@ -1,9 +1,6 @@
-import math
-
 import SearchSpace
 import CombinatorialProblem
 import utils
-import numpy as np
 
 
 class BinValProblem(CombinatorialProblem.CombinatorialProblem):
