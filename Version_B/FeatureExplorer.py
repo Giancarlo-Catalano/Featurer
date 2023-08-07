@@ -26,7 +26,7 @@ class IntermediateFeature:
 
     @classmethod
     def get_trivial_feature(cls, var, val, search_space: SearchSpace.SearchSpace):
-        return cls(var, var, search_space.get_single_value_feature(var, val))
+        return cls(var, var, SearchSpace.Feature.trivial_feature(var, val))
 
 
 def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature):

@@ -16,18 +16,23 @@ def value_to_string(val):
 
 
 class Feature:
-    # a wrapper for a tuple of (optional) values,
-    def __init__(self, values):
-        self.values = values
+    # a list of pairs (var, val)
+    def __init__(self, var_vals):
+        self.var_vals = var_vals
 
     def __repr__(self):
-        return "<" + (" ".join([value_to_string(val) for val in self.values])) + ">"
+        return "<" + (", ".join([f"[{var}]={val}" for var, val in self.var_vals])) + ">"
 
     def __hash__(self):
-        return tuple(self.values).__hash__()
+        return tuple(self.var_vals).__hash__()
 
-    def __eq__(self, other):
-        return self.values == other.values
+    @classmethod
+    def empty_feature(cls):
+        return cls([])
+
+    @classmethod
+    def trivial_feature(cls, var, val):
+        return cls([(var, val)])
 
 
 class Candidate:
@@ -62,14 +67,6 @@ class SearchSpace:
     def get_random_candidate(self):
         return Candidate(tuple((random.randrange(card) for card in self.cardinalities)))
 
-    def get_empty_feature(self):
-        return Feature([None] * self.dimensions)
-
-    def get_single_value_feature(self, var, val):
-        result = self.get_empty_feature()
-        result.values[var] = val
-        return result
-
     def get_all_var_val_pairs(self):
         return [(var, val) for var in range(self.dimensions)
                 for val in range(self.cardinalities[var])]
@@ -77,58 +74,19 @@ class SearchSpace:
     def get_all_trivial_features(self):
         all_var_val_pairs = self.get_all_var_val_pairs()
 
-        return [self.get_single_value_feature(var, val)
+        return [Feature.trivial_feature(var, val)
                 for (var, val) in all_var_val_pairs]
 
     def probability_of_feature_in_uniform(self, combinatorial_feature: Feature):
         result = 1
-        for (val, card) in zip(combinatorial_feature.values, self.cardinalities):
-            if val is not None:
-                result /= card
+        for var, _ in combinatorial_feature.var_vals:
+            result /= self.cardinalities[var]
         return result
 
     def __repr__(self):
         return f"SearchSpace{self.cardinalities}"
 
 
-def merge_two_features(feature_a: Feature, feature_b: Feature):
-    # TODO make this more efficient
-    result: Feature = Feature([])
-    # I'm sorry!!! but having (0 or None) was really confusing..
-    for from_a, from_b in zip(feature_a.values, feature_b.values):
-        if from_a is None:
-            if from_b is None:
-                result.values.append(None)
-            else:
-                result.values.append(from_b)
-        else:
-            if from_b is None:
-                result.values.append(from_a)
-            elif from_a != from_b:
-                return None
-            else:
-                result.values.append(from_a)
+def merge_two_features(feature_a, feature_b):
+    return Feature(feature_a.var_vals + feature_b.var_vals)
 
-    return result
-
-
-def experimental_merge_two_features(feature_a: Feature, feature_b: Feature):
-    result_values = list(feature_a.values)
-    # I'm sorry!!! but having (0 or None) was really confusing..
-    for index, from_b in enumerate(feature_b.values):
-        if from_b is not None:
-            result_values[index] = from_b
-
-    return Feature(result_values)
-
-
-def merge_features(list_of_features):
-    # assumes list_of_features has at least 2 elements
-    result = merge_two_features(list_of_features[0], list_of_features[1])
-    for feature in list_of_features[2:]:
-        if result is None:
-            return None
-        result = merge_two_features(result, feature)
-    if result is None:
-        return None
-    return result
