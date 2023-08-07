@@ -5,7 +5,7 @@ import numpy as np
 import HotEncoding
 import SearchSpace
 import utils
-from BenchmarkProblems import CheckerBoard, OneMax, BinVal, TrapK, BT
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT
 
 import Version_B.FeatureDiscoverer
 from Version_B import VariateModels
@@ -22,12 +22,12 @@ BT = BT.BTProblem(20, 3)
 merging_power = 2
 
 
-def get_problem_training_data(problem, sample_size):
-    search_space = problem.get_search_space()
+def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
+    search_space = problem.search_space
     random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
-    return (random_candidates, scores)
+    return random_candidates, scores
 
 
 def pretty_print_features(problem, input_list_of_features, with_scores = False, combinatorial = False):
