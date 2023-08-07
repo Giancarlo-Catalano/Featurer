@@ -160,11 +160,6 @@ class FeatureExplorer:
     def get_complexity_of_featureC(self, featureC):
         return self.complexity_function(featureC)
 
-    def get_explainability_of_feature(self, featureC):
-        """ returns a score in [0,1] describing how explainable the feature is,
-                based on the given complexity function"""
-        return 1.0 - self.get_complexity_of_featureC(featureC)
-
 
     def get_average_fitnesses_and_frequencies(self, candidateC_population, fitness_list, features):
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidateC_population)
@@ -219,7 +214,7 @@ class FeatureExplorer:
         """this function will combine them using a simple interpolation average"""
         """this is where 'importance of explainability' gets used!'"""
         (features, scores) = features_and_prodigy_scores
-        explainabilities = np.array([self.get_explainability_of_feature(feature) for feature in features])
+        explainabilities = 1.0-utils.remap_array_in_zero_one([self.get_complexity_of_featureC(feature) for feature in features])
         score_array = utils.remap_array_in_zero_one(np.array(scores))
 
 

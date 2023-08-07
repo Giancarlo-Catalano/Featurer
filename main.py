@@ -19,7 +19,7 @@ onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
 
-merging_power = 2
+merging_power = 4
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
@@ -231,7 +231,7 @@ def test_explorer(problem):
 
 
 if __name__ == '__main__':
-    test_explorer(BT)
+    test_explorer(checkerboard)
 
 # TODO
 # investigate why the scores are so bad

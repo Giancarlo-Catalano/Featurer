@@ -184,4 +184,4 @@ class ESTEEM_Sampler:
 
             attempts += 1
 
-        return self.hot_encoder.candidate_from_hot_encoding(current_state)
+        return self.hot_encoder.candidate_from_hot_encoding(current_state)  # TODO this is now broken
