@@ -1,13 +1,9 @@
-import math
-
 import numpy as np
 
 import SearchSpace
 import HotEncoding
 import Version_B.VariateModels
 import utils
-
-from Version_B import VariateModels
 
 
 class IntermediateFeature:
@@ -25,7 +21,7 @@ class IntermediateFeature:
         return f"IntermediateFeature(start = {self.start}, end = {self.end}, feature = {self.feature})"
 
     @classmethod
-    def get_trivial_feature(cls, var, val, search_space: SearchSpace.SearchSpace):
+    def get_trivial_feature(cls, var, val):
         return cls(var, var, SearchSpace.Feature.trivial_feature(var, val))
 
 
@@ -34,7 +30,7 @@ def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature
     # NOTE: the order of the arguments matters!
     new_start = left.start
     new_end = right.end
-    new_feature = SearchSpace.experimental_merge_two_features(left.feature, right.feature)
+    new_feature = SearchSpace.merge_two_features(left.feature, right.feature)
 
     return IntermediateFeature(new_start, new_end, new_feature)
 
@@ -70,10 +66,9 @@ class IntermediateFeatureGroup:
     def get_trivial_weight_group(cls, search_space: SearchSpace.SearchSpace):
         weight = 1
         var_vals = search_space.get_all_var_val_pairs()
-        trivial_features = set(IntermediateFeature.get_trivial_feature(var, val, search_space)
+        trivial_features = set(IntermediateFeature.get_trivial_feature(var, val)
                                for (var, val) in var_vals)
         return cls(trivial_features, weight)
-
 
     def cull_by_complexity(self, complexity_function, wanted_size):
         if wanted_size > len(self.intermediate_features):
@@ -173,7 +168,7 @@ class FeatureExplorer:
 
     def get_average_fitnesses_and_frequencies(self, candidateC_population, fitness_list, features):
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidateC_population)
-        featuresH = [self.hot_encoder.to_hot_encoding(featureC) for featureC in features]
+        featuresH = [self.hot_encoder.feature_to_hot_encoding(featureC) for featureC in features]
         feature_presence_matrix = self.variate_model_generator.get_feature_presence_matrix(candidate_matrix, featuresH)
         fitness_array = np.array(fitness_list)
 

@@ -1,18 +1,19 @@
 import SearchSpace
 import utils
-import CombinatorialProblem
+import BenchmarkProblems.CombinatorialProblem
 
 
-class TrapK(CombinatorialProblem.CombinatorialProblem):
+class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     k: int
     amount_of_groups: int
     amount_of_bits: int
 
     def __init__(self, k, amount_of_groups):
-        super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
         self.k = k
         self.amount_of_groups = amount_of_groups
-        self.amount_of_bits = k*amount_of_groups
+        self.amount_of_bits = k * amount_of_groups
+        super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
+
 
     def __repr__(self):
         return f"TrapK(K={self.k}, amount of groups = {self.amount_of_groups})"

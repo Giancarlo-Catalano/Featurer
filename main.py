@@ -30,8 +30,8 @@ def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem
     return random_candidates, scores
 
 
-def pretty_print_features(problem, input_list_of_features, with_scores = False, combinatorial = False):
-    hot_encoder = HotEncoding.HotEncoder(problem.get_search_space())
+def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores = False, combinatorial = False):
+    hot_encoder = HotEncoding.HotEncoder(problem.search_space)
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
         problem.pretty_print_feature(featureC)
@@ -200,7 +200,7 @@ def test_sampler(problem):
         print(f"Has score {actual_score}\n")
 
 def test_explorer(problem):
-    search_space = problem.get_search_space()
+    search_space = problem.search_space
     print("Testing the explainable feature explorer")
     print(f"The problem is {problem}")
 

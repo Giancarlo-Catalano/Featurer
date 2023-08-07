@@ -3,7 +3,7 @@ import random
 import SearchSpace
 import utils
 from enum import Enum
-import CombinatorialProblem
+import BenchmarkProblems.CombinatorialProblem
 
 
 class Weekday(Enum):
@@ -71,16 +71,17 @@ class Worker:
         return cls(random_name, options)
 
 
-class BTProblem(CombinatorialProblem.CombinatorialProblem):
+class BTProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     total_workers: int
     amount_of_choices: int
     workers: list
 
     def __init__(self, amount_of_workers, amount_of_choices):
-        super().__init__(SearchSpace.SearchSpace([self.amount_of_choices] * self.total_workers))
         self.total_workers = amount_of_workers
         self.amount_of_choices = amount_of_choices
         self.workers = [Worker.random(amount_of_choices) for _ in range(amount_of_workers)]
+        super().__init__(SearchSpace.SearchSpace([self.amount_of_choices] * self.total_workers))
+
 
     def __repr__(self):
         return f"BTProblem:(" \

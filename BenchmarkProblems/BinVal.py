@@ -1,15 +1,16 @@
 import SearchSpace
-import CombinatorialProblem
+import BenchmarkProblems.CombinatorialProblem
 
 
-class BinValProblem(CombinatorialProblem.CombinatorialProblem):
+class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     amount_of_bits: int
     base: float
 
     def __init__(self, amount_of_bits, base):
-        super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
         self.amount_of_bits = amount_of_bits
         self.base = base
+        super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
+
 
     def __repr__(self):
         return f"BinValProblem(bits={self.amount_of_bits}, base = {self.base})"

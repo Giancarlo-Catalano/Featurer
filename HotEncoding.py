@@ -28,7 +28,7 @@ def feature_is_valid_in_search_space(feature_hot, search_space: SearchSpace.Sear
 
 
 class HotEncoder:
-    search_space: SearchSpace
+    search_space: SearchSpace.SearchSpace
 
     def __init__(self, search_space):
         self.search_space = search_space
@@ -37,11 +37,20 @@ class HotEncoder:
     def empty_feature(self):  # TO TEST
         return np.zeros(sum(self.search_space.cardinalities))
 
-    def to_hot_encoding(self, candidate):
+    def candidate_to_hot_encoding(self, candidate):
         """works for both candidates and features"""
         return np.concatenate(
             [utils.one_hot_encoding(candidate.values[var], cardinality)
              for (var, cardinality) in enumerate(self.search_space.cardinalities)])
+
+
+    def feature_to_hot_encoding(self, feature: SearchSpace.Feature):
+        result = np.zeros(self.search_space.total_cardinality, dtype=np.float)
+        for var, val in feature.var_vals:
+            result[self.search_space.precomputed_offsets[var]+val] = 1.0
+        return result
+
+
 
     def deconcat_hot_encoding(self, hot_encoded):
         return [hot_encoded[begin:end]
@@ -59,10 +68,10 @@ class HotEncoder:
         return SearchSpace.Feature(var_vals)
 
     def to_hot_encoded_matrix(self, populationC):
-        return np.array([self.to_hot_encoding(c) for c in populationC])
+        return np.array([self.candidate_to_hot_encoding(c) for c in populationC])
 
     def get_hot_encoded_trivial_features(self):
-        return [self.to_hot_encoding(feature) for feature in self.search_space.get_all_trivial_features()]
+        return [self.feature_to_hot_encoding(feature) for feature in self.search_space.get_all_trivial_features()]
 
     def is_valid_hot_encoded_feature(self, hot_feature):
         deconcatted = self.deconcat_hot_encoding(hot_feature)

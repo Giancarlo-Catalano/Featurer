@@ -1,16 +1,17 @@
 import SearchSpace
 import utils
-import CombinatorialProblem
+import BenchmarkProblems.CombinatorialProblem
 
 
-class CheckerBoardProblem(CombinatorialProblem.CombinatorialProblem):
+class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     rows: int
     cols: int
 
     def __init__(self, rows, cols):
-        super().__init__(SearchSpace.SearchSpace([2] * self.total_area))
         self.rows = rows
         self.cols = cols
+        super().__init__(SearchSpace.SearchSpace([2] * self.total_area))
+
 
     def __repr__(self):
         return f"CheckerBoard(rows={self.rows}, cols={self.cols})"
