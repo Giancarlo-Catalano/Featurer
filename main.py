@@ -24,7 +24,7 @@ merging_power = 5
 
 def get_problem_training_data(problem, sample_size):
     search_space = problem.get_search_space()
-    random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
+    random_candidates = [search_space.get_random_candidate() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return (random_candidates, scores)
