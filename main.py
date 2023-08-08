@@ -13,19 +13,19 @@ from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
 
-trap5 = TrapK.TrapK(5, 1)
+trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
 
 merging_power = 5
-importance_of_explainability = 0.0
+importance_of_explainability = 0.5
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
     search_space = problem.search_space
-    random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
+    random_candidates = [search_space.get_random_candidate() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
@@ -49,6 +49,12 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
         print_with_or_without_score(maybe_pair)
         print()
 
+def without_scores(features_with_scores):
+    return utils.unzip(features_with_scores)[0]
+
+def hot_encoded_features(problem, featuresC):
+    hot_encoder = HotEncoding.HotEncoder(problem.search_space)
+    return [hot_encoder.feature_to_hot_encoding(featureC) for featureC in featuresC]
 
 def get_explainable_features(problem, training_data):
     print(f"The problem is {problem}")
@@ -228,7 +234,24 @@ def test_explorer(problem):
     pretty_print_features(problem, unpopular_features_and_scores, combinatorial=True, with_scores=True)
 
 
+    fit_features = hot_encoded_features(problem, without_scores(fit_features_and_scores))[:6]
+    unfit_features = hot_encoded_features(problem, without_scores(unfit_features_and_scores))[:6]
+    pop_features = hot_encoded_features(problem, without_scores(popular_features_and_scores))
+    unpop_features = hot_encoded_features(problem, without_scores(unpopular_features_and_scores))
 
+    print("Then we sample some new candidates")
+    sampler = ESTEEM_Sampler(search_space, fit_features=fit_features,
+                             unfit_features=unfit_features, unpopular_features=unpop_features,
+                             importance_of_novelty=0.3)
+
+    sampler.train(training_samples, training_scores)
+
+    for _ in range(10):
+        new_candidate = sampler.sample()
+        actual_score = problem.score_of_candidate(new_candidate)
+
+        problem.pretty_print_candidate(new_candidate)
+        print(f"Has score {actual_score}\n")
 
 
 if __name__ == '__main__':

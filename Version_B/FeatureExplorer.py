@@ -237,13 +237,15 @@ class FeatureExplorer:
         popular_prodigies = self.combine_prodigy_score_with_explainabilities(populars)
         unpopular_prodigies = self.combine_prodigy_score_with_explainabilities(unpopulars)
 
-        def sort_by_criteria(zipped_prodigies_with_scores):
-            return sorted(zipped_prodigies_with_scores, key=utils.second, reverse=True)
+        def sort_and_filter_by_criteria(zipped_prodigies_with_scores):
+            sorted_by_criteria = sorted(zipped_prodigies_with_scores, key=utils.second, reverse=True)
+            above_ten_percent = [(feature, score) for feature, score in sorted_by_criteria if score > 0.1]
+            return above_ten_percent
 
-        fit_prodigies = sort_by_criteria(fit_prodigies)
-        unfit_prodigies = sort_by_criteria(unfit_prodigies)
-        popular_prodigies = sort_by_criteria(popular_prodigies)
-        unpopular_prodigies = sort_by_criteria(unpopular_prodigies)
+        fit_prodigies = sort_and_filter_by_criteria(fit_prodigies)
+        unfit_prodigies = sort_and_filter_by_criteria(unfit_prodigies)
+        popular_prodigies = sort_and_filter_by_criteria(popular_prodigies)
+        unpopular_prodigies = sort_and_filter_by_criteria(unpopular_prodigies)
 
         return fit_prodigies, unfit_prodigies, popular_prodigies, unpopular_prodigies
 

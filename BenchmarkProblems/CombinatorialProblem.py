@@ -49,3 +49,7 @@ class CombinatorialProblem:
 
     def pretty_print_feature(self, feature):
         raise Exception("A class extending CombinatorialProblem does not implement .pretty_print_feature(f)!")
+
+
+    def pretty_print_candidate(self, candidate):
+        self.pretty_print_feature(candidate.as_feature())

@@ -50,6 +50,11 @@ class Candidate:
         return self.values.__hash__()
 
 
+    def as_feature(self):
+        return Feature(list((i,v) for i, v in enumerate(self.values) if v is not None))
+
+
+
 class SearchSpace:
     # cardinalities: list[int]
     # precomputed_offsets: list[int] #used to convert into one-hot-encodings
@@ -104,6 +109,11 @@ class SearchSpace:
                 return False
         return True
 
+    def feature_to_candidate(self, feature: Feature) -> Candidate:
+        result_list = [None] * self.dimensions
+        for var, val in feature:
+            result_list[var] = val
+        return Candidate(tuple(result_list))
 
 def merge_two_features(feature_a, feature_b):
     return Feature(feature_a.var_vals + feature_b.var_vals)

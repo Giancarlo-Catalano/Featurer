@@ -131,7 +131,7 @@ class ESTEEM_Sampler:
         self.uniform_sampler.train_for_uniformity()
 
     def candidate_is_complete(self, candidateH):
-        """returns true when the input is a fully fileld candidate"""
+        """returns true when the input is a fully filled candidate"""
         combinatorial_candidate = self.hot_encoder.candidate_from_hot_encoding(candidateH)
         amount_of_nones = sum([1 if val is None else 0 for val in combinatorial_candidate.values])
         return amount_of_nones == 0
@@ -174,12 +174,12 @@ class ESTEEM_Sampler:
         too_many_attempts = self.search_space.total_cardinality
         while True:
             # the uniform sampler helps prevent getting stuck in "invalidity basins"
-            self.importance_of_randomness = attempts / too_many_attempts
+            self.importance_of_randomness = attempts / too_many_attempts  # impatience grows with the amount of attempts
             if self.candidate_is_complete(current_state):
                 break
             tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
             if self.validator.is_candidate_valid(tentative_specialisation) and \
-                    not self.contains_worst_features(tentative_specialisation):
+                    not (attempts < too_many_attempts and self.contains_worst_features(tentative_specialisation)):
                 current_state = tentative_specialisation
 
             attempts += 1
