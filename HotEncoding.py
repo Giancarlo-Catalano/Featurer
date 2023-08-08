@@ -45,7 +45,7 @@ class HotEncoder:
 
 
     def feature_to_hot_encoding(self, feature: SearchSpace.Feature):
-        result = np.zeros(self.search_space.total_cardinality, dtype=np.float)
+        result = np.zeros(self.search_space.total_cardinality, dtype=float)
         for var, val in feature.var_vals:
             result[self.search_space.precomputed_offsets[var]+val] = 1.0
         return result
