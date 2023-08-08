@@ -1,14 +1,8 @@
-import random
-
-import numpy as np
-
 import HotEncoding
-import SearchSpace
 import utils
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT
 
-import Version_B.FeatureDiscoverer
-from Version_B import VariateModels
+import Version_B.outdated.FeatureDiscoverer
 from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
@@ -24,15 +18,19 @@ importance_of_explainability = 0.0
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
+    """ generates some random data points, and their fitnesses"""
     search_space = problem.search_space
-    random_candidates = [search_space.get_random_candidate() for _ in range(6000)]
+    random_candidates = [search_space.get_random_candidate() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
 
 
-def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores = False, combinatorial = False):
+def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
+                          combinatorial=False):
+    """prints the passed features, following the structure specified by the problem"""
     hot_encoder = HotEncoding.HotEncoder(problem.search_space)
+
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
         problem.pretty_print_feature(featureC)
@@ -60,7 +58,7 @@ def get_explainable_features(problem, training_data):
     importance_of_explainability = 0.5
     complexity_damping = 1
 
-    feature_discoverer = Version_B.FeatureDiscoverer. \
+    feature_discoverer = Version_B.outdated.FeatureDiscoverer. \
         FeatureDiscoverer(search_space=search_space, candidateC_population=training_candidates,
                           fitness_scores=training_scores, merging_power=merging_power,
                           complexity_function=problem.get_complexity_of_feature,
@@ -72,7 +70,6 @@ def get_explainable_features(problem, training_data):
     print("Obtaining the fit and unfit features")
     (fit_features, unfit_features) = feature_discoverer.get_explainable_features(criteria='fitness')
     (pop_features, unpop_features) = feature_discoverer.get_explainable_features(criteria='popularity')
-
 
     def remove_scores(list_of_features_with_scores):
         return utils.unzip(list_of_features_with_scores)[0]
@@ -120,8 +117,8 @@ def test_surrogate_scorer(problem):
 
     print("Instantiating the surrogate scorer")
     trad_scorer = SurrogateScorer(model_power=2,
-                             search_space=search_space,
-                             featuresH=selected_features)
+                                  search_space=search_space,
+                                  featuresH=selected_features)
     print("And now we train the model")
 
     (training_candidates, training_scores) = training_data
@@ -130,14 +127,13 @@ def test_surrogate_scorer(problem):
 
     print(f"The model is now {trad_scorer}")
 
-
     print("We also train some other models")
     fit_scorer = SurrogateScorer(model_power=2,
-                                  search_space=search_space,
-                                  featuresH=selected_fit_features)
-    unfit_scorer = SurrogateScorer(model_power=2,
                                  search_space=search_space,
-                                 featuresH=selected_unfit_features)
+                                 featuresH=selected_fit_features)
+    unfit_scorer = SurrogateScorer(model_power=2,
+                                   search_space=search_space,
+                                   featuresH=selected_unfit_features)
 
     pop_scorer = SurrogateScorer(model_power=2,
                                  search_space=search_space,
@@ -156,21 +152,22 @@ def test_surrogate_scorer(problem):
 
         return neutral_score + positive_score - negative_score
 
-
     def sanity_check():
         test_candidate = search_space.get_random_candidate()
         test_score = problem.score_of_candidate(test_candidate)
         surrogate_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate)
         surrogate_mistrustful_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
 
-        print(f"For a randomly generated candidate with actual score {test_score}, the surrogate score is {surrogate_score}")
+        print(
+            f"For a randomly generated candidate with actual score {test_score}, the surrogate score is {surrogate_score}")
 
     def print_data_for_analysis():
         (test_candidates, test_scores) = get_problem_training_data(problem, 1000)
 
         for (test_candidate, test_score) in zip(test_candidates, test_scores):
             surrogate_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate)
-            surrogate_mistrustful_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate, based_on_trust=True)
+            surrogate_mistrustful_score = trad_scorer.get_surrogate_score_of_fitness(test_candidate,
+                                                                                     based_on_trust=True)
 
             deviation_score = get_deviated_score(test_candidate, based_on_trust=False)
             deviation_score_mistrustful = get_deviated_score(test_candidate, based_on_trust=True)
@@ -179,8 +176,6 @@ def test_surrogate_scorer(problem):
                   f"\t{surrogate_mistrustful_score}"
                   f"\t{deviation_score}"
                   f"\t{deviation_score_mistrustful}")
-
-
 
     sanity_check()
     print_data_for_analysis()
@@ -200,6 +195,7 @@ def test_sampler(problem):
         problem.pretty_print_feature(new_candidate)
         print(f"Has score {actual_score}\n")
 
+
 def test_explorer(problem):
     search_space = problem.search_space
     print("Testing the explainable feature explorer")
@@ -207,12 +203,13 @@ def test_explorer(problem):
 
     print("Constructing the explorer")
     explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
-                                                         importance_of_explainability = importance_of_explainability)
+                                                         importance_of_explainability=importance_of_explainability)
 
     training_samples, training_scores = get_problem_training_data(problem, 200)
 
     print("Then we obtain the meaningful features")
-    (fit_features_and_scores), (unfit_features_and_scores), (popular_features_and_scores), (unpopular_features_and_scores) = \
+    (fit_features_and_scores), (unfit_features_and_scores), (popular_features_and_scores), (
+        unpopular_features_and_scores) = \
         explorer.get_important_explainable_features(training_samples, training_scores)
 
     print("The fit features are")
@@ -228,13 +225,10 @@ def test_explorer(problem):
     pretty_print_features(problem, unpopular_features_and_scores, combinatorial=True, with_scores=True)
 
 
-
-
-
 if __name__ == '__main__':
     test_explorer(trap5)
 
 # TODO
 # investigate why the scores are so bad
-        # is it because not enough features are used?
-        # test by changing the arrangement of the cells in binval
+# is it because not enough features are used?
+# test by changing the arrangement of the cells in binval
