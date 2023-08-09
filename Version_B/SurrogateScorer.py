@@ -91,6 +91,8 @@ class SurrogateScorer:
 
         # obtain which features are present in which candidates
         feature_presence_matrix = self.feature_detector.get_feature_presence_matrix_from_candidates(candidatesC)
+        if self.with_inverse:
+            feature_presence_matrix = np.concatenate((feature_presence_matrix, 1.0 - feature_presence_matrix), axis=1)
 
         # get self-interactions by using flat outer powers
         outer_power = utils.row_wise_nth_power_self_outer_product(feature_presence_matrix, self.model_power)
@@ -134,6 +136,9 @@ class SurrogateScorer:
         candidate_feature_vector = self.feature_detector.get_feature_presence_from_candidateC(candidateC)
         if based_on_trust:
             candidate_feature_vector *= self.trust_values
+        if self.with_inverse:
+            candidate_feature_vector = np.concatenate((candidate_feature_vector, 1.0-candidate_feature_vector))
+
         outer_power = utils.nth_power_flat_outer_product(candidate_feature_vector, self.model_power)
         sum_of_fitnesses = np.dot(outer_power, self.S_matrix)
         sum_of_weights = np.dot(outer_power, self.P_matrix)

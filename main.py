@@ -14,7 +14,7 @@ from Version_B.VariateModels import VariateModels
 import csv
 
 trap5 = TrapK.TrapK(5, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
+checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(3)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(20, 3)
@@ -304,7 +304,8 @@ def test_explorer(problem):
     features_for_surrogate_scorer = utils.unzip(features_with_unstabilities_and_counterstabilities)[0][:30]
     surrogate_scorer = Version_B.SurrogateScorer.SurrogateScorer(2,
                                                                  search_space=search_space,
-                                                                 featuresH=features_for_surrogate_scorer)
+                                                                 featuresH=features_for_surrogate_scorer,
+                                                                 with_inverse=True)
 
     print("Training the model...")
     surrogate_scorer.train(training_samples, training_scores)
@@ -315,11 +316,11 @@ def test_explorer(problem):
         test_datapoint = search_space.get_random_candidate()
         actual_score = problem.score_of_candidate(test_datapoint)
         surrogate_score = surrogate_scorer.get_surrogate_score_of_fitness(candidateC=test_datapoint, based_on_trust=False)
-        surrogate_score_mistrustful = surrogate_scorer.get_surrogate_score_of_fitness(candidateC=test_datapoint,
-                                                                                      based_on_trust=True)
+        # surrogate_score_mistrustful = surrogate_scorer.get_surrogate_score_of_fitness(candidateC=test_datapoint,
+        #                                                                               based_on_trust=True)
 
         problem.pretty_print_candidate(test_datapoint)
-        print(f"Has {actual_score =:.2f}, {surrogate_score =:.2f}, {surrogate_score_mistrustful =:.2f}")
+        print(f"Has {actual_score =:.2f}, {surrogate_score =:.2f}")
 
 
 
@@ -328,14 +329,14 @@ def test_explorer(problem):
         actual_score = problem.score_of_candidate(test_datapoint)
         surrogate_score = surrogate_scorer.get_surrogate_score_of_fitness(candidateC=test_datapoint,
                                                                           based_on_trust=False)
-        surrogate_score_mistrustful = surrogate_scorer.get_surrogate_score_of_fitness(candidateC=test_datapoint,
-                                                                                          based_on_trust=True)
+        # surrogate_score_mistrustful = surrogate_scorer.get_surrogate_score_of_fitness(candidateC=test_datapoint,
+        #                                                                                   based_on_trust=True)
 
-        return (actual_score, surrogate_score, surrogate_score_mistrustful)
+        return (actual_score, surrogate_score)
 
     headers = ["actual", "surrogate", "surrogate (mistrustful)"]
 
-    output_onto_csv_file(get_appropriate_filename(problem), headers, create_measureable_data, 10)
+    output_onto_csv_file(get_appropriate_filename(problem), headers, create_measureable_data, 1000)
 
 if __name__ == '__main__':
     test_explorer(checkerboard)
