@@ -101,7 +101,7 @@ class VariateModels:
         positive_when_absent = (1 - candidate_matrix) @ feature_matrix
         return 1 - np.minimum(positive_when_absent, 1)
 
-    def clean_criteria_scores_given_expectations(self, criteria_scores: np.ndarray, expectations: np.ndarray):
+    def get_criteria_scores_given_expectaction(self, criteria_scores: np.ndarray, expectations: np.ndarray):
         chi_squared_and_is_good = [(utils.chi_squared(observed, expected),
                                     observed > expected)
                                    for (observed, expected) in zip(criteria_scores, expectations)]
@@ -124,17 +124,17 @@ class VariateModels:
 
         average_fitness_overall = np.mean(fitness_list)
         expectation_list = [average_fitness_overall for _ in average_fitnesses]
-        return self.clean_criteria_scores_given_expectations(average_fitnesses, expectation_list)
+        return self.get_criteria_scores_given_expectaction(average_fitnesses, expectation_list)
 
     def get_popularity_unpopularity_scores(self, feature_presence_matrix, expected_amounts) -> (list, list):
         """returns the univariate model according to the popularity"""
         observed_amounts = np.sum(feature_presence_matrix, axis=0)
-        return self.clean_criteria_scores_given_expectations(observed_amounts, expected_amounts)
+        return self.get_criteria_scores_given_expectaction(observed_amounts, expected_amounts)
 
-    def get_fitness_unstability_scores(self, feature_presence_matrix, fitness_list):
+    def get_fitness_unstability_scores(self, feature_presence_matrix, fitness_array):
         """highly experimental function, probably not useful"""
         """calculates standard_deviation / mean for each feature"""
-        def standard_deviation(observed_array, presence_array):
+        def get_unstability(observed_array, presence_array):
             amount = np.sum(presence_array)
             if amount < 2:
                 return 0.0
@@ -146,12 +146,12 @@ class VariateModels:
 
 
         observations = feature_presence_matrix * utils.to_column_vector(
-            fitness_list)  # TODO this is calculated elsewhere, perhaps it can be cached?
+            fitness_array)  # TODO this is calculated elsewhere, perhaps it can be cached?
 
         result_list = []
 
         for observed_fitnesses, presences in zip(observations.T, feature_presence_matrix.T):
-            result_list.append(standard_deviation(observed_fitnesses, presences))
+            result_list.append(get_unstability(observed_fitnesses, presences))
 
         return np.array(result_list)
 

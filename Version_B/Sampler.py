@@ -70,13 +70,18 @@ class Sampler:
 
     def specialise_unsafe(self, pseudo_candidateH):
         feature_presence_vector = self.get_feature_presence_vector(pseudo_candidateH)
-
+        distribution = None
         distribution = (feature_presence_vector @ self.bivariate_matrix).ravel()
+
         # we remove the features that are already present
         distribution *= (1.0 - feature_presence_vector.ravel())
 
-        # then we sample from the distribution to obtain a new feature to add
-        new_feature_index = utils.sample_index_with_weights(distribution)
+        new_feature_index = None
+        if np.sum(distribution) <= 0.0:   # happens when no features are present, or edge cases
+            new_feature_index = random.randrange(len(self.features))
+        else:
+            new_feature_index = utils.sample_index_with_weights(distribution)
+
         new_feature = self.features[new_feature_index]
         return HotEncoding.merge_features(pseudo_candidateH, new_feature)
 

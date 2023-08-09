@@ -238,9 +238,10 @@ class FeatureExplorer:
         unpopular_prodigies = self.combine_prodigy_score_with_explainabilities(unpopulars)
 
         def sort_and_filter_by_criteria(zipped_prodigies_with_scores):
+            how_many_to_keep = self.search_space.dimensions
             sorted_by_criteria = sorted(zipped_prodigies_with_scores, key=utils.second, reverse=True)
             above_ten_percent = [(feature, score) for feature, score in sorted_by_criteria if score > 0.1]
-            return above_ten_percent
+            return above_ten_percent[:how_many_to_keep]
 
         fit_prodigies = sort_and_filter_by_criteria(fit_prodigies)
         unfit_prodigies = sort_and_filter_by_criteria(unfit_prodigies)

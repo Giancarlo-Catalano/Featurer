@@ -41,10 +41,11 @@ class SurrogateScorer:
 
         return np.array(result_as_list, dtype=np.float)
 
-    def __init__(self, model_power: int, search_space: SearchSpace.SearchSpace, featuresH: list):
+    def __init__(self, model_power: int, search_space: SearchSpace.SearchSpace, featuresH: list, with_inverse=False):
         self.model_power = model_power
         self.search_space = search_space
         self.feature_detector = Version_B.VariateModels.FeatureDetector(search_space, featuresH)
+        self.with_inverse = with_inverse
 
         self.variate_model_generator = Version_B.VariateModels.VariateModels(self.search_space)
         self.redundant_cell_matrix = self.get_diagonal_cell_matrix(len(featuresH), model_power)
@@ -76,7 +77,7 @@ class SurrogateScorer:
 
         standard_deviations = self.variate_model_generator.get_fitness_unstability_scores(feature_presence_matrix,
                                                                                           fitness_array)
-        return 1 - (standard_deviations / np.max(standard_deviations))
+        return 1.0 - (standard_deviations / np.max(standard_deviations))
 
     def subtract_mean(self, mean):
         self.S_matrix -= mean * self.P_matrix
