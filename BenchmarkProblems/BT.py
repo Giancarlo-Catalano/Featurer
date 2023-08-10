@@ -84,9 +84,10 @@ class BTProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
 
 
     def __repr__(self):
-        return f"BTProblem:(" \
-               f"\n\t workers: " + \
-            "\n\t\t".join([worker.__repr__() for worker in self.workers])
+        # return f"BTProblem:(" \
+        #        f"\n\t workers: " + \
+        #     "\n\t\t".join([worker.__repr__() for worker in self.workers])
+        return "BTProblem"
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         amount_of_workers = super().amount_of_set_values_in_feature(feature)
