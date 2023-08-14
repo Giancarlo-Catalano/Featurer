@@ -97,5 +97,18 @@ class FeatureFinder:
 
 
 
+    # TODO:
 
+    """ 
+        * cleanly implement something that stores the best features so that new feature sets can be construted
+        * add an alternative execution path where only the popularity matters
+        * Clean up VariateModels
+        
+        * create the class which stores iterations and selects from them 
+            * perhaps featurefinder, which makes use of featureforgetter to obtain scores and decide what to keep?
+            * perhaps there's 3 phases to featureforgetter (3 states):
+                * struggle: be fed the features obtained from merging previous iterations
+                * grind: give scores to the features, select the best ones
+                * shine: remove the unwanted features, we store only the good features and their scores
+    """
 
