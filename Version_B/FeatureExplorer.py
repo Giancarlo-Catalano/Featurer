@@ -170,7 +170,7 @@ class FeatureExplorer:
         fitness_array = np.array(fitness_list)
 
         average_fitnesses = self.variate_model_generator.\
-            get_average_fitness_of_features(feature_presence_matrix, fitness_array)
+            get_average_fitness_of_features_from_matrix(feature_presence_matrix, fitness_array)
         frequencies = self.variate_model_generator.get_observed_frequency_of_features(feature_presence_matrix)
 
         return average_fitnesses, frequencies

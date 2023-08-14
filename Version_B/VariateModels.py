@@ -92,8 +92,10 @@ class CandidateValidator:
 
 
 class VariateModels:
-    # features: a list of featuresH
-    # correlation matrices
+    def __init__(self, search_space: SearchSpace.SearchSpace):
+        self.search_space = search_space
+        self.hot_encoder = HotEncoding.HotEncoder(search_space)
+
 
     def get_feature_presence_matrix(self, candidate_matrix, featureH_pool) -> np.ndarray:
         """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
@@ -179,7 +181,7 @@ class VariateModels:
         amount_of_features = feature_presence_matrix.shape[1]
         return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))
 
-    def get_average_fitness_of_features(self, feature_presence_matrix, fitness_array):
+    def get_average_fitness_of_features_from_matrix(self, feature_presence_matrix, fitness_array):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
         sum_of_fitness_for_each_feature = np.sum(feature_presence_matrix * utils.to_column_vector(fitness_array),
                                                  axis=0)
@@ -189,6 +191,34 @@ class VariateModels:
 
         return average_fitnesses
 
+    def get_average_fitness_of_features(self, features: list[SearchSpace.Feature],
+                                        sample_population: list[SearchSpace.Candidate],
+                                        fitness_array: np.ndarray):
+        """returns the average fitness of each feature, in the given population"""
+
+        candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(sample_population)
+        featuresH = [self.hot_encoder.feature_to_hot_encoding(feature) for feature in features]
+        feature_presence_matrix: np.ndarray = self.get_feature_presence_matrix(candidate_matrix,featuresH)
+        return self.get_average_fitness_of_features_from_matrix(feature_presence_matrix, fitness_array)
+
+
+    def get_fitness_relevance_scores(self, features: list[SearchSpace.Feature],
+                                                    sample_population: list[SearchSpace.Candidate],
+                                                    fitness_array: np.ndarray):
+        """
+        Returns an array of values from 0 to 1 indicating how relevant each feature is to the fitness.
+        Note that the score is high whether it's a "negative" feature or a "positive" feature.
+        :param features: features to be assessed
+        :param sample_population: training data
+        :param fitness_array: fitnesses of the training data
+        :return: an array, where each value corresponds to a feature
+        """
+        overall_average_fitness = np.mean(fitness_array)
+        observed_averages = self.get_average_fitness_of_features(features, sample_population, fitness_array)
+        chi_squared_scores = utils.chi_squared(observed_averages, overall_average_fitness)
+        return utils.remap_array_in_zero_one(chi_squared_scores)
+
+
     def get_observed_frequency_of_features(self, feature_presence_matrix):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
         return count_for_each_feature
@@ -196,6 +226,3 @@ class VariateModels:
     def get_expected_bivariate_model_from_marginals(self, marginals):
         return np.outer(marginals, marginals)
 
-    def __init__(self, search_space: SearchSpace.SearchSpace):
-        self.search_space = search_space
-        self.hot_encoder = HotEncoding.HotEncoder(search_space)
