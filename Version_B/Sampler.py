@@ -1,3 +1,4 @@
+import copy
 import random
 
 import Version_B.VariateModels
@@ -155,6 +156,18 @@ class ESTEEM_Sampler:
         else:
             return self.fit_sampler
 
+    def erase_random_values(self, feature, amount:int):
+        amount_of_subfeatures = len(feature.var_vals)
+        return SearchSpace.Feature(random.sample(feature.var_vals, amount_of_subfeatures-amount))
+
+
+    def maybe_without_some_subfeatures(self, feature: SearchSpace.Feature):
+        if random.random() < 0.3:
+            amount_of_holes = random.randrange(1, 4)
+            return self.erase_random_values(feature, amount_of_holes)
+        else:
+            return feature
+
     def sample(self):
         """ Generates a new candidate by using the many models within"""
 
@@ -176,15 +189,17 @@ class ESTEEM_Sampler:
         current_state = self.model_of_choice.get_starting_pseudo_candidate()
 
         attempts = 0
-        too_many_attempts = self.search_space.total_cardinality
+        too_many_attempts = self.search_space.total_cardinality*2
         while True:
             # the uniform sampler helps prevent getting stuck in "invalidity basins"
             self.importance_of_randomness = attempts / too_many_attempts  # impatience grows with the amount of attempts
             if self.candidate_is_complete(current_state):
                 break
+            if attempts < too_many_attempts:
+                concurrent_state = self.maybe_without_some_subfeatures(current_state)
             tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
             if self.validator.is_candidate_valid(tentative_specialisation) and \
-                    not (attempts < too_many_attempts and self.contains_worst_features(tentative_specialisation)):
+                    not (attempts > too_many_attempts and self.contains_worst_features(tentative_specialisation)):
                 current_state = tentative_specialisation
 
             attempts += 1

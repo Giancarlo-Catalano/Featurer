@@ -8,7 +8,7 @@ import HotEncoding
 import SearchSpace
 import numpy as np
 import utils
-from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring
 
 import Version_B.outdated.FeatureDiscoverer
 from Version_B.Sampler import ESTEEM_Sampler
@@ -28,9 +28,10 @@ checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
+graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 
-merging_power = 3
-importance_of_explainability = 0.8
+merging_power = 4
+importance_of_explainability = 0.5
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
@@ -248,6 +249,19 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
     explainable_features = get_explainable_features(problem, training_data)
     (fit_features, unfit_features, pop_features, unpop_features) = explainable_features
 
+    sampler = Version_B.Sampler.ESTEEM_Sampler(search_space, fit_features, unfit_features, unpop_features,
+                                               importance_of_novelty=0)
+
+    sampler.train(*training_data)
+
+    print("We can generate some new candidates:")
+    for _ in range(12):
+        new_candidate = search_space.get_random_candidate()
+        score = problem.score_of_candidate(new_candidate)
+        problem.pretty_print_candidate(new_candidate)
+        print(f"(has actual score of {score})\n")
+
+
     detectors = [Version_B.VariateModels.FeatureDetector(search_space, feature_list)
                                                         for feature_list in [fit_features, unfit_features, pop_features]]
     def candidate_to_model_input(candidateC):
@@ -294,7 +308,7 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
 
 
     regressors = [decision_tree_regressor, lasso_regressor, gradient_boosting_regressor, random_forest_regressor, mlp_regressor]
-    headers = ["actual", "own", "Decision Tree", "Lasso Prediction", "Gradient Boosting", "andom_forest_regressor", "mlp_regressor"]
+    headers = ["actual", "own", "Decision Tree", "Lasso Prediction", "Gradient Boosting", "random_forest_regressor", "mlp_regressor"]
 
 
     def get_test_datapoint():
@@ -319,5 +333,6 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
 
 
 if __name__ == '__main__':
-    test_surrogate_model(binval)
+    problem = binval
+    get_explainable_features(problem, get_problem_training_data(problem, 600))
 
