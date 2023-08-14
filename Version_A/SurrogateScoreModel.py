@@ -32,4 +32,4 @@ class SurrogateScoreModel:
         self.hot_encoder = HotEncoding.HotEncoder(feature_detection_model.search_space)
 
     def get_surrogate_score(self, combinatorial_candidate):
-        return self.cooccurrence_model.score_of_raw_candidate_vector(self.hot_encoder.to_hot_encoding(combinatorial_candidate))
+        return self.cooccurrence_model.score_of_raw_candidate_vector(self.hot_encoder.candidate_to_hot_encoding(combinatorial_candidate))

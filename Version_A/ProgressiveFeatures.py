@@ -37,7 +37,7 @@ class ProgressiveFeatures:
 
     def build_cooc_model(self):
         print(f"In build_cooc_model, the features at this point are {self.pool_of_features}")
-        raw_hot_encoded_features = [self.hot_encoder.to_hot_encoding(combinatorial_feature)
+        raw_hot_encoded_features = [self.hot_encoder.candidate_to_hot_encoding(combinatorial_feature)
                                     for combinatorial_feature in self.pool_of_features]
 
         print(f"The raw encoded features are {raw_hot_encoded_features}")
@@ -204,7 +204,7 @@ class ProgressiveFeatures:
 
     def score_of_candidate(self, candidate_combinatorial):
         """This is to be used on candidates generated from the outside"""
-        candidate_hot_encoded = self.hot_encoder.to_hot_encoding(candidate_combinatorial)
+        candidate_hot_encoded = self.hot_encoder.candidate_to_hot_encoding(candidate_combinatorial)
         score_according_to_feature_group = self.cooccurrence_model.score_of_raw_candidate_vector(candidate_hot_encoded)
         return score_according_to_feature_group
 
