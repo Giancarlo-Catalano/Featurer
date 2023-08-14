@@ -1,6 +1,8 @@
 import copy
+import functools
 import itertools
 import math
+import operator
 import random
 import traceback
 import warnings
@@ -374,5 +376,8 @@ def row_wise_nth_power_self_outer_product(input_matrix, n:int):
 
 
 
+
+def product(iterable):
+    return functools.reduce(operator.mul, iterable)
 
 

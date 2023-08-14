@@ -1,13 +1,9 @@
-import math
-
 import numpy as np
 
 import SearchSpace
 import HotEncoding
 import Version_B.VariateModels
 import utils
-
-from Version_B import VariateModels
 
 
 class IntermediateFeature:
@@ -25,8 +21,8 @@ class IntermediateFeature:
         return f"IntermediateFeature(start = {self.start}, end = {self.end}, feature = {self.feature})"
 
     @classmethod
-    def get_trivial_feature(cls, var, val, search_space: SearchSpace.SearchSpace):
-        return cls(var, var, search_space.get_single_value_feature(var, val))
+    def get_trivial_feature(cls, var, val):
+        return cls(var, var, SearchSpace.Feature.trivial_feature(var, val))
 
 
 def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature):
@@ -70,19 +66,18 @@ class IntermediateFeatureGroup:
     def get_trivial_weight_group(cls, search_space: SearchSpace.SearchSpace):
         weight = 1
         var_vals = search_space.get_all_var_val_pairs()
-        trivial_features = set(IntermediateFeature.get_trivial_feature(var, val, search_space)
+        trivial_features = set(IntermediateFeature.get_trivial_feature(var, val)
                                for (var, val) in var_vals)
         return cls(trivial_features, weight)
 
+def cull_by_complexity(intermediate_features, complexity_function, wanted_size) -> set:
+    if wanted_size > len(intermediate_features):
+        return intermediate_features
+    with_complexity = [(intermediate, complexity_function(intermediate.feature))
+                       for intermediate in intermediate_features]
 
-    def cull_by_complexity(self, complexity_function, wanted_size):
-        if wanted_size > len(self.intermediate_features):
-            return
-        with_complexity = [(intermediate, complexity_function(intermediate.feature))
-                           for intermediate in self.intermediate_features]
-
-        with_complexity.sort(key=utils.second)
-        self.intermediate_features = set(intermediate for (intermediate, score) in with_complexity[:wanted_size])
+    with_complexity.sort(key=utils.second)
+    return set(intermediate for (intermediate, score) in with_complexity[:wanted_size])
 
 
 def mix_intermediate_feature_groups(first_group: IntermediateFeatureGroup, second_group: IntermediateFeatureGroup):
@@ -104,7 +99,8 @@ class GroupManager:
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.groups_by_weight = [IntermediateFeatureGroup.get_0_weight_group(),
                                  IntermediateFeatureGroup.get_trivial_weight_group(search_space)]
-        self.ideal_size_of_group = search_space.total_cardinality*search_space.dimensions
+        self.ideal_size_of_group = max(search_space.total_cardinality*search_space.dimensions, 100)
+        # this is because very small problems will attempt culling and erase a significant chunk of the entire space
 
     def get_group(self, weight) -> IntermediateFeatureGroup:
         return self.groups_by_weight[weight]
@@ -120,7 +116,7 @@ class GroupManager:
         new_group = mix_intermediate_feature_groups(
             self.get_group(left_weight), self.get_group(right_weight))
 
-        new_group.cull_by_complexity(feature_complexity_function, self.ideal_size_of_group)
+        new_group.intermediate_features = cull_by_complexity(new_group.intermediate_features, feature_complexity_function, self.ideal_size_of_group)
         self.groups_by_weight.append(new_group)
 
 
@@ -132,14 +128,15 @@ def develop_groups_to_weight(search_space: SearchSpace.SearchSpace, max_weight: 
     return current_group_manager
 
 
-def get_all_features_of_weight_at_most(search_space: SearchSpace.SearchSpace, max_weight: int, feature_complexity_function):
+def retrieve_explainable_features(search_space: SearchSpace.SearchSpace, max_weight: int, feature_complexity_function):
     groups: GroupManager = develop_groups_to_weight(search_space, max_weight, feature_complexity_function)
 
-    result = []
+    result = set()
     for weight_category in groups.groups_by_weight[1:]:
-        result.extend(intermediate.feature for intermediate in weight_category.intermediate_features)
+        result.update(weight_category.intermediate_features)
 
-    return result
+    # result = cull_by_complexity(result, feature_complexity_function, len(result))
+    return [intermediate.feature for intermediate in result]
 
 class FeatureExplorer:
     search_space: SearchSpace.SearchSpace
@@ -153,27 +150,22 @@ class FeatureExplorer:
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.merging_power = merging_power
-        self.importance_of_explainability = 0.5
+        self.importance_of_explainability = importance_of_explainability
         self.complexity_function = complexity_function
 
         self.variate_model_generator = Version_B.VariateModels.VariateModels(self.search_space)
 
-        self.explanainable_features = get_all_features_of_weight_at_most(self.search_space,
-                                                                         self.merging_power,
-                                                                         self.complexity_function)
+        self.explanainable_features = retrieve_explainable_features(self.search_space,
+                                                                    self.merging_power,
+                                                                    self.complexity_function)
 
     def get_complexity_of_featureC(self, featureC):
         return self.complexity_function(featureC)
 
-    def get_explainability_of_feature(self, featureC):
-        """ returns a score in [0,1] describing how explainable the feature is,
-                based on the given complexity function"""
-        return 1.0 / self.get_complexity_of_featureC(featureC)
-
 
     def get_average_fitnesses_and_frequencies(self, candidateC_population, fitness_list, features):
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidateC_population)
-        featuresH = [self.hot_encoder.to_hot_encoding(featureC) for featureC in features]
+        featuresH = [self.hot_encoder.feature_to_hot_encoding(featureC) for featureC in features]
         feature_presence_matrix = self.variate_model_generator.get_feature_presence_matrix(candidate_matrix, featuresH)
         fitness_array = np.array(fitness_list)
 
@@ -220,9 +212,19 @@ class FeatureExplorer:
                 (unpopular_features, unpopular_scores))
 
     def combine_prodigy_score_with_explainabilities(self, features_and_prodigy_scores):
+        """each feature has a criteria score (fitness, unfitness, pop, unpop), and an explainability"""
+        """this function will combine them using a simple interpolation average"""
+        """this is where 'importance of explainability' gets used!'"""
         (features, scores) = features_and_prodigy_scores
-        explainabilities = np.array([self.get_explainability_of_feature(feature) for feature in features])
+        explainabilities = 1.0-utils.remap_array_in_zero_one([self.get_complexity_of_featureC(feature) for feature in features])
         score_array = utils.remap_array_in_zero_one(np.array(scores))
+
+
+        # debug
+        # print("In the given list of features, the values are as follows:")
+        # for feature, explainability, criteria_score in zip(features, explainabilities, score_array):
+        #     print(f"For the feature {feature}, expl = {explainability:.2f}, score = {criteria_score:.2f}")
+        # end of debug
 
         return zip(features, utils.weighted_sum(explainabilities, self.importance_of_explainability,
                                   score_array, 1.0-self.importance_of_explainability))
@@ -235,13 +237,16 @@ class FeatureExplorer:
         popular_prodigies = self.combine_prodigy_score_with_explainabilities(populars)
         unpopular_prodigies = self.combine_prodigy_score_with_explainabilities(unpopulars)
 
-        def sort_by_criteria(zipped_prodigies_with_scores):
-            return sorted(zipped_prodigies_with_scores, key=utils.second, reverse=True)
+        def sort_and_filter_by_criteria(zipped_prodigies_with_scores):
+            how_many_to_keep = self.search_space.total_cardinality
+            sorted_by_criteria = sorted(zipped_prodigies_with_scores, key=utils.second, reverse=True)
+            above_ten_percent = [(feature, score) for feature, score in sorted_by_criteria if score > 0.1]
+            return above_ten_percent[:how_many_to_keep]
 
-        fit_prodigies = sort_by_criteria(fit_prodigies)
-        unfit_prodigies = sort_by_criteria(unfit_prodigies)
-        popular_prodigies = sort_by_criteria(popular_prodigies)
-        unpopular_prodigies = sort_by_criteria(unpopular_prodigies)
+        fit_prodigies = sort_and_filter_by_criteria(fit_prodigies)
+        unfit_prodigies = sort_and_filter_by_criteria(unfit_prodigies)
+        popular_prodigies = sort_and_filter_by_criteria(popular_prodigies)
+        unpopular_prodigies = sort_and_filter_by_criteria(unpopular_prodigies)
 
         return fit_prodigies, unfit_prodigies, popular_prodigies, unpopular_prodigies
 
@@ -249,16 +254,4 @@ class FeatureExplorer:
 
 
 
-
-    # TODO
-
-    # "Train the model" to recognise popular, unpopular, fit and unfit features
-    # first, we pass a candidate population, with fitnesses
-    # from that we obtain the feature presence matrix, stored in self
-    # using the feature presence matrix and the fitnesses we can
-    #   calculate the average fitnesses, check which they are greater than expected, then force [0, 1]
-    #   calculate the frequency, check when they are greater than expected, then force [0, 1]
-    # using these scores, determine which features are fit (fitness average is high) etc,
-    # separate the fit and unfit features (they should be disjoint), and the pop and unpop
-    # calculate their weighted averages with the explainabilities.
 

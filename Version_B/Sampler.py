@@ -1,3 +1,4 @@
+import copy
 import random
 
 import Version_B.VariateModels
@@ -70,13 +71,18 @@ class Sampler:
 
     def specialise_unsafe(self, pseudo_candidateH):
         feature_presence_vector = self.get_feature_presence_vector(pseudo_candidateH)
-
+        distribution = None
         distribution = (feature_presence_vector @ self.bivariate_matrix).ravel()
+
         # we remove the features that are already present
         distribution *= (1.0 - feature_presence_vector.ravel())
 
-        # then we sample from the distribution to obtain a new feature to add
-        new_feature_index = utils.sample_index_with_weights(distribution)
+        new_feature_index = None
+        if np.sum(distribution) <= 0.0:   # happens when no features are present, or edge cases
+            new_feature_index = random.randrange(len(self.features))
+        else:
+            new_feature_index = utils.sample_index_with_weights(distribution)
+
         new_feature = self.features[new_feature_index]
         return HotEncoding.merge_features(pseudo_candidateH, new_feature)
 
@@ -131,7 +137,7 @@ class ESTEEM_Sampler:
         self.uniform_sampler.train_for_uniformity()
 
     def candidate_is_complete(self, candidateH):
-        """returns true when the input is a fully fileld candidate"""
+        """returns true when the input is a fully filled candidate"""
         combinatorial_candidate = self.hot_encoder.candidate_from_hot_encoding(candidateH)
         amount_of_nones = sum([1 if val is None else 0 for val in combinatorial_candidate.values])
         return amount_of_nones == 0
@@ -149,6 +155,18 @@ class ESTEEM_Sampler:
             return self.novelty_sampler
         else:
             return self.fit_sampler
+
+    def erase_random_values(self, feature, amount:int):
+        amount_of_subfeatures = len(feature.var_vals)
+        return SearchSpace.Feature(random.sample(feature.var_vals, amount_of_subfeatures-amount))
+
+
+    def maybe_without_some_subfeatures(self, feature: SearchSpace.Feature):
+        if random.random() < 0.3:
+            amount_of_holes = random.randrange(1, 4)
+            return self.erase_random_values(feature, amount_of_holes)
+        else:
+            return feature
 
     def sample(self):
         """ Generates a new candidate by using the many models within"""
@@ -171,17 +189,19 @@ class ESTEEM_Sampler:
         current_state = self.model_of_choice.get_starting_pseudo_candidate()
 
         attempts = 0
-        too_many_attempts = self.search_space.total_cardinality
+        too_many_attempts = self.search_space.total_cardinality*2
         while True:
             # the uniform sampler helps prevent getting stuck in "invalidity basins"
-            self.importance_of_randomness = attempts / too_many_attempts
+            self.importance_of_randomness = attempts / too_many_attempts  # impatience grows with the amount of attempts
             if self.candidate_is_complete(current_state):
                 break
+            if attempts < too_many_attempts:
+                concurrent_state = self.maybe_without_some_subfeatures(current_state)
             tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
             if self.validator.is_candidate_valid(tentative_specialisation) and \
-                    not self.contains_worst_features(tentative_specialisation):
+                    not (attempts > too_many_attempts and self.contains_worst_features(tentative_specialisation)):
                 current_state = tentative_specialisation
 
             attempts += 1
 
-        return self.hot_encoder.candidate_from_hot_encoding(current_state)
+        return self.hot_encoder.candidate_from_hot_encoding(current_state)  # TODO this is now broken

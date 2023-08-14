@@ -1,50 +1,31 @@
-import math
-
 import SearchSpace
 import utils
-import numpy as np
+import BenchmarkProblems.CombinatorialProblem
 
 
-class TrapK:
+class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     k: int
     amount_of_groups: int
-
     amount_of_bits: int
 
     def __init__(self, k, amount_of_groups):
         self.k = k
         self.amount_of_groups = amount_of_groups
-        self.amount_of_bits = k*amount_of_groups
+        self.amount_of_bits = k * amount_of_groups
+        super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
+
 
     def __repr__(self):
         return f"TrapK(K={self.k}, amount of groups = {self.amount_of_groups})"
 
-    def get_search_space(self):
-        return SearchSpace.SearchSpace([2] * self.amount_of_bits)
-
-    def get_bounding_box(self, feature):
-        used_columns = [col for (col, feature_cell) in enumerate(feature.values)
-                             if feature_cell is not None]
-
-        if len(used_columns) == 0:
-            return (0, 0)
-        return (min(used_columns), max(used_columns)+1)
-
-    def get_unconcatted_groups(self, feature):
-        return [SearchSpace.Feature(feature.values[(self.k*i):self.k*(i+1)]) for i in range(self.amount_of_groups)]
-
-    def get_complexity_of_unconcatted_feature(self, u_feature):
-        bounding_box = self.get_bounding_box(u_feature)
-        return (bounding_box[1]-bounding_box[0])
-
+    def get_how_many_vars_per_group(self, feature: SearchSpace.Feature):
+        how_many_per_group = [0]* self.amount_of_groups
+        for var, _ in feature.var_vals:
+            how_many_per_group[var // self.k] += 1
+        return how_many_per_group
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        """returns area of bounding box / area of board"""
-        occupied_areas = [self.get_complexity_of_unconcatted_feature(uf)
-                    for uf in self.get_unconcatted_groups(feature)]
-
-        return sum([area if area == 0 else self.k+area for area in occupied_areas])
-
+        return utils.product([area + 1 for area in self.get_how_many_vars_per_group(feature)])
 
     def divide_candidate_in_groups(self, candidate: SearchSpace.Candidate):
         return [candidate.values[which*self.k:(which+1)*self.k] for which in range(self.amount_of_groups)]
@@ -66,7 +47,7 @@ class TrapK:
                 return "_"
             else:
                 return str(cell)
-        for group in self.divide_candidate_in_groups(feature):
+        for group in self.divide_candidate_in_groups(SearchSpace.Candidate(super().get_positional_values(feature))):
             print("[", end="")
             for cell in group:
                 print(f"{cell_repr(cell)} ", end="")
