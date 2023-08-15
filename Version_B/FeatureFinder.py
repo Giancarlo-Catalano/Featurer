@@ -2,38 +2,18 @@ from typing import Any
 
 import numpy as np
 import random
-import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import HotEncoding
 import utils
 import VariateModels
 from FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
 
-
-class SampleAndPrecomputedData:
-    candidate_matrix: np.ndarray
-    feature_presence_matrix: np.ndarray
-    fitness_array: np.ndarray
-    featuresH: list[np.ndarray]
-    size_of_sample: int
-
-    def __init__(self, candidate_matrix, fitness_array):
-        self.candidate_matrix = candidate_matrix
-        self.fitness_array = fitness_array
-        self.featuresH = None
-        self.feature_presence_matrix = None
-        self.size_of_sample = utils.rows_in_matrix(candidate_matrix)
-
-    def set_features(self, hot_encoded_features: list[np.ndarray]):
-        self.featuresH = hot_encoded_features
-        feature_matrix = np.transpose(np.array(self.featuresH))
-        positive_when_absent = (1 - self.candidate_matrix) @ feature_matrix
-        self.feature_presence_matrix = 1 - np.minimum(positive_when_absent, 1)
-
-
-
-
 class ParentPool:
+    """this is a data structure to store a list of features and their scores"""
+    """ The scores indicate how good a feature is, in terms of explainability and either fitness or novelty,
+        These scores go from 0 to 1 and are also used to sample the features using weights.
+        The main purpose of this class is to select a random feature and use it as a parent somewhere else
+    """
     features: list[IntermediateFeature]
     weights: list[float]
 
@@ -57,6 +37,9 @@ class ParentPool:
 
 
 class FeatureMixer:
+    """ this class takes two sets of parents, and uses them to create new features"""
+    """ it simply decides a parent from each set, and combines them"""
+    """alternatively, you can use a greedy heuristic approach to get the best n"""
     parent_set_1: ParentPool
     parent_set_2: ParentPool
     """assumes parent_set_2 is either the same as parent_set_1 or bigger in len"""
@@ -84,6 +67,7 @@ class FeatureMixer:
                 return merge_two_intermediate(parent_1, parent_2)
 
     def get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+        """this is the stochastic approach"""
         result = set()
         while len(result) < amount:
             result.add(self.create_random_feature())
@@ -121,6 +105,7 @@ class FeatureMixer:
         return list(result)
 
     def get_heuristically_mixed_features(self, amount: int):
+        """this is the greedy heuristic mixing approach"""
         if self.asexual:
             return self.get_heuristic_mixed_features_asexual(amount)
         else:
@@ -144,6 +129,7 @@ class PopulationSamplePrecomputedData:
 
 
 class PopulationSampleWithFeaturesPrecomputedData:
+    """this data structures stores matrices that are used around the other classes"""
     population_sample_precomputed: PopulationSamplePrecomputedData
     hot_encoded_features: list[np.ndarray]
     feature_presence_matrix: np.ndarray
@@ -163,7 +149,8 @@ class PopulationSampleWithFeaturesPrecomputedData:
         self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
 
 
-    def get_average_fitness_vector(self):
+    def get_average_fitness_vector(self) -> np.ndarray:
+        """returns the vector of average fitnesses for each feature"""
         sum_of_fitnesses = utils.weighted_sum_of_rows(self.feature_presence_matrix,
                                                       self.population_sample_precomputed.fitness_array)
 
@@ -171,13 +158,16 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
 
     def get_overall_average_fitness(self):
+        """returns the average fitness over the entire population"""
         return np.mean(self.population_sample_precomputed.fitness_array)
 
     def get_observed_proportions(self):
+        """returns the observed proportion for every feature, from 0 to 1"""
         return self.count_for_each_feature / self.population_sample_precomputed.sample_size
 
 
 class FeatureFilter:
+    """this class accepts a list of features, assesses them based on a given population sample, and decides which are good"""
     current_features: list[IntermediateFeature]
     precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
     complexity_array: np.ndarray
@@ -233,6 +223,7 @@ class FeatureFilter:
 
 
 class FeatureDeveloper:
+    """this class generates the useful, explainable features"""
     population_sample: PopulationSamplePrecomputedData
     previous_iterations: list[ParentPool]
     depth: int
@@ -325,6 +316,8 @@ class FeatureDeveloper:
             self.new_iteration(amount_to_consider, amount_to_keep_per_category, heuristic)
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
+
+        """This is the function which returns the features you'll be using in the future!"""
         developed_features = utils.concat([parent_pool.get_raw_features() for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features)
 
