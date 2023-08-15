@@ -339,5 +339,7 @@ class FeatureDeveloper:
                 
         TODO: currently if you set expected_proportions to none, it means you only look at the fitness
         if it's set, it will only look at the novelty. This is confusing and nasty.
+        
+        * decide how the greedy heuristic approach should consider more features before returning.
     """
 
