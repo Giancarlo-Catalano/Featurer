@@ -26,6 +26,10 @@ class Feature:
     def __hash__(self):
         return tuple(self.var_vals).__hash__()
 
+
+    def __eq__(self, other):
+        return self.var_vals == other.var_vals
+
     @classmethod
     def empty_feature(cls):
         return cls([])

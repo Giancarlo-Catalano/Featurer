@@ -91,6 +91,13 @@ class CandidateValidator:
         return np.dot(flat_outer, self.clash_matrix) == 0.0
 
 
+def get_feature_presence_matrix(candidate_matrix, hot_encoded_features) -> np.ndarray:
+    """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
+    feature_matrix = np.transpose(np.array(hot_encoded_features))
+    positive_when_absent = (1 - candidate_matrix) @ feature_matrix
+    return 1 - np.minimum(positive_when_absent, 1)
+
+
 class VariateModels:
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space
@@ -99,9 +106,7 @@ class VariateModels:
 
     def get_feature_presence_matrix(self, candidate_matrix, featureH_pool) -> np.ndarray:
         """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
-        feature_matrix = np.transpose(np.array(featureH_pool))
-        positive_when_absent = (1 - candidate_matrix) @ feature_matrix
-        return 1 - np.minimum(positive_when_absent, 1)
+        return get_feature_presence_matrix(candidate_matrix, featureH_pool)
 
     def get_criteria_scores_given_expectaction(self, criteria_scores: np.ndarray, expectations: np.ndarray):
         chi_squared_and_is_good = [(utils.chi_squared(observed, expected),

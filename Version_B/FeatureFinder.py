@@ -1,10 +1,13 @@
-import numpy as np
+from typing import Any
 
+import numpy as np
+import random
 import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import HotEncoding
 import utils
 import VariateModels
+from FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
 
 
 class SampleAndPrecomputedData:
@@ -12,103 +15,336 @@ class SampleAndPrecomputedData:
     feature_presence_matrix: np.ndarray
     fitness_array: np.ndarray
     featuresH: list[np.ndarray]
+    size_of_sample: int
 
     def __init__(self, candidate_matrix, fitness_array):
         self.candidate_matrix = candidate_matrix
         self.fitness_array = fitness_array
         self.featuresH = None
         self.feature_presence_matrix = None
+        self.size_of_sample = utils.rows_in_matrix(candidate_matrix)
 
-    def set_features(self, featuresH: list[np.ndarray]):
-        self.featuresH = featuresH
+    def set_features(self, hot_encoded_features: list[np.ndarray]):
+        self.featuresH = hot_encoded_features
         feature_matrix = np.transpose(np.array(self.featuresH))
         positive_when_absent = (1 - self.candidate_matrix) @ feature_matrix
         self.feature_presence_matrix = 1 - np.minimum(positive_when_absent, 1)
 
-class FeatureFinder:
-    problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem
-    importance_of_explainability: float
-    depth: int
+
+
+
+class ParentPool:
+    features: list[IntermediateFeature]
+    weights: list[float]
+
+    precomputed_cumulative_list: list[float]
+
+
+    def __init__(self, features, weights):
+        self.features = features
+        self.weights = weights
+        self.precomputed_cumulative_list = np.cumsum(weights)
+
+    def select_parent_randomly(self) -> SearchSpace.Feature:
+        return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list)
+
+
+    def get_raw_features(self):
+        return [intermediate.feature for intermediate in self.features]
+
+
+
+
+
+class FeatureMixer:
+    parent_set_1: ParentPool
+    parent_set_2: ParentPool
+    """assumes parent_set_2 is either the same as parent_set_1 or bigger in len"""
+
+    asexual: bool
+
+    def __init__(self, parent_set_1: ParentPool, parent_set_2: ParentPool, asexual):
+        if len(parent_set_1.features) < len(parent_set_2.features):
+            self.parent_set_1 = parent_set_1
+            self.parent_set_2 = parent_set_2
+        else:
+            self.parent_set_1 = parent_set_2
+            self.parent_set_2 = parent_set_1
+
+        self.asexual = asexual
+
+
+    def select_parents(self) -> (IntermediateFeature, IntermediateFeature):
+        return (self.parent_set_1.select_parent_randomly(), self.parent_set_2.select_parent_randomly())
+
+    def create_random_feature(self) -> IntermediateFeature:
+        while True:
+            parent_1, parent_2 = self.select_parents()
+            if can_be_merged(parent_1, parent_2):
+                return merge_two_intermediate(parent_1, parent_2)
+
+    def get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+        result = set()
+        while len(result) < amount:
+            result.add(self.create_random_feature())
+
+        return list(result)
+
+
+    def add_merged_if_mergeable(self, accumulator: set[IntermediateFeature],
+                                mother: IntermediateFeature,
+                                father: IntermediateFeature):
+        if can_be_merged(mother, father):
+            accumulator.add(merge_two_intermediate(mother, father))
+            return True
+        return False
+
+    def get_heuristic_mixed_features_asexual(self, amount: int):
+        result = set()
+
+        for row, row_feature in reversed(list(enumerate(self.parent_set_1.features))):
+            for column_feature in self.parent_set_2.features[-1:row:-1]:  # mamma mia
+                successfully_added = self.add_merged_if_mergeable(result, row_feature, column_feature)
+                if successfully_added and len(result) >= amount:
+                    return list(result)
+
+        return list(result)
+
+    def get_heuristic_mixed_features_different_parents(self, amount: int):
+        result = set()
+        for row_feature in reversed(self.parent_set_2.features):
+            for column_feature in reversed(self.parent_set_1.features):
+                successfully_added = self.add_merged_if_mergeable(result, row_feature, column_feature)
+                if successfully_added and len(result) >= amount:
+                    return list(result)
+
+        return list(result)
+
+    def get_heuristically_mixed_features(self, amount: int):
+        if self.asexual:
+            return self.get_heuristic_mixed_features_asexual(amount)
+        else:
+            return self.get_heuristic_mixed_features_different_parents(amount)
+
+class PopulationSamplePrecomputedData:
     search_space: SearchSpace.SearchSpace
     hot_encoder: HotEncoding.HotEncoder
-    variate_model_generator: VariateModels.VariateModels
+    candidate_matrix: np.ndarray
+    fitness_array: np.ndarray
+    sample_size: int
 
-    sample_and_precomputed_data: SampleAndPrecomputedData
-    considered_features: list[SearchSpace.Feature]
 
-    def __init__(self, problem, depth, importance_of_explainability):
-        self.problem = problem
-        self.depth = depth
-        self.importance_of_explainability = importance_of_explainability
-
-        self.search_space = self.problem.search_space
+    def __init__(self, search_space, population_sample, fitness_list):
+        self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
-        self.trivial_features = self.search_space.get_all_trivial_features()
-        self.variate_model_generator = VariateModels.VariateModels(self.search_space)
+        self.candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(population_sample)
+        self.fitness_array = np.array(fitness_list)
 
-        self.sample_and_precomputed_data = None
-        self.considered_features = []
+        self.sample_size = len(population_sample)
 
-    def set_population(self, population: list[SearchSpace.Candidate]):
-        candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(population)
-        fitness_array = np.ndarray([self.get_fitness_of_candidate(candidate) for candidate in population])
-        self.sample_and_precomputed_data = SampleAndPrecomputedData(candidate_matrix, fitness_array)
 
-    def get_fitness_of_candidate(self, candidate):
-        return self.problem.score_of_candidate(candidate)
+class PopulationSampleWithFeaturesPrecomputedData:
+    population_sample_precomputed: PopulationSamplePrecomputedData
+    hot_encoded_features: list[np.ndarray]
+    feature_presence_matrix: np.ndarray
 
-    def get_complexity_of_feature(self, feature):
-        return self.problem.get_complexity_of_feature(feature)
+    count_for_each_feature: np.ndarray
+    complexity_array: np.ndarray
 
-    def get_explainability_relevance_of_features(self) -> np.ndarray:
-        """
-        Returns an array of values from 0 to 1 which are associated with explainability, the opposite of complexity
-        :return: an array, where the scores are in the same order as the input list.
-        """
-        complexities = np.array([self.get_complexity_of_feature(feature) for feature in self.considered_features])
-        normalised_complexities = utils.remap_array_in_zero_one(complexities)
-        return 1.0 - normalised_complexities
 
-    def cache_features_in_population_sample(self):
-        self.sample_and_precomputed_data.set_features([self.hot_encoder.feature_to_hot_encoding(feature)
-                                                       for feature in self.considered_features])
-    def get_fitness_relevance_of_features(self):
-        """
-        Returns an array of values from 0 to 1 which correspond to how strongly each feature affects the fitness,
-        which might be positively or negatively. This only measures how strong it is!
-        :return: an np.ndarray containing all of the values, where 0 means irrelevant, 1 means very
-        interesting
-        """
-        return (self.variate_model_generator
-                .get_average_fitness_of_features_from_matrix(self.sample_and_precomputed_data.feature_presence_matrix,
-                                                             self.sample_and_precomputed_data.fitness_array))
+    def __init__(self, population_precomputed: PopulationSamplePrecomputedData, intermediate_features: list[IntermediateFeature]):
+        self.population_sample_precomputed = population_precomputed
+        self.hot_encoded_features = [self.population_sample_precomputed.hot_encoder.feature_to_hot_encoding(intermediate_feature.feature)
+                                     for intermediate_feature in intermediate_features]
 
-    def get_overall_scores_of_features(self):
-        explainabilities = self.get_explainability_relevance_of_features()
-        fitness_relevances = self.get_fitness_relevance_of_features()
+        self.feature_presence_matrix = VariateModels.get_feature_presence_matrix(self.population_sample_precomputed.candidate_matrix,
+                                                                                 self.hot_encoded_features)
+
+        self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
+
+
+    def get_average_fitness_vector(self):
+        sum_of_fitnesses = utils.weighted_sum_of_rows(self.feature_presence_matrix,
+                                                      self.population_sample_precomputed.fitness_array)
+
+        return np.where(self.count_for_each_feature == 0.0, 0.0, sum_of_fitnesses / self.count_for_each_feature)
+
+
+    def get_overall_average_fitness(self):
+        return np.mean(self.population_sample_precomputed.fitness_array)
+
+    def get_observed_proportions(self):
+        return self.count_for_each_feature / self.population_sample_precomputed.sample_size
+
+
+class FeatureFilter:
+    current_features: list[IntermediateFeature]
+    precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
+    complexity_array: np.ndarray
+
+    for_novelty: bool
+    expected_proportions: np.ndarray
+
+    def __init__(self,
+                 initial_features,
+                 precomputed_sample_data,
+                 complexity_function,
+                 importance_of_explainability,
+                 expected_proportions = None):
+        self.current_features = initial_features
+        self.precomputed_data_for_features = PopulationSampleWithFeaturesPrecomputedData(precomputed_sample_data,
+                                                                                         self.current_features)
+        self.complexity_array = np.array([complexity_function(feature) for feature in self.current_features])
+        self.importance_of_explainability = importance_of_explainability
+        self.for_novelty = (expected_proportions is not None)
+        self.expected_proportions = expected_proportions
+
+
+    def get_explainability_array(self) -> np.ndarray:
+        return 1.0 - utils.remap_array_in_zero_one(self.complexity_array)
+
+    def get_fitness_relevance_array(self) -> np.ndarray:
+        average_fitesses = self.precomputed_data_for_features.get_average_fitness_vector()
+        average_overall_fitness = self.precomputed_data_for_features.get_overall_average_fitness()
+        fitness_distance = np.abs(average_fitesses-average_overall_fitness) # TODO here use a t test instead
+        return utils.remap_array_in_zero_one(fitness_distance)
+
+    def get_novelty_array(self) -> np.ndarray:
+        observed_proportions = self.precomputed_data_for_features.get_observed_proportions()
+        distance_from_expected = np.abs(observed_proportions - self.expected_proportions)  # TODO here use a Chi squared metric instead
+        return 1.0 - distance_from_expected
+
+    def get_scores_of_features(self) -> np.ndarray:
+        explainabilities = self.get_explainability_array()
+        criteria_scores = self.get_novelty_array() if self.for_novelty else self.get_fitness_relevance_array()
+
         return utils.weighted_sum(explainabilities, self.importance_of_explainability,
-                                  fitness_relevances, 1.0 - self.importance_of_explainability)
+                                  criteria_scores, 1.0-self.importance_of_explainability)
 
-    def get_the_best_features(self, how_many_to_keep: int):
-        scores = self.get_overall_scores_of_features()
+    def get_the_best_features(self, how_many_to_keep: int) -> (list[IntermediateFeature], np.ndarray):
+        scores = self.get_scores_of_features()
 
-        sorted_by_with_score = sorted(zip(self.considered_features, scores), key=utils.second, reverse=True)
-        return sorted_by_with_score[:how_many_to_keep]
+        sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
+        features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
+        return features, np.array(scores_list)
 
+
+
+
+
+class FeatureDeveloper:
+    population_sample: PopulationSamplePrecomputedData
+    previous_iterations: list[ParentPool]
+    depth: int
+    search_space: SearchSpace.SearchSpace
+    complexity_function: Any  # SearchSpace.Feature -> float
+    importance_of_explainability: float
+    for_novelty: bool
+
+
+    def get_filter(self, intermediates):
+        # TODO: in the future you might want the expected proportions to be obtained from previous iterations of the GA!
+        # For now, they are obtained as if it always was the first generation (and the one before was uniformly random)
+        if self.for_novelty:
+            expected_proportions = np.ndarray([self.search_space.probability_of_feature_in_uniform(intermediate.feature)
+                                               for intermediate in intermediates])
+            return FeatureFilter(intermediates,
+                                 self.population_sample,
+                                 self.complexity_function,
+                                 self.importance_of_explainability,
+                                 expected_proportions)
+        else:
+            return FeatureFilter(intermediates,
+                                 self.population_sample,
+                                 self.complexity_function,
+                                 self.importance_of_explainability,
+                                 expected_proportions=None)
+
+
+    def get_trivial_parent_pool(self):
+        trivial_features = [IntermediateFeature.get_trivial_feature(var, val)
+                            for var, val in self.search_space.get_all_var_val_pairs()]
+
+        feature_filter = self.get_filter(trivial_features)
+        scores = feature_filter.get_scores_of_features()
+
+        return ParentPool(trivial_features, scores)  # note how they don't get filtered!
+
+
+
+
+    def __init__(self,
+                 search_space,
+                 population_sample,
+                 depth,
+                 complexity_function,
+                 importance_of_explainability,
+                 for_novelty = False):
+        self.search_space = search_space
+        self.population_sample = population_sample
+        self.depth = depth
+        self.complexity_function = complexity_function
+        self.importance_of_explainability = importance_of_explainability
+        self.for_novelty = for_novelty
+
+        self.previous_iterations = [self.get_trivial_parent_pool()]
+
+    def get_parent_pool_of_weight(self, weight):
+        return self.previous_iterations[weight-1]
+
+
+
+
+
+    def new_iteration(self, amount_to_consider: int, amount_to_return: int, heuristic = False):
+        new_weight = len(self.previous_iterations)+1
+        parent_weight_1 = new_weight // 2
+        parent_weight_2 = new_weight - parent_weight_1
+
+        asexual_mixing = parent_weight_1 == parent_weight_2
+
+        feature_mixer = FeatureMixer(self.get_parent_pool_of_weight(parent_weight_1),
+                                     self.get_parent_pool_of_weight(parent_weight_2),
+                                     asexual_mixing)
+
+        considered_features = None
+        if heuristic:
+            considered_features = feature_mixer.get_heuristically_mixed_features(amount_to_consider)
+        else:
+            considered_features = feature_mixer.get_stochastically_mixed_features(amount_to_consider)
+
+        feature_filter = self.get_filter(considered_features)
+
+        features, scores = feature_filter.get_the_best_features(amount_to_return)
+        self.previous_iterations.append(ParentPool(features, scores))
+
+    def develop_features(self, heuristic = False):
+        for i in range(self.depth):
+            amount_to_keep_per_category = self.search_space.total_cardinality
+            amount_to_consider = amount_to_keep_per_category ** 2
+            self.new_iteration(amount_to_consider, amount_to_keep_per_category, heuristic)
+
+    def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
+        developed_features = utils.concat([parent_pool.get_raw_features() for parent_pool in self.previous_iterations])
+        feature_filterer = self.get_filter(developed_features)
+
+        return feature_filterer.get_the_best_features(self.search_space.total_cardinality)
 
 
     # TODO:
 
     """ 
-        * cleanly implement something that stores the best features so that new feature sets can be construted
-        * add an alternative execution path where only the popularity matters
         * Clean up VariateModels
         
         * create the class which stores iterations and selects from them 
-            * perhaps featurefinder, which makes use of featureforgetter to obtain scores and decide what to keep?
-            * perhaps there's 3 phases to featureforgetter (3 states):
+            * perhaps featurefinder, which makes use of featurefilter to obtain scores and decide what to keep?
+            * perhaps there's 3 phases to featurefilter (3 states):
                 * struggle: be fed the features obtained from merging previous iterations
                 * grind: give scores to the features, select the best ones
                 * shine: remove the unwanted features, we store only the good features and their scores
+                
+                
+        TODO: currently if you set expected_proportions to none, it means you only look at the fitness
+        if it's set, it will only look at the novelty. This is confusing and nasty.
     """
 

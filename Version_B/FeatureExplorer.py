@@ -25,21 +25,28 @@ class IntermediateFeature:
         return cls(var, var, SearchSpace.Feature.trivial_feature(var, val))
 
 
+    def __hash__(self):
+        return self.feature.__hash__()
+
+    def __eq__(self, other):
+        return self.feature.__eq__(other.feature)
+
+
 def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature):
     """creates the union of two intermediate features"""
     # NOTE: the order of the arguments matters!
-    new_start = left.start
-    new_end = right.end
+    new_start = min(left.start, right.start)
+    new_end = max(left.end, right.end)
     new_feature = SearchSpace.merge_two_features(left.feature, right.feature)
 
     return IntermediateFeature(new_start, new_end, new_feature)
 
 
-def can_be_merged(left: IntermediateFeature, right: IntermediateFeature):
+def can_be_merged(a: IntermediateFeature, b: IntermediateFeature):
     """Returns true if the 2 features can be merged without overlaps"""
     """Additionally, it only allows two features to be merged in one way (ie AB is allowed, BA is not)"""
     # NOTE: the order of the arguments matters!
-    return left.end < right.start
+    return (a.end < b.start) or (b.end < a.start)
 
 
 class IntermediateFeatureGroup:

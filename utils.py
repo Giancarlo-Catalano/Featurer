@@ -381,3 +381,8 @@ def product(iterable):
     return functools.reduce(operator.mul, iterable)
 
 
+def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
+    return np.einsum('ij,i->j', matrix, weights)
+
+
+
