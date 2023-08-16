@@ -113,10 +113,10 @@ class FeatureMixer:
 
     def get_heuristic_mixed_features_different_parents(self, amount: int):
         result = set()
-        for row_feature in reversed(self.parent_set_2.features):
+        for row_feature in reversed(self.parent_set_1.features):
             if len(result) >= amount:
                 break
-            for column_feature in reversed(self.parent_set_1.features):
+            for column_feature in reversed(self.parent_set_2.features):
                 FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
 
         return list(result)[:amount]
@@ -228,15 +228,18 @@ class FeatureFilter:
             observed_proportions - self.expected_proportions)  # TODO here use a Chi squared metric instead
         return 1.0 - distance_from_expected
 
-    def get_scores_of_features(self) -> np.ndarray:
+    def get_scores_of_features(self, with_criteria = True) -> np.ndarray:
         explainabilities = self.get_explainability_array()
-        criteria_scores = self.get_novelty_array() if self.for_novelty else self.get_fitness_relevance_array()
 
+        if not with_criteria:
+            return explainabilities
+
+        criteria_scores = self.get_novelty_array() if self.for_novelty else self.get_fitness_relevance_array()
         return utils.weighted_sum(explainabilities, self.importance_of_explainability,
                                   criteria_scores, 1.0 - self.importance_of_explainability)
 
-    def get_the_best_features(self, how_many_to_keep: int) -> (list[IntermediateFeature], np.ndarray):
-        scores = self.get_scores_of_features()
+    def get_the_best_features(self, how_many_to_keep: int, with_criteria = True) -> (list[IntermediateFeature], np.ndarray):
+        scores = self.get_scores_of_features(with_criteria)
 
         sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
         features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
@@ -299,13 +302,12 @@ class FeatureDeveloper:
     def get_parent_pool_of_weight(self, weight):
         return self.previous_iterations[weight - 1]
 
-    def new_iteration(self, amount_to_consider: int, amount_to_return: int, heuristic=False):
+    def new_iteration(self, amount_to_consider: int, amount_to_return: int, heuristic=False, with_criteria=True):
         new_weight = len(self.previous_iterations) + 1
         parent_weight_1 = new_weight // 2
         parent_weight_2 = new_weight - parent_weight_1
 
         asexual_mixing = parent_weight_1 == parent_weight_2
-
         feature_mixer = FeatureMixer(self.get_parent_pool_of_weight(parent_weight_1),
                                      self.get_parent_pool_of_weight(parent_weight_2),
                                      asexual_mixing)
@@ -317,15 +319,41 @@ class FeatureDeveloper:
 
         feature_filter = self.get_filter(considered_features)
 
-        features, scores = feature_filter.get_the_best_features(amount_to_return)
+        features, scores = feature_filter.get_the_best_features(amount_to_return, with_criteria=with_criteria)
         self.previous_iterations.append(ParentPool(features, scores))
 
+
     def develop_features(self, heuristic=False):
+
+        def should_use_heuristic(iteration):
+            heuristic_threshold = self.depth * 0.8
+            if heuristic == "initially":
+                return iteration < heuristic_threshold
+            else:
+                return heuristic
+
+        def should_use_criteria(iteration):
+            criteria_threshold = self.depth // 2
+            return iteration >= criteria_threshold
+
+        # TODO choose good numbers
         for i in range(self.depth):
-            # TODO find appropriate values here!!
-            amount_to_keep_per_category = self.search_space.total_cardinality * ((i + 1) ** 2)
-            amount_to_consider = amount_to_keep_per_category * 2
-            self.new_iteration(amount_to_consider, amount_to_keep_per_category, heuristic)
+            use_heuristic = should_use_heuristic(i)
+            use_criteria = should_use_criteria(i)
+            amount_to_keep_per_category = self.search_space.total_cardinality * ((i + 2) ** 2)
+
+            if use_heuristic:
+                amount_to_consider = amount_to_keep_per_category ** 2
+            else:
+                amount_to_consider = amount_to_keep_per_category
+
+
+            print(f"On the {i}th loop of develop_features, {use_heuristic =}, {use_criteria =}")
+            print(f"{amount_to_keep_per_category = }, {amount_to_consider = }")
+            self.new_iteration(amount_to_consider,
+                               amount_to_keep_per_category,
+                               heuristic=use_heuristic,
+                               with_criteria=use_criteria)
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
         """This is the function which returns the features you'll be using in the future!"""
@@ -349,7 +377,7 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                                          importance_of_explainability=importance_of_explainability,
                                          for_novelty=for_novelty)
 
-    feature_developer.develop_features(heuristic=True)
+    feature_developer.develop_features(heuristic="initially")
 
     intermediate_features, scores = feature_developer.get_developed_features()
     raw_features = [intermediate.feature for intermediate in intermediate_features]

@@ -306,7 +306,7 @@ def remap_array_in_zero_one(input_array):
     max_value = np.max(input_array)
 
     if (min_value == max_value):
-        return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
+        return np.ones_like(input_array)  # should be all ones! TODO perhaps these should be all 0.5?
 
     return (input_array - min_value) / (max_value - min_value)
 
