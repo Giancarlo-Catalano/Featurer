@@ -197,9 +197,9 @@ class FeatureFilter:
         return 1.0 - utils.remap_array_in_zero_one(self.complexity_array)
 
     def get_fitness_relevance_array(self) -> np.ndarray:
-        average_fitesses = self.precomputed_data_for_features.get_average_fitness_vector()
+        average_fitnesses = self.precomputed_data_for_features.get_average_fitness_vector()
         average_overall_fitness = self.precomputed_data_for_features.get_overall_average_fitness()
-        fitness_distance = np.abs(average_fitesses - average_overall_fitness)  # TODO here use a t test instead
+        fitness_distance = np.abs(average_fitnesses - average_overall_fitness)  # TODO here use a t test instead
         return utils.remap_array_in_zero_one(fitness_distance)
 
     def get_novelty_array(self) -> np.ndarray:
@@ -320,7 +320,7 @@ class FeatureDeveloper:
         * Clean up VariateModels
         
         * create the class which stores iterations and selects from them 
-            * perhaps featurefinder, which makes use of featurefilter to obtain scores and decide what to keep?
+            * perhaps FeatureFinder, which makes use of featurefilter to obtain scores and decide what to keep?
             * perhaps there's 3 phases to featurefilter (3 states):
                 * struggle: be fed the features obtained from merging previous iterations
                 * grind: give scores to the features, select the best ones
