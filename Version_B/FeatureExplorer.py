@@ -44,8 +44,6 @@ def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature
 
 def can_be_merged(a: IntermediateFeature, b: IntermediateFeature):
     """Returns true if the 2 features can be merged without overlaps"""
-    """Additionally, it only allows two features to be merged in one way (ie AB is allowed, BA is not)"""
-    # NOTE: the order of the arguments matters!
     return (a.end < b.start) or (b.end < a.start)
 
 

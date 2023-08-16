@@ -1,9 +1,6 @@
-import copy
-import itertools
 import math
 import random
 import utils
-import numpy as np
 
 
 def value_to_string(val):
@@ -17,15 +14,16 @@ def value_to_string(val):
 
 class Feature:
     # a list of pairs (var, val)
+    var_vals: list[(int, int)]
+
     def __init__(self, var_vals):
-        self.var_vals = var_vals
+        self.var_vals = sorted(var_vals, key=utils.first)
 
     def __repr__(self):
         return "<" + (", ".join([f"[{var}]={val}" for var, val in self.var_vals])) + ">"
 
     def __hash__(self):
         return tuple(self.var_vals).__hash__()
-
 
     def __eq__(self, other):
         return self.var_vals == other.var_vals
@@ -53,10 +51,8 @@ class Candidate:
     def __hash__(self):
         return self.values.__hash__()
 
-
     def as_feature(self):
-        return Feature(list((i,v) for i, v in enumerate(self.values) if v is not None))
-
+        return Feature(list((i, v) for i, v in enumerate(self.values) if v is not None))
 
 
 class SearchSpace:
@@ -95,14 +91,12 @@ class SearchSpace:
     def __repr__(self):
         return f"SearchSpace{self.cardinalities}"
 
-
     def feature_is_complete(self, feature: Feature):
         """returns true when the feature has all the variables set"""
-        used_vars = [False]*self.dimensions
+        used_vars = [False] * self.dimensions
         for (var, _) in feature.var_vals:
             used_vars[var] = True
         return all(used_vars)
-
 
     def feature_is_valid(self, feature: Feature):
         value_for_each_var = [None] * self.dimensions
@@ -115,10 +109,10 @@ class SearchSpace:
 
     def feature_to_candidate(self, feature: Feature) -> Candidate:
         result_list = [None] * self.dimensions
-        for var, val in feature:
+        for var, val in feature.var_vals:
             result_list[var] = val
         return Candidate(tuple(result_list))
 
+
 def merge_two_features(feature_a, feature_b):
     return Feature(feature_a.var_vals + feature_b.var_vals)
-

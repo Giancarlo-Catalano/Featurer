@@ -30,7 +30,6 @@ class ParentPool:
     def select_parent_randomly(self) -> SearchSpace.Feature:
         return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list)[0]
 
-
     def select_n_parents_randomly(self, amount: int):
         return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list, k=amount)
 
@@ -76,14 +75,15 @@ class FeatureMixer:
 
         return list(result)
 
-
     def efficient_get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
         batch_size = amount
         result = set()
+
         def add_from_batch():
             batch_mothers = self.parent_set_1.select_n_parents_randomly(batch_size)
             batch_fathers = self.parent_set_2.select_n_parents_randomly(batch_size)
-            offspring = [merge_two_intermediate(mother, father) for mother, father in zip(batch_mothers, batch_fathers)]
+            offspring = [merge_two_intermediate(mother, father) for mother, father in zip(batch_mothers, batch_fathers)
+                         if can_be_merged(mother, father)]
             result.update(offspring)
 
         while len(result) < amount:
@@ -323,7 +323,7 @@ class FeatureDeveloper:
     def develop_features(self, heuristic=False):
         for i in range(self.depth):
             # TODO find appropriate values here!!
-            amount_to_keep_per_category = self.search_space.total_cardinality * ((i+1) ** 2)
+            amount_to_keep_per_category = self.search_space.total_cardinality * ((i + 1) ** 2)
             amount_to_consider = amount_to_keep_per_category * 2
             self.new_iteration(amount_to_consider, amount_to_keep_per_category, heuristic)
 
@@ -336,12 +336,11 @@ class FeatureDeveloper:
         return feature_filterer.get_the_best_features(self.search_space.total_cardinality)
 
 
-
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
                   depth: int,
                   importance_of_explainability: float,
                   sample_size: int,
-                  for_novelty: bool)  -> (list[SearchSpace.Feature], np.ndarray):
+                  for_novelty: bool) -> (list[SearchSpace.Feature], np.ndarray):
     sample_data = PopulationSamplePrecomputedData.from_problem(problem, sample_size)
     feature_developer = FeatureDeveloper(search_space=problem.search_space,
                                          population_sample=sample_data,
@@ -350,10 +349,10 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                                          importance_of_explainability=importance_of_explainability,
                                          for_novelty=for_novelty)
 
-    feature_developer.develop_features(heuristic=False)
+    feature_developer.develop_features(heuristic=True)
 
-    intermedidate_features, scores = feature_developer.get_developed_features()
-    raw_features = [intermediate.feature for intermediate in intermedidate_features]
+    intermediate_features, scores = feature_developer.get_developed_features()
+    raw_features = [intermediate.feature for intermediate in intermediate_features]
     return raw_features, scores
 
     # TODO:
