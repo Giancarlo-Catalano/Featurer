@@ -104,22 +104,22 @@ class FeatureMixer:
         result = set()
 
         for row, row_feature in reversed(list(enumerate(self.parent_set_1.features))):
+            if len(result) >= amount:
+                break
             for column_feature in self.parent_set_2.features[-1:row:-1]:  # mamma mia
-                successfully_added = FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
-                if successfully_added and len(result) >= amount:
-                    return list(result)
+                FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
 
-        return list(result)
+        return list(result)[:amount]
 
     def get_heuristic_mixed_features_different_parents(self, amount: int):
         result = set()
         for row_feature in reversed(self.parent_set_2.features):
+            if len(result) >= amount:
+                break
             for column_feature in reversed(self.parent_set_1.features):
-                successfully_added = FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
-                if successfully_added and len(result) >= amount:
-                    return list(result)
+                FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
 
-        return list(result)
+        return list(result)[:amount]
 
     def get_heuristically_mixed_features(self, amount: int):
         """this is the greedy heuristic mixing approach"""
