@@ -323,6 +323,14 @@ class FeatureDeveloper:
         self.previous_iterations.append(ParentPool(features, scores))
 
 
+
+    def how_many_features_to_consider_in_weight_category(self, weight):
+        average_cardinality = self.search_space.total_cardinality / self.search_space.dimensions
+        total_amount_in_weight_category = utils.binomial_coeff(self.search_space.dimensions, weight) * (
+            average_cardinality ** weight)
+        return utils.binomial_coeff(self.search_space.dimensions, weight) * average_cardinality * weight
+
+
     def develop_features(self, heuristic=False):
 
         def should_use_heuristic(iteration):
@@ -340,6 +348,9 @@ class FeatureDeveloper:
         for i in range(self.depth-1):
             use_heuristic = should_use_heuristic(i)
             use_criteria = should_use_criteria(i)
+
+            weight = i+2
+            total_amount_in_weight_category = self.how_many_features_to_consider_in_weight_category(i+2)
             amount_to_keep_per_category = int(self.search_space.total_cardinality ** ((i+2) / 2))
 
             if use_heuristic:

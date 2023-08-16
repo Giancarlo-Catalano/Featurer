@@ -30,7 +30,7 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 
-depth = 4
+depth = 5
 importance_of_explainability = 0.5
 
 
@@ -345,6 +345,6 @@ def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialPro
 
 
 if __name__ == '__main__':
-    problem = checkerboard
+    problem = trap5
     # print(f"The problem is {problem.long_repr()}")
     test_finder(problem)
