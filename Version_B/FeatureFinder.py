@@ -214,7 +214,7 @@ class FeatureFilter:
         self.expected_proportions = expected_proportions
 
     def get_explainability_array(self) -> np.ndarray:
-        return 1.0 - utils.remap_array_in_zero_one(self.complexity_array)
+        return (1.0 - utils.remap_array_in_zero_one(self.complexity_array)) ** 2
 
     def get_fitness_relevance_array(self) -> np.ndarray:
         average_fitnesses = self.precomputed_data_for_features.get_average_fitness_vector()
@@ -235,7 +235,7 @@ class FeatureFilter:
             return explainabilities
 
         criteria_scores = self.get_novelty_array() if self.for_novelty else self.get_fitness_relevance_array()
-        return utils.weighted_sum(explainabilities, self.importance_of_explainability,
+        return utils.geometric_weighted_average(explainabilities, self.importance_of_explainability,
                                   criteria_scores, 1.0 - self.importance_of_explainability)
 
     def get_the_best_features(self, how_many_to_keep: int, with_criteria = True) -> (list[IntermediateFeature], np.ndarray):

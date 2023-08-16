@@ -31,7 +31,7 @@ BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 
 depth = 4
-importance_of_explainability = 0.2
+importance_of_explainability = 0.5
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
@@ -345,6 +345,6 @@ def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialPro
 
 
 if __name__ == '__main__':
-    problem = graph_colouring
-    print(f"The problem is {problem.long_repr()}")
+    problem = checkerboard
+    # print(f"The problem is {problem.long_repr()}")
     test_finder(problem)

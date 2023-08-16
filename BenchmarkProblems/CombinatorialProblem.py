@@ -21,10 +21,10 @@ class CombinatorialProblem:
 
 
     def get_leftmost_and_rightmost_set_variable(self, feature):
-        if len(feature.var_vals):
+        if len(feature.var_vals) == 0:
             return 0, 0
 
-        used_vars = utils.unzip(feature.var_vals)
+        used_vars = utils.unzip(feature.var_vals)[0]
         return min(used_vars), max(used_vars)
 
     def get_area_of_smallest_bounding_box(self, feature):
