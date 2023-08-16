@@ -28,7 +28,11 @@ class ParentPool:
         self.precomputed_cumulative_list = np.cumsum(weights)
 
     def select_parent_randomly(self) -> SearchSpace.Feature:
-        return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list)
+        return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list)[0]
+
+
+    def select_n_parents_randomly(self, amount: int):
+        return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list, k=amount)
 
     def get_raw_features(self):
         return [intermediate.feature for intermediate in self.features]
@@ -64,12 +68,28 @@ class FeatureMixer:
                 return merge_two_intermediate(parent_1, parent_2)
 
     def get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+        # TODO make this more efficient
         """this is the stochastic approach"""
         result = set()
         while len(result) < amount:
             result.add(self.create_random_feature())
 
         return list(result)
+
+
+    def efficient_get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+        batch_size = amount
+        result = set()
+        def add_from_batch():
+            batch_mothers = self.parent_set_1.select_n_parents_randomly(batch_size)
+            batch_fathers = self.parent_set_2.select_n_parents_randomly(batch_size)
+            offspring = [merge_two_intermediate(mother, father) for mother, father in zip(batch_mothers, batch_fathers)]
+            result.update(offspring)
+
+        while len(result) < amount:
+            add_from_batch()
+
+        return list(result)[:amount]
 
     @staticmethod
     def add_merged_if_mergeable(accumulator: set[IntermediateFeature],
@@ -293,7 +313,7 @@ class FeatureDeveloper:
         if heuristic:
             considered_features = feature_mixer.get_heuristically_mixed_features(amount_to_consider)
         else:
-            considered_features = feature_mixer.get_stochastically_mixed_features(amount_to_consider)
+            considered_features = feature_mixer.efficient_get_stochastically_mixed_features(amount_to_consider)
 
         feature_filter = self.get_filter(considered_features)
 
@@ -302,8 +322,9 @@ class FeatureDeveloper:
 
     def develop_features(self, heuristic=False):
         for i in range(self.depth):
-            amount_to_keep_per_category = self.search_space.total_cardinality
-            amount_to_consider = amount_to_keep_per_category ** 2
+            # TODO find appropriate values here!!
+            amount_to_keep_per_category = self.search_space.total_cardinality * ((i+1) ** 2)
+            amount_to_consider = amount_to_keep_per_category * 2
             self.new_iteration(amount_to_consider, amount_to_keep_per_category, heuristic)
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
@@ -328,6 +349,8 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                                          complexity_function=problem.get_complexity_of_feature,
                                          importance_of_explainability=importance_of_explainability,
                                          for_novelty=for_novelty)
+
+    feature_developer.develop_features(heuristic=False)
 
     intermedidate_features, scores = feature_developer.get_developed_features()
     raw_features = [intermediate.feature for intermediate in intermedidate_features]
