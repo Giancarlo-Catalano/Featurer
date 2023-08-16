@@ -2,6 +2,8 @@ from typing import Any
 
 import numpy as np
 import random
+
+import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import HotEncoding
 import utils
@@ -109,24 +111,28 @@ class FeatureMixer:
 
 class PopulationSamplePrecomputedData:
     search_space: SearchSpace.SearchSpace
-    hot_encoder: HotEncoding.HotEncoder
     candidate_matrix: np.ndarray
     fitness_array: np.ndarray
     sample_size: int
 
     def __init__(self, search_space, population_sample, fitness_list):
         self.search_space = search_space
-        self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
-        self.candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(population_sample)
+        self.candidate_matrix = HotEncoding.hot_encode_candidate_population(population_sample, self.search_space)
         self.fitness_array = np.array(fitness_list)
-
         self.sample_size = len(population_sample)
+
+    @classmethod
+    def from_problem(cls, problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
+                     amount_of_samples: int):
+        search_space = problem.search_space
+        population = [search_space.get_random_candidate() for _ in range(amount_of_samples)]
+        fitnesses = [problem.score_of_candidate(candidate) for candidate in population]
+        return cls(search_space, population, fitnesses)
 
 
 class PopulationSampleWithFeaturesPrecomputedData:
     """this data structures stores matrices that are used around the other classes"""
     population_sample_precomputed: PopulationSamplePrecomputedData
-    hot_encoded_features: list[np.ndarray]
     feature_presence_matrix: np.ndarray
 
     count_for_each_feature: np.ndarray
@@ -135,13 +141,13 @@ class PopulationSampleWithFeaturesPrecomputedData:
     def __init__(self, population_precomputed: PopulationSamplePrecomputedData,
                  intermediate_features: list[IntermediateFeature]):
         self.population_sample_precomputed = population_precomputed
-        self.hot_encoded_features = [
-            self.population_sample_precomputed.hot_encoder.feature_to_hot_encoding(intermediate_feature.feature)
-            for intermediate_feature in intermediate_features]
+        raw_features = [intermediate.feature for intermediate in intermediate_features]
+        feature_matrix = HotEncoding.hot_encode_feature_list(raw_features,
+                                                                  self.population_sample_precomputed.search_space)
 
-        self.feature_presence_matrix = VariateModels.get_feature_presence_matrix(
+        self.feature_presence_matrix = VariateModels.get_feature_presence_matrix_from_feature_matrix(
             self.population_sample_precomputed.candidate_matrix,
-            self.hot_encoded_features)
+            feature_matrix)
 
         self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
 
@@ -284,7 +290,6 @@ class FeatureDeveloper:
                                      self.get_parent_pool_of_weight(parent_weight_2),
                                      asexual_mixing)
 
-        considered_features = None
         if heuristic:
             considered_features = feature_mixer.get_heuristically_mixed_features(amount_to_consider)
         else:

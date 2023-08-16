@@ -27,6 +27,30 @@ def feature_is_valid_in_search_space(feature_hot, search_space: SearchSpace.Sear
     return True
 
 
+def hot_encode_candidate(candidate: SearchSpace.Candidate, search_space: SearchSpace)-> np.ndarray:
+    return np.concatenate(
+        [utils.one_hot_encoding(candidate.values[var], cardinality)
+         for (var, cardinality) in enumerate(search_space.cardinalities)])
+
+
+def hot_encode_feature(feature: SearchSpace.Feature, search_space: SearchSpace)-> np.ndarray:
+    result = np.zeros(search_space.total_cardinality, dtype=float)
+    for var, val in feature.var_vals:
+        result[search_space.precomputed_offsets[var] + val] = 1.0
+    return result
+
+
+def hot_encode_candidate_population(population: list[SearchSpace.Candidate],
+                                    search_space: SearchSpace.SearchSpace) -> np.ndarray:
+    return np.array([hot_encode_candidate(c, search_space) for c in population])
+
+
+def hot_encode_feature_list(feature_list: list[SearchSpace.Feature],
+                            search_space: SearchSpace.SearchSpace) -> np.ndarray:
+    """ returns the feature matrix, transposed already"""
+    return np.array([hot_encode_feature(feature, search_space) for feature in feature_list]).T
+
+
 class HotEncoder:
     search_space: SearchSpace.SearchSpace
 
@@ -38,19 +62,10 @@ class HotEncoder:
         return np.zeros(sum(self.search_space.cardinalities))
 
     def candidate_to_hot_encoding(self, candidate):
-        """works for both candidates and features"""
-        return np.concatenate(
-            [utils.one_hot_encoding(candidate.values[var], cardinality)
-             for (var, cardinality) in enumerate(self.search_space.cardinalities)])
-
+        return hot_encode_candidate(candidate, self.search_space)
 
     def feature_to_hot_encoding(self, feature: SearchSpace.Feature):
-        result = np.zeros(self.search_space.total_cardinality, dtype=float)
-        for var, val in feature.var_vals:
-            result[self.search_space.precomputed_offsets[var]+val] = 1.0
-        return result
-
-
+        return hot_encode_feature(feature, self.search_space)
 
     def deconcat_hot_encoding(self, hot_encoded):
         return [hot_encoded[begin:end]
@@ -67,8 +82,8 @@ class HotEncoder:
         var_vals = [(index, val) for index, val in enumerate(decoded) if val is not None]
         return SearchSpace.Feature(var_vals)
 
-    def to_hot_encoded_matrix(self, populationC):
-        return np.array([self.candidate_to_hot_encoding(c) for c in populationC])
+    def to_hot_encoded_matrix(self, population: list[SearchSpace.Candidate]):
+       return hot_encode_candidate_population(population)
 
     def get_hot_encoded_trivial_features(self):
         return [self.feature_to_hot_encoding(feature) for feature in self.search_space.get_all_trivial_features()]

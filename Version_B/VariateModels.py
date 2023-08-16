@@ -91,11 +91,17 @@ class CandidateValidator:
         return np.dot(flat_outer, self.clash_matrix) == 0.0
 
 
+def get_feature_presence_matrix_from_feature_matrix(candidate_matrix: np.ndarray,
+                                                   feature_matrix: np.ndarray) -> np.ndarray:
+    positive_when_absent = (1 - candidate_matrix) @ feature_matrix
+    return 1 - np.minimum(positive_when_absent, 1)
+
 def get_feature_presence_matrix(candidate_matrix, hot_encoded_features) -> np.ndarray:
     """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
     feature_matrix = np.transpose(np.array(hot_encoded_features))
-    positive_when_absent = (1 - candidate_matrix) @ feature_matrix
-    return 1 - np.minimum(positive_when_absent, 1)
+    return get_feature_presence_matrix_from_feature_matrix(candidate_matrix, feature_matrix)
+
+
 
 
 class VariateModels:
