@@ -7,8 +7,8 @@ import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import HotEncoding
 import utils
-import VariateModels
-from FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
+import Version_B.VariateModels
+from Version_B.FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
 
 
 class ParentPool:
@@ -139,13 +139,12 @@ class PopulationSampleWithFeaturesPrecomputedData:
     complexity_array: np.ndarray
 
     def __init__(self, population_precomputed: PopulationSamplePrecomputedData,
-                 intermediate_features: list[IntermediateFeature]):
+                 raw_features: list[SearchSpace.Feature]):
         self.population_sample_precomputed = population_precomputed
-        raw_features = [intermediate.feature for intermediate in intermediate_features]
         feature_matrix = HotEncoding.hot_encode_feature_list(raw_features,
-                                                                  self.population_sample_precomputed.search_space)
+                                                             self.population_sample_precomputed.search_space)
 
-        self.feature_presence_matrix = VariateModels.get_feature_presence_matrix_from_feature_matrix(
+        self.feature_presence_matrix = Version_B.VariateModels.get_feature_presence_matrix_from_feature_matrix(
             self.population_sample_precomputed.candidate_matrix,
             feature_matrix)
 
@@ -186,9 +185,10 @@ class FeatureFilter:
                  importance_of_explainability,
                  expected_proportions=None):
         self.current_features = initial_features
+        stripped_initial_features = [intermediate.feature for intermediate in initial_features]
         self.precomputed_data_for_features = PopulationSampleWithFeaturesPrecomputedData(precomputed_sample_data,
-                                                                                         self.current_features)
-        self.complexity_array = np.array([complexity_function(feature) for feature in self.current_features])
+                                                                                         stripped_initial_features)
+        self.complexity_array = np.array([complexity_function(feature) for feature in stripped_initial_features])
         self.importance_of_explainability = importance_of_explainability
         self.for_novelty = (expected_proportions is not None)
         self.expected_proportions = expected_proportions
@@ -233,7 +233,7 @@ class FeatureDeveloper:
     importance_of_explainability: float
     for_novelty: bool
 
-    def get_filter(self, intermediates):
+    def get_filter(self, intermediates: list[IntermediateFeature]):
         # TODO: in the future you might want the expected proportions to be obtained from previous iterations of the GA!
         # For now, they are obtained as if it always was the first generation (and the one before was uniformly random)
         if self.for_novelty:
@@ -307,12 +307,31 @@ class FeatureDeveloper:
             self.new_iteration(amount_to_consider, amount_to_keep_per_category, heuristic)
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
-
         """This is the function which returns the features you'll be using in the future!"""
-        developed_features = utils.concat([parent_pool.get_raw_features() for parent_pool in self.previous_iterations])
+        developed_features: list[IntermediateFeature] = utils.concat([parent_pool.features
+                                                                      for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features)
 
         return feature_filterer.get_the_best_features(self.search_space.total_cardinality)
+
+
+
+def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
+                  depth: int,
+                  importance_of_explainability: float,
+                  sample_size: int,
+                  for_novelty: bool)  -> (list[SearchSpace.Feature], np.ndarray):
+    sample_data = PopulationSamplePrecomputedData.from_problem(problem, sample_size)
+    feature_developer = FeatureDeveloper(search_space=problem.search_space,
+                                         population_sample=sample_data,
+                                         depth=depth,
+                                         complexity_function=problem.get_complexity_of_feature,
+                                         importance_of_explainability=importance_of_explainability,
+                                         for_novelty=for_novelty)
+
+    intermedidate_features, scores = feature_developer.get_developed_features()
+    raw_features = [intermediate.feature for intermediate in intermedidate_features]
+    return raw_features, scores
 
     # TODO:
 

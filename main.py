@@ -4,6 +4,7 @@ from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 
+import BenchmarkProblems.CombinatorialProblem
 import HotEncoding
 import SearchSpace
 import numpy as np
@@ -15,13 +16,12 @@ from Version_B.Sampler import ESTEEM_Sampler
 from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
 from Version_B.VariateModels import VariateModels
+import Version_B.FeatureFinder
 import csv
-
 
 from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
@@ -30,7 +30,7 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 
-merging_power = 4
+depth = 5
 importance_of_explainability = 0.5
 
 
@@ -41,10 +41,12 @@ def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
 
+
 def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
                           combinatorial=False):
     """prints the passed features, following the structure specified by the problem"""
     hot_encoder = HotEncoding.HotEncoder(problem.search_space)
+
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
         problem.pretty_print_feature(featureC)
@@ -59,14 +61,17 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
     for maybe_pair in input_list_of_features:
         print_with_or_without_score(maybe_pair)
-        print()
+        print("\n")
+
 
 def without_scores(features_with_scores):
     return utils.unzip(features_with_scores)[0]
 
+
 def hot_encoded_features(problem, featuresC):
     hot_encoder = HotEncoding.HotEncoder(problem.search_space)
     return [hot_encoder.feature_to_hot_encoding(featureC) for featureC in featuresC]
+
 
 def output_onto_csv_file(filename, headers, generator_function, how_many_samples):
     print(f"Writing the some output data onto {filename}")
@@ -75,12 +80,14 @@ def output_onto_csv_file(filename, headers, generator_function, how_many_samples
         writer.writerow(headers)
         writer.writerows([generator_function() for _ in range(how_many_samples)])
 
-def get_appropriate_filename(problem :CombinatorialProblem.CombinatorialProblem, tags = []):
+
+def get_appropriate_filename(problem: CombinatorialProblem.CombinatorialProblem, tags=[]):
     directory = "outputs\\"
     timestamp = datetime.datetime.now().strftime("%H'%M %d-%m-%Y")
-    tags_together = "["+"|".join(tags)+"]"
+    tags_together = "[" + "|".join(tags) + "]"
     extension = ".csv"
     return f"{directory}{problem} -- {timestamp}{tags_together}{extension}"
+
 
 def get_explainable_features(problem, training_data):
     search_space = problem.search_space
@@ -88,7 +95,7 @@ def get_explainable_features(problem, training_data):
     print(f"The problem is {problem}")
 
     print("Constructing the explorer")
-    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
+    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, depth, problem.get_complexity_of_feature,
                                                          importance_of_explainability=importance_of_explainability)
 
     training_samples, training_scores = training_data
@@ -122,6 +129,7 @@ def get_explainable_features(problem, training_data):
                                                     unpopular_features_and_scores))
     return (fit_features, unfit_features, pop_features, unpop_features)
 
+
 def test_sampler(problem):
     search_space = problem.get_search_space()
     training_data = get_problem_training_data(problem, 120)
@@ -137,13 +145,14 @@ def test_sampler(problem):
         problem.pretty_print_feature(new_candidate)
         print(f"Has score {actual_score}\n")
 
+
 def test_explorer(problem):
     search_space = problem.search_space
     print("Testing the explainable feature explorer")
     print(f"The problem is {problem}")
 
     print("Constructing the explorer")
-    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
+    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, depth, problem.get_complexity_of_feature,
                                                          importance_of_explainability=importance_of_explainability)
 
     training_samples, training_scores = get_problem_training_data(problem, 200)
@@ -165,17 +174,16 @@ def test_explorer(problem):
     print("\n\nThe unpopular features are")
     pretty_print_features(problem, unpopular_features_and_scores, combinatorial=True, with_scores=True)
 
-
     features_per_category = search_space.dimensions
 
     (fit_features,
      unfit_features,
      pop_features,
      unpop_features) = (hot_encoded_features(problem, without_scores(features_and_scores))[:features_per_category]
-                                for features_and_scores in (fit_features_and_scores,
-                                                            unfit_features_and_scores,
-                                                            popular_features_and_scores,
-                                                            unpopular_features_and_scores))
+                        for features_and_scores in (fit_features_and_scores,
+                                                    unfit_features_and_scores,
+                                                    popular_features_and_scores,
+                                                    unpopular_features_and_scores))
 
     print("Then we sample some new candidates")
     sampler = ESTEEM_Sampler(search_space, fit_features=fit_features,
@@ -191,9 +199,8 @@ def test_explorer(problem):
         problem.pretty_print_candidate(new_candidate)
         print(f"Has score {actual_score}\n")
 
-
     print("We can then analyse the unstabilities")
-    features_to_be_considered = fit_features+unfit_features+pop_features
+    features_to_be_considered = fit_features + unfit_features + pop_features
     variate_model_generator = Version_B.VariateModels.VariateModels(search_space)
 
     hot_encoder = HotEncoding.HotEncoder(search_space)
@@ -201,20 +208,19 @@ def test_explorer(problem):
     featuresH = features_to_be_considered
     feature_presence_matrix = variate_model_generator.get_feature_presence_matrix(candidate_matrix, featuresH)
 
-
     fitness_array = np.array(training_scores)
     unstabilities = variate_model_generator.get_fitness_unstability_scores(feature_presence_matrix, fitness_array)
-    counterstabilities = variate_model_generator.get_fitness_unstability_scores(1.0-feature_presence_matrix, fitness_array)
+    counterstabilities = variate_model_generator.get_fitness_unstability_scores(1.0 - feature_presence_matrix,
+                                                                                fitness_array)
 
-    features_with_unstabilities_and_counterstabilities = list(zip(features_to_be_considered, unstabilities, counterstabilities))
+    features_with_unstabilities_and_counterstabilities = list(
+        zip(features_to_be_considered, unstabilities, counterstabilities))
 
     features_with_unstabilities_and_counterstabilities.sort(key=lambda x: min(x[1], x[2]))
 
     for feature, unstability, counterstability in features_with_unstabilities_and_counterstabilities:
         problem.pretty_print_feature(hot_encoder.feature_from_hot_encoding(feature))
         print(f"(Has unstability = {unstability:.2f}, counterstability = {counterstability:.2f}")
-
-
 
     print("We will be training the surrogate scorer using the most stable features")
 
@@ -243,6 +249,7 @@ def test_explorer(problem):
 
     print("Generating surrogate scores and comparing them to actual scores")
 
+
 def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
     search_space = problem.search_space
     training_data = get_problem_training_data(problem, 2000)
@@ -261,9 +268,9 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
         problem.pretty_print_candidate(new_candidate)
         print(f"(has actual score of {score})\n")
 
-
     detectors = [Version_B.VariateModels.FeatureDetector(search_space, feature_list)
-                                                        for feature_list in [fit_features, unfit_features, pop_features]]
+                 for feature_list in [fit_features, unfit_features, pop_features]]
+
     def candidate_to_model_input(candidateC):
         [fit_feature_vector,
          unfit_feature_vector,
@@ -279,9 +286,9 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
     # own
-    own_regressor = Version_B.SurrogateScorer.SurrogateScorer(model_power=2, search_space=search_space, featuresH = fit_features+unfit_features+pop_features)
+    own_regressor = Version_B.SurrogateScorer.SurrogateScorer(model_power=2, search_space=search_space,
+                                                              featuresH=fit_features + unfit_features + pop_features)
     own_regressor.train(original_candidates, scores)
     own_regressor.make_picky()
 
@@ -305,11 +312,10 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
     mlp_regressor = MLPRegressor(random_state=42)
     mlp_regressor.fit(X_train, y_train)
 
-
-
-    regressors = [decision_tree_regressor, lasso_regressor, gradient_boosting_regressor, random_forest_regressor, mlp_regressor]
-    headers = ["actual", "own", "Decision Tree", "Lasso Prediction", "Gradient Boosting", "random_forest_regressor", "mlp_regressor"]
-
+    regressors = [decision_tree_regressor, lasso_regressor, gradient_boosting_regressor, random_forest_regressor,
+                  mlp_regressor]
+    headers = ["actual", "own", "Decision Tree", "Lasso Prediction", "Gradient Boosting", "random_forest_regressor",
+               "mlp_regressor"]
 
     def get_test_datapoint():
         candidate = search_space.get_random_candidate()
@@ -321,19 +327,22 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
 
         return [actual_score, own_prediction] + other_predictions
 
-
-
     output_onto_csv_file(get_appropriate_filename(problem, tags=["all"]),
-                         headers = headers,
-                         generator_function = get_test_datapoint,
-                         how_many_samples = 1000)
+                         headers=headers,
+                         generator_function=get_test_datapoint,
+                         how_many_samples=1000)
 
 
+def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+    features, scores = Version_B.FeatureFinder.find_features(problem=problem,
+                                                             depth=depth,
+                                                             importance_of_explainability=importance_of_explainability,
+                                                             sample_size=1000,
+                                                             for_novelty=False)
 
+    print(f"For the problem {problem}, the found features are:")
+    pretty_print_features(problem, features, combinatorial=True)
 
 
 if __name__ == '__main__':
-    problem = binval
-    get_explainable_features(problem, get_problem_training_data(problem, 600))
-    # big things are coming!
-
+    test_finder(trap5)
