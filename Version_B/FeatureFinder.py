@@ -220,7 +220,7 @@ class FeatureFilter:
         average_fitnesses = self.precomputed_data_for_features.get_average_fitness_vector()
         average_overall_fitness = self.precomputed_data_for_features.get_overall_average_fitness()
         fitness_distance = np.abs(average_fitnesses - average_overall_fitness)  # TODO here use a t test instead
-        return utils.remap_array_in_zero_one(fitness_distance)
+        return utils.remap_array_in_zero_one(fitness_distance) ** 2
 
     def get_novelty_array(self) -> np.ndarray:
         observed_proportions = self.precomputed_data_for_features.get_observed_proportions()
@@ -279,7 +279,7 @@ class FeatureDeveloper:
                             for var, val in self.search_space.get_all_var_val_pairs()]
 
         feature_filter = self.get_filter(trivial_features)
-        scores = feature_filter.get_scores_of_features()
+        scores = feature_filter.get_scores_of_features(with_criteria=False)
 
         return ParentPool(trivial_features, scores)  # note how they don't get filtered!
 
@@ -337,10 +337,10 @@ class FeatureDeveloper:
             return iteration >= criteria_threshold
 
         # TODO choose good numbers
-        for i in range(self.depth):
+        for i in range(self.depth-1):
             use_heuristic = should_use_heuristic(i)
             use_criteria = should_use_criteria(i)
-            amount_to_keep_per_category = self.search_space.total_cardinality * ((i + 2) ** 2)
+            amount_to_keep_per_category = int(self.search_space.total_cardinality ** ((i+2) / 2))
 
             if use_heuristic:
                 amount_to_consider = amount_to_keep_per_category ** 2
@@ -348,8 +348,10 @@ class FeatureDeveloper:
                 amount_to_consider = amount_to_keep_per_category
 
 
-            print(f"On the {i}th loop of develop_features, {use_heuristic =}, {use_criteria =}")
-            print(f"{amount_to_keep_per_category = }, {amount_to_consider = }")
+            print(f"On the {i}th loop of develop_features, {use_heuristic = },"
+                  f" {use_criteria = }, "
+                  f"{amount_to_keep_per_category = }, "
+                  f"{amount_to_consider = }")
             self.new_iteration(amount_to_consider,
                                amount_to_keep_per_category,
                                heuristic=use_heuristic,
@@ -377,11 +379,27 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                                          importance_of_explainability=importance_of_explainability,
                                          for_novelty=for_novelty)
 
-    feature_developer.develop_features(heuristic="initially")
+    feature_developer.develop_features(heuristic=True)
 
     intermediate_features, scores = feature_developer.get_developed_features()
     raw_features = [intermediate.feature for intermediate in intermediate_features]
+
+    give_explainability_and_average_fitnesses(raw_features, sample_data, problem)
     return raw_features, scores
+
+
+
+def give_explainability_and_average_fitnesses(features: list[SearchSpace.Feature],
+                                              population_sample: PopulationSamplePrecomputedData,
+                                              problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+    sample_with_features = PopulationSampleWithFeaturesPrecomputedData(population_sample, features)
+    fitnesses = sample_with_features.get_average_fitness_vector()
+    complexities = np.array([problem.get_complexity_of_feature(feature) for feature in features])
+
+    for feature, fitness, complexity in zip(features, fitnesses, complexities):
+        problem.pretty_print_feature(feature)
+        print(f"Has {fitness = :.2f}, {complexity = :.2f}")
+
 
     # TODO:
 
