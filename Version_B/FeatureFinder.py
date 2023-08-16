@@ -374,7 +374,7 @@ class FeatureDeveloper:
                                                                       for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features)
 
-        return feature_filterer.get_the_best_features(self.search_space.total_cardinality)
+        return feature_filterer.get_the_best_features(self.search_space.total_cardinality, with_criteria=True)
 
 
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
