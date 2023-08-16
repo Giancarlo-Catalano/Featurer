@@ -8,6 +8,7 @@ import utils
 import VariateModels
 from FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
 
+
 class ParentPool:
     """this is a data structure to store a list of features and their scores"""
     """ The scores indicate how good a feature is, in terms of explainability and either fitness or novelty,
@@ -19,7 +20,6 @@ class ParentPool:
 
     precomputed_cumulative_list: list[float]
 
-
     def __init__(self, features, weights):
         self.features = features
         self.weights = weights
@@ -28,12 +28,8 @@ class ParentPool:
     def select_parent_randomly(self) -> SearchSpace.Feature:
         return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list)
 
-
     def get_raw_features(self):
         return [intermediate.feature for intermediate in self.features]
-
-
-
 
 
 class FeatureMixer:
@@ -56,7 +52,6 @@ class FeatureMixer:
 
         self.asexual = asexual
 
-
     def select_parents(self) -> (IntermediateFeature, IntermediateFeature):
         return (self.parent_set_1.select_parent_randomly(), self.parent_set_2.select_parent_randomly())
 
@@ -74,8 +69,8 @@ class FeatureMixer:
 
         return list(result)
 
-
-    def add_merged_if_mergeable(self, accumulator: set[IntermediateFeature],
+    @staticmethod
+    def add_merged_if_mergeable(accumulator: set[IntermediateFeature],
                                 mother: IntermediateFeature,
                                 father: IntermediateFeature):
         if can_be_merged(mother, father):
@@ -88,7 +83,7 @@ class FeatureMixer:
 
         for row, row_feature in reversed(list(enumerate(self.parent_set_1.features))):
             for column_feature in self.parent_set_2.features[-1:row:-1]:  # mamma mia
-                successfully_added = self.add_merged_if_mergeable(result, row_feature, column_feature)
+                successfully_added = FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
                 if successfully_added and len(result) >= amount:
                     return list(result)
 
@@ -98,7 +93,7 @@ class FeatureMixer:
         result = set()
         for row_feature in reversed(self.parent_set_2.features):
             for column_feature in reversed(self.parent_set_1.features):
-                successfully_added = self.add_merged_if_mergeable(result, row_feature, column_feature)
+                successfully_added = FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
                 if successfully_added and len(result) >= amount:
                     return list(result)
 
@@ -111,13 +106,13 @@ class FeatureMixer:
         else:
             return self.get_heuristic_mixed_features_different_parents(amount)
 
+
 class PopulationSamplePrecomputedData:
     search_space: SearchSpace.SearchSpace
     hot_encoder: HotEncoding.HotEncoder
     candidate_matrix: np.ndarray
     fitness_array: np.ndarray
     sample_size: int
-
 
     def __init__(self, search_space, population_sample, fitness_list):
         self.search_space = search_space
@@ -137,17 +132,18 @@ class PopulationSampleWithFeaturesPrecomputedData:
     count_for_each_feature: np.ndarray
     complexity_array: np.ndarray
 
-
-    def __init__(self, population_precomputed: PopulationSamplePrecomputedData, intermediate_features: list[IntermediateFeature]):
+    def __init__(self, population_precomputed: PopulationSamplePrecomputedData,
+                 intermediate_features: list[IntermediateFeature]):
         self.population_sample_precomputed = population_precomputed
-        self.hot_encoded_features = [self.population_sample_precomputed.hot_encoder.feature_to_hot_encoding(intermediate_feature.feature)
-                                     for intermediate_feature in intermediate_features]
+        self.hot_encoded_features = [
+            self.population_sample_precomputed.hot_encoder.feature_to_hot_encoding(intermediate_feature.feature)
+            for intermediate_feature in intermediate_features]
 
-        self.feature_presence_matrix = VariateModels.get_feature_presence_matrix(self.population_sample_precomputed.candidate_matrix,
-                                                                                 self.hot_encoded_features)
+        self.feature_presence_matrix = VariateModels.get_feature_presence_matrix(
+            self.population_sample_precomputed.candidate_matrix,
+            self.hot_encoded_features)
 
         self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
-
 
     def get_average_fitness_vector(self) -> np.ndarray:
         """returns the vector of average fitnesses for each feature"""
@@ -155,7 +151,6 @@ class PopulationSampleWithFeaturesPrecomputedData:
                                                       self.population_sample_precomputed.fitness_array)
 
         return np.where(self.count_for_each_feature == 0.0, 0.0, sum_of_fitnesses / self.count_for_each_feature)
-
 
     def get_overall_average_fitness(self):
         """returns the average fitness over the entire population"""
@@ -167,7 +162,10 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
 
 class FeatureFilter:
-    """this class accepts a list of features, assesses them based on a given population sample, and decides which are good"""
+    """this class accepts a list of features, and can
+        * create scores based on their explainability + fitness / novelty
+        * filter the given features based on those scores
+    """
     current_features: list[IntermediateFeature]
     precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
     complexity_array: np.ndarray
@@ -180,7 +178,7 @@ class FeatureFilter:
                  precomputed_sample_data,
                  complexity_function,
                  importance_of_explainability,
-                 expected_proportions = None):
+                 expected_proportions=None):
         self.current_features = initial_features
         self.precomputed_data_for_features = PopulationSampleWithFeaturesPrecomputedData(precomputed_sample_data,
                                                                                          self.current_features)
@@ -189,19 +187,19 @@ class FeatureFilter:
         self.for_novelty = (expected_proportions is not None)
         self.expected_proportions = expected_proportions
 
-
     def get_explainability_array(self) -> np.ndarray:
         return 1.0 - utils.remap_array_in_zero_one(self.complexity_array)
 
     def get_fitness_relevance_array(self) -> np.ndarray:
         average_fitesses = self.precomputed_data_for_features.get_average_fitness_vector()
         average_overall_fitness = self.precomputed_data_for_features.get_overall_average_fitness()
-        fitness_distance = np.abs(average_fitesses-average_overall_fitness) # TODO here use a t test instead
+        fitness_distance = np.abs(average_fitesses - average_overall_fitness)  # TODO here use a t test instead
         return utils.remap_array_in_zero_one(fitness_distance)
 
     def get_novelty_array(self) -> np.ndarray:
         observed_proportions = self.precomputed_data_for_features.get_observed_proportions()
-        distance_from_expected = np.abs(observed_proportions - self.expected_proportions)  # TODO here use a Chi squared metric instead
+        distance_from_expected = np.abs(
+            observed_proportions - self.expected_proportions)  # TODO here use a Chi squared metric instead
         return 1.0 - distance_from_expected
 
     def get_scores_of_features(self) -> np.ndarray:
@@ -209,7 +207,7 @@ class FeatureFilter:
         criteria_scores = self.get_novelty_array() if self.for_novelty else self.get_fitness_relevance_array()
 
         return utils.weighted_sum(explainabilities, self.importance_of_explainability,
-                                  criteria_scores, 1.0-self.importance_of_explainability)
+                                  criteria_scores, 1.0 - self.importance_of_explainability)
 
     def get_the_best_features(self, how_many_to_keep: int) -> (list[IntermediateFeature], np.ndarray):
         scores = self.get_scores_of_features()
@@ -217,9 +215,6 @@ class FeatureFilter:
         sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
         features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
         return features, np.array(scores_list)
-
-
-
 
 
 class FeatureDeveloper:
@@ -231,7 +226,6 @@ class FeatureDeveloper:
     complexity_function: Any  # SearchSpace.Feature -> float
     importance_of_explainability: float
     for_novelty: bool
-
 
     def get_filter(self, intermediates):
         # TODO: in the future you might want the expected proportions to be obtained from previous iterations of the GA!
@@ -251,7 +245,6 @@ class FeatureDeveloper:
                                  self.importance_of_explainability,
                                  expected_proportions=None)
 
-
     def get_trivial_parent_pool(self):
         trivial_features = [IntermediateFeature.get_trivial_feature(var, val)
                             for var, val in self.search_space.get_all_var_val_pairs()]
@@ -261,16 +254,13 @@ class FeatureDeveloper:
 
         return ParentPool(trivial_features, scores)  # note how they don't get filtered!
 
-
-
-
     def __init__(self,
                  search_space,
                  population_sample,
                  depth,
                  complexity_function,
                  importance_of_explainability,
-                 for_novelty = False):
+                 for_novelty=False):
         self.search_space = search_space
         self.population_sample = population_sample
         self.depth = depth
@@ -281,14 +271,10 @@ class FeatureDeveloper:
         self.previous_iterations = [self.get_trivial_parent_pool()]
 
     def get_parent_pool_of_weight(self, weight):
-        return self.previous_iterations[weight-1]
+        return self.previous_iterations[weight - 1]
 
-
-
-
-
-    def new_iteration(self, amount_to_consider: int, amount_to_return: int, heuristic = False):
-        new_weight = len(self.previous_iterations)+1
+    def new_iteration(self, amount_to_consider: int, amount_to_return: int, heuristic=False):
+        new_weight = len(self.previous_iterations) + 1
         parent_weight_1 = new_weight // 2
         parent_weight_2 = new_weight - parent_weight_1
 
@@ -309,7 +295,7 @@ class FeatureDeveloper:
         features, scores = feature_filter.get_the_best_features(amount_to_return)
         self.previous_iterations.append(ParentPool(features, scores))
 
-    def develop_features(self, heuristic = False):
+    def develop_features(self, heuristic=False):
         for i in range(self.depth):
             amount_to_keep_per_category = self.search_space.total_cardinality
             amount_to_consider = amount_to_keep_per_category ** 2
@@ -322,7 +308,6 @@ class FeatureDeveloper:
         feature_filterer = self.get_filter(developed_features)
 
         return feature_filterer.get_the_best_features(self.search_space.total_cardinality)
-
 
     # TODO:
 
@@ -342,4 +327,3 @@ class FeatureDeveloper:
         
         * decide how the greedy heuristic approach should consider more features before returning.
     """
-
