@@ -97,7 +97,7 @@ class HotEncoder:
         return all([is_valid_one_hot_encoding(enc) for enc in deconcatted])
 
 
-def merge_features(feature_hot_a, feature_hot_b):
+def merge_features(feature_hot_a: np.ndarray, feature_hot_b: np.ndarray):
     return np.minimum(feature_hot_a + feature_hot_b, 1)
 
 

@@ -85,10 +85,11 @@ class CandidateValidator:
         return flat_outer_for_each_feature @ self.clash_matrix
 
 
-    def is_candidate_valid(self, candidateH) -> bool:
-        candidate_matrix = utils.as_row_matrix(candidateH)
+    def is_hot_encoded_candidate_valid(self, candidate: np.ndarray) -> bool:
+        candidate_matrix = utils.as_row_matrix(candidate)
         flat_outer = utils.flat_outer_product(candidate_matrix)
         return np.dot(flat_outer, self.clash_matrix) == 0.0
+
 
 
 def get_feature_presence_matrix_from_feature_matrix(candidate_matrix: np.ndarray,
