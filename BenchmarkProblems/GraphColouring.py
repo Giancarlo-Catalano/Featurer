@@ -58,7 +58,9 @@ class GraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combinatorial
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """returns area of bounding box / area of board"""
-        return super().amount_of_set_values_in_feature(feature)
+        amount_of_set_vars = super().amount_of_set_values_in_feature(feature)
+        amount_of_distinct_colours = len(set([val for var, val in feature.var_vals]))
+        return (amount_of_distinct_colours/self.amount_of_colours) + (amount_of_set_vars/self.amount_of_nodes)*2
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         def are_different_colours(node_x, node_y):
