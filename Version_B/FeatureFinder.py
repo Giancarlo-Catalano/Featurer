@@ -263,7 +263,7 @@ class FeatureFilter:
             raise Exception("The criterion for scoring was not specified")
 
     def get_scores_of_features(self, additional_criteria: Optional[ScoringCriterion]) -> np.ndarray:
-        explainabilities = self.get_explainability_array()
+        explainabilities = self.get_requested_score(ScoringCriterion.EXPLAINABILITY)
 
         if additional_criteria is None:
             return explainabilities
@@ -376,7 +376,7 @@ class FeatureDeveloper:
     def how_many_features_to_keep_in_weight_category(self, weight):
         total_amount_possible = utils.binomial_coeff(self.search_space.dimensions, weight) * (
                     weight ** self.search_space.average_cardinality)
-        return int(utils.binomial_coeff(self.search_space.dimensions, weight) * self.search_space.average_cardinality)
+        return int(utils.binomial_coeff(self.search_space.dimensions, weight) * self.search_space.average_cardinality * self.depth)
 
     def develop_features(self, heuristic=False):
 

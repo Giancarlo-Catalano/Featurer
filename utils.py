@@ -310,6 +310,14 @@ def remap_array_in_zero_one(input_array):
 
     return (input_array - min_value) / (max_value - min_value)
 
+def remap_array_in_zero_one_ammortise(input_array):
+    amount_of_items = len(input_array)
+    positions = np.arange(start=0, stop=amount_of_items, dtype = float) / (amount_of_items-1)
+
+    zipped = sorted(zip(input_array, positions), key=utils.first)
+    _, rearranged_positions = unzip(zipped)
+    return np.array(rearranged_positions)
+
 
 def remap_array_in_zero_one_ignore_zeros(input_array):
 
@@ -387,5 +395,7 @@ def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
 
 def divide_arrays_safely(numerator, deniminator):
     return np.divide(numerator, deniminator, out=np.zeros_like(numerator), where=deniminator != 0.0)
+
+
 
 
