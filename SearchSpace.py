@@ -69,6 +69,10 @@ class SearchSpace:
     def total_cardinality(self):
         return sum(self.cardinalities)  # there's other ways, but this is more change resistant
 
+    @property
+    def average_cardinality(self):
+        return self.total_cardinality / self.dimensions
+
     def get_random_candidate(self):
         return Candidate(tuple((random.randrange(card) for card in self.cardinalities)))
 

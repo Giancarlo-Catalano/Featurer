@@ -337,8 +337,9 @@ def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialPro
     features, scores = Version_B.FeatureFinder.find_features(problem=problem,
                                                              depth=depth,
                                                              importance_of_explainability=importance_of_explainability,
+                                                             heuristic = True,
                                                              sample_size=1000,
-                                                             for_novelty=False)
+                                                             criteria=Version_B.FeatureFinder.ScoringCriterion.HIGH_FITNESS)
 
     print(f"For the problem {problem}, the found features are:")
     pretty_print_features(problem, features, combinatorial=True)
@@ -347,4 +348,4 @@ def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialPro
 if __name__ == '__main__':
     problem = trap5
     # print(f"The problem is {problem.long_repr()}")
-    test_finder(checkerboard)
+    test_finder(problem)
