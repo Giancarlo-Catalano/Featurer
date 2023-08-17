@@ -177,7 +177,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
         sum_of_fitnesses = utils.weighted_sum_of_rows(self.feature_presence_matrix,
                                                       self.population_sample_precomputed.fitness_array)
 
-        return np.where(self.count_for_each_feature == 0.0, 0.0, sum_of_fitnesses / self.count_for_each_feature)
+        return utils.divide_arrays_safely(sum_of_fitnesses, self.count_for_each_feature)
 
     def get_overall_average_fitness(self):
         """returns the average fitness over the entire population"""

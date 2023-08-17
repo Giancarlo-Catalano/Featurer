@@ -346,6 +346,6 @@ def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialPro
 
 
 if __name__ == '__main__':
-    problem = trap5
+    problem = graph_colouring
     # print(f"The problem is {problem.long_repr()}")
     test_finder(problem)
