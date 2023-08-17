@@ -234,6 +234,8 @@ class FeatureDeveloper:
     complexity_function: Any  # SearchSpace.Feature -> float
     importance_of_explainability: float
     additional_criteria: Optional[ScoringCriterion]
+    amount_requested: int
+    thoroughness: float
 
     def get_filter(self, intermediates: list[IntermediateFeature]):
         # TODO: in the future you might want the expected proportions to be obtained from previous iterations of the GA!
@@ -258,13 +260,18 @@ class FeatureDeveloper:
 
         return ParentPool(trivial_features, scores)  # note how they don't get filtered!
 
+
+    def get_expected_amount_at_the_end(self) -> int:
+        return self.search_space.total_cardinality
+
     def __init__(self,
                  search_space,
                  population_sample,
                  depth,
                  complexity_function,
                  importance_of_explainability,
-                 additional_criteria: Optional[ScoringCriterion]):
+                 additional_criteria: Optional[ScoringCriterion],
+                 amount_requested):
         self.search_space = search_space
         self.population_sample = population_sample
         self.depth = depth
@@ -272,6 +279,9 @@ class FeatureDeveloper:
         self.importance_of_explainability = importance_of_explainability
         self.additional_criteria = additional_criteria
         self.previous_iterations = [self.get_trivial_parent_pool()]
+        self.amount_requested = amount_requested
+        expected_full_amount_at_the_end = self.get_expected_amount_at_the_end()
+        self.thoroughness = min(self.amount_requested / expected_full_amount_at_the_end, 1)
 
     def get_parent_pool_of_weight(self, weight):
         return self.previous_iterations[weight - 1]
@@ -342,7 +352,7 @@ class FeatureDeveloper:
             weight = i + 2
 
             amount_to_consider = self.how_many_features_to_consider_in_weight_category(weight,
-                                                                                       thoroughness=0.5 if use_heuristic else 0.25)
+                                                                                       thoroughness=self.thoroughness if use_heuristic else self.thoroughness/2)
             amount_to_keep = self.how_many_features_to_keep_in_weight_category(weight)
 
             print(f"On the {i}th loop of develop_features, {use_heuristic = },"
@@ -360,7 +370,7 @@ class FeatureDeveloper:
                                                                       for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features)
 
-        return feature_filterer.get_the_best_features(self.search_space.total_cardinality, self.additional_criteria)
+        return feature_filterer.get_the_best_features(self.amount_requested, self.additional_criteria)
 
 
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
@@ -368,13 +378,15 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                   importance_of_explainability: float,
                   sample_data: PopulationSamplePrecomputedData,
                   heuristic,
-                  criteria: Optional[ScoringCriterion]) -> (list[SearchSpace.Feature], np.ndarray):
+                  criteria: Optional[ScoringCriterion],
+                  amount_requested: int) -> (list[SearchSpace.Feature], np.ndarray):
     feature_developer = FeatureDeveloper(search_space=problem.search_space,
                                          population_sample=sample_data,
                                          depth=depth,
                                          complexity_function=problem.get_complexity_of_feature,
                                          importance_of_explainability=importance_of_explainability,
-                                         additional_criteria=criteria)
+                                         additional_criteria=criteria,
+                                         amount_requested = amount_requested)
 
     feature_developer.develop_features(heuristic=heuristic)
 

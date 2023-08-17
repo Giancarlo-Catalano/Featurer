@@ -222,4 +222,8 @@ class Sampler:
 
             attempts += 1
 
-        return self.hot_encoder.candidate_from_hot_encoding(current_state)  # TODO this is now broken
+        return self.hot_encoder.candidate_from_hot_encoding(current_state)
+
+
+
+    # TODO: somewhere the tentative candidate is being converted into an erroneous hot encoded form

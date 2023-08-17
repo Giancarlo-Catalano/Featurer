@@ -55,25 +55,29 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
 def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
-                 criteria: ScoringCriterion):
+                 criteria: ScoringCriterion,
+                 amount_requested: int):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
                                      depth=depth,
                                      importance_of_explainability=importance_of_explainability,
                                      heuristic=True,
                                      sample_data=sample_data,
-                                     criteria=criteria)
+                                     criteria=criteria,
+                                     amount_requested=amount_requested)
     return features
 
 
-def get_sampler(problem: CombinatorialProblem, training_data: PopulationSamplePrecomputedData) -> Sampler:
+def get_sampler(problem: CombinatorialProblem,
+                training_data: PopulationSamplePrecomputedData,
+                amount_of_features_per_sampler) -> Sampler:
     print("Constructing the sampler, involves finding:")
     print("\t -fit features")
-    fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS)
+    fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS, amount_of_features_per_sampler)
     print("\t -unfit features")
-    unfit_features = get_features(problem, training_data, ScoringCriterion.LOW_FITNESS)
+    unfit_features = get_features(problem, training_data, ScoringCriterion.LOW_FITNESS, amount_of_features_per_sampler)
     print("\t -novel features")
-    novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY)
+    novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
 
     sampler = Sampler(search_space=problem.search_space,
                       fit_features=fit_features,
@@ -88,16 +92,17 @@ def get_sampler(problem: CombinatorialProblem, training_data: PopulationSamplePr
 
 
 if __name__ == '__main__':
-    problem = checkerboard
+    problem = onemax
     training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS
-    features = get_features(problem, training_data, criteria)
+    requested_amount_of_features = problem.search_space.total_cardinality
+    features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")
     pretty_print_features(problem, features, combinatorial=True)
 
-    sampler = get_sampler(problem, training_data)
+    sampler = get_sampler(problem, training_data, requested_amount_of_features//2)
 
     print("We can sample some individuals")
     how_many_to_sample = 6
