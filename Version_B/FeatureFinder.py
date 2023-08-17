@@ -137,7 +137,9 @@ class PopulationSamplePrecomputedData:
     fitness_array: np.ndarray
     sample_size: int
 
-    def __init__(self, search_space, population_sample, fitness_list):
+    def __init__(self, search_space: SearchSpace.SearchSpace,
+                 population_sample: list[SearchSpace.Candidate],
+                 fitness_list: list[float]):
         self.search_space = search_space
         self.candidate_matrix = HotEncoding.hot_encode_candidate_population(population_sample, self.search_space)
         self.fitness_array = np.array(fitness_list)
@@ -422,10 +424,9 @@ class FeatureDeveloper:
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
                   depth: int,
                   importance_of_explainability: float,
-                  sample_size: int,
+                  sample_data: PopulationSamplePrecomputedData,
                   heuristic,
                   criteria: Optional[ScoringCriterion]) -> (list[SearchSpace.Feature], np.ndarray):
-    sample_data = PopulationSamplePrecomputedData.from_problem(problem, sample_size)
     feature_developer = FeatureDeveloper(search_space=problem.search_space,
                                          population_sample=sample_data,
                                          depth=depth,

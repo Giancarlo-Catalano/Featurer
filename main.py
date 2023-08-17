@@ -17,6 +17,7 @@ from Version_B.SurrogateScorer import SurrogateScorer
 import Version_B.FeatureExplorer
 from Version_B.VariateModels import VariateModels
 import Version_B.FeatureFinder
+from Version_B.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
 import csv
 
 from sklearn.linear_model import LinearRegression, Lasso
@@ -34,12 +35,19 @@ depth = 4
 importance_of_explainability = 0.3
 
 
-def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
+def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
+                              sample_size) -> (list[SearchSpace.Candidate], list[float]):
     search_space = problem.search_space
     random_candidates = [search_space.get_random_candidate() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
+
+
+def get_problem_compact_training_data(problem: CombinatorialProblem.CombinatorialProblem,
+                                      sample_size) -> PopulationSamplePrecomputedData:
+    training_samples, fitness_list = get_problem_training_data(problem, sample_size)
+    return PopulationSamplePrecomputedData(problem.search_space, training_samples, fitness_list)
 
 
 def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
@@ -333,19 +341,50 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
                          how_many_samples=1000)
 
 
-def test_finder(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+def get_features(problem: CombinatorialProblem,
+                 sample_data: PopulationSamplePrecomputedData,
+                 criteria: ScoringCriterion):
+    print("Finding the features...")
     features, scores = Version_B.FeatureFinder.find_features(problem=problem,
                                                              depth=depth,
                                                              importance_of_explainability=importance_of_explainability,
-                                                             heuristic = True,
-                                                             sample_size=1000,
-                                                             criteria=Version_B.FeatureFinder.ScoringCriterion.HIGH_FITNESS)
+                                                             heuristic=True,
+                                                             sample_data=sample_data,
+                                                             criteria=criteria)
+    return features
 
-    print(f"For the problem {problem}, the found features are:")
-    pretty_print_features(problem, features, combinatorial=True)
+
+def get_sampler(problem: CombinatorialProblem):
+    print("Constructing the sampler, involves finding:")
+    print("\t -fit features")
+    fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS)
+    print("\t -unfit features")
+    unfit_features = get_features(problem, training_data, ScoringCriterion.LOW_FITNESS)
+    print("\t -novel features")
+    novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY)
+
+    sampler = ESTEEM_Sampler(search_space=problem.search_space,
+                             fit_features=fit_features,
+                             unfit_features=unfit_features,
+                             unpopular_features=novel_features,
+                             importance_of_novelty=0.1)
+
+    sampler.train(*get_problem_training_data(problem, 1000))
 
 
 if __name__ == '__main__':
     problem = graph_colouring
+    training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem.long_repr()}")
-    test_finder(problem)
+    criteria = ScoringCriterion.HIGH_FITNESS
+    features = get_features(problem, training_data, criteria)
+
+    print(f"For the problem {problem}, the found features are:")
+    pretty_print_features(problem, features, combinatorial=True)
+
+    sampler = get_sampler(problem)
+
+    print("We can sample some individuals")
+    how_many_to_sample = 6
+    # for _ in range(how_many_to_sample):
+    #     new_individual = sampler.sample()
