@@ -1,4 +1,4 @@
-import CombinatorialProblem
+from BenchmarkProblems import CombinatorialProblem
 import SearchSpace
 
 

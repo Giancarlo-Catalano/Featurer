@@ -12,6 +12,7 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 10)
+c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, going_to_the_beach=True, need_to_pay=True)
 
 depth = 4
 importance_of_explainability = 0.5
@@ -95,9 +96,9 @@ def get_sampler(problem: CombinatorialProblem,
 
 
 if __name__ == '__main__':
-    problem = graph_colouring
-    maximise = True
-    training_data = get_problem_compact_training_data(problem, sample_size=1000)
+    problem = c_knapsack
+    maximise = False
+    training_data = get_problem_compact_training_data(problem, sample_size=10000)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = 60
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     print(f"For the problem {problem}, the found features are:")
     pretty_print_features(problem, features, combinatorial=True)
 
-    sampler = get_sampler(problem, training_data, requested_amount_of_features)
+    sampler = get_sampler(problem, training_data, requested_amount_of_features, maximise)
 
     print("We can sample some individuals")
     how_many_to_sample = 6
@@ -115,7 +116,7 @@ if __name__ == '__main__':
         actual_score = problem.score_of_candidate(new_individual)
 
         print(f"{problem.candidate_repr(new_individual)}\n"
-              f"Has score {actual_score}\n")
+              f"Has score {actual_score:.2f}\n")
 
 
 

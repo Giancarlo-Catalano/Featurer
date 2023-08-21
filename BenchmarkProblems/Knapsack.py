@@ -1,6 +1,7 @@
 from typing import Optional
 
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
+from BenchmarkProblems.CombinatorialConstrainedProblem import CombinatorialConstrainedProblem
 import SearchSpace
 
 
@@ -54,12 +55,15 @@ travel_towel = Item("travel towel", 2.00, 30, 7)
 thermos = Item("thermos", 2.00, 50, 6)
 crosswords = Item("crosswords", 1.50, 25, 3)
 swimming_trunks = Item("swimming_trunks", 3.00, 150, 4)
+bread = Item("bread", 0.75, 120, 5)
+coins = Item("coins", 0.00, 200, 3)
+sunscreen = Item("sunscreen", 2.00, 100, 3)
 
 all_items = [water_bottle, pen, bananas, oranges, hat, socks, laptop, playing_cards, cash, credit_card, phone_charger,
              tissues,
              book, candy, energy_drink, lock, local_map, jacket, knitting, shampoo, cutlery, headphones, earphones,
              sunglasses,
-             travel_towel, thermos, crosswords, swimming_trunks]
+             travel_towel, thermos, crosswords, swimming_trunks, bread, coins, sunscreen]
 
 
 class KnapsackProblem(CombinatorialProblem):
@@ -92,6 +96,9 @@ class KnapsackProblem(CombinatorialProblem):
                 result += "\n"
             result += f"DO NOT Bring:{absent_items}"
 
+        price, weight, volume = self.get_properties_of_candidate(self.search_space.feature_to_candidate(feature))
+        result += f"\n{price = }, {weight = }, {volume = }"
+
         return result
 
     def get_items_brought_in_candidate(self, candidate: SearchSpace.Candidate):
@@ -109,7 +116,7 @@ class KnapsackProblem(CombinatorialProblem):
         price, weight, volume = self.get_properties_of_candidate(candidate)
 
         def score_for_property(observed, expected):
-            return observed / expected
+            return abs(observed-expected) / expected
 
         return sum(score_for_property(total_property, expected)
                    for total_property, expected in zip([price, weight, volume],
@@ -118,3 +125,79 @@ class KnapsackProblem(CombinatorialProblem):
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         return super().amount_of_set_values_in_feature(feature)
+
+
+
+
+class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
+    need_to_drink: bool
+    need_to_eat: bool
+    need_to_pay: bool
+    going_to_the_beach: bool
+
+    original_problem: KnapsackProblem
+
+
+    def get_list_of_needs(self):
+        return [self.need_to_drink, self.need_to_eat, self.need_to_pay, self.going_to_the_beach]
+
+
+    def __init__(self, unconstrained_problem: KnapsackProblem, need_to_drink=False, need_to_eat=False, need_to_pay=False, going_to_the_beach=False):
+        self.need_to_drink = need_to_drink
+        self.need_to_eat = need_to_eat
+        self.need_to_pay = need_to_pay
+        self.going_to_the_beach = going_to_the_beach
+        amount_of_predicates = sum(int(necessity) for necessity in self.get_list_of_needs())
+        constraint_space = SearchSpace.SearchSpace([2]*amount_of_predicates)
+        self.original_problem = unconstrained_problem
+        super().__init__(unconstrained_problem, SearchSpace.SearchSpace(constraint_space))
+
+
+    def candidate_contains_any(self, candidate: SearchSpace.Candidate, any_of_these):
+        present_items = self.original_problem.get_items_brought_in_candidate(candidate)
+        return any(wanted_item in present_items for wanted_item in any_of_these)
+
+    def candidate_contains_all(self, candidate: SearchSpace.Candidate, all_of_these):
+        present_items = self.original_problem.get_items_brought_in_candidate(candidate)
+        return all(wanted_item in present_items for wanted_item in all_of_these)
+
+    def can_drink(self, candidate: SearchSpace.Candidate) -> bool:
+        drinkable = [water_bottle, oranges, energy_drink]
+        return self.candidate_contains_any(candidate, drinkable)
+
+    def can_eat(self, candidate: SearchSpace.Candidate) -> bool:
+        edible = [bananas, oranges, candy, bread]
+        return self.candidate_contains_any(candidate, edible)
+
+    def can_pay(self, candidate: SearchSpace.Candidate) -> bool:
+        payment_methods = [cash, credit_card, coins]
+        return self.candidate_contains_any(candidate, payment_methods)
+
+    def can_go_to_the_beach(self, candidate: SearchSpace.Candidate) -> bool:
+        for_the_beach = [hat, swimming_trunks, sunscreen]
+        return self.candidate_contains_all(candidate, for_the_beach)
+
+    def get_predicates(self, candidate_solution: SearchSpace.Candidate) -> SearchSpace.Candidate:
+        result = []
+        if self.need_to_drink:
+            result.append(self.can_drink(candidate_solution))
+        if self.need_to_eat:
+            result.append(self.can_eat(candidate_solution))
+        if self.need_to_pay:
+            result.append(self.can_pay)
+        if self.going_to_the_beach:
+            result.append(self.can_go_to_the_beach(candidate_solution))
+
+        return SearchSpace.Candidate(result)
+
+
+    def constraint_repr(self, constraint: SearchSpace.Candidate):
+        all_constraint_names = ["drink", "eat", "pay", "beach"]
+        used_constraints = [name for name, used in zip(all_constraint_names, self.get_list_of_needs())]
+
+        result = ""
+        yes = "✓"
+        no = "⤬"
+
+        return ", ".join(f"{constraint_name}({yes if satisfied else no})"
+                         for (constraint_name, satisfied) in zip(used_constraints, constraint.values))
