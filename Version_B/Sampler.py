@@ -107,10 +107,10 @@ class SingleObjectiveSampler:
 
 
 class Sampler:
-    fit_sampler: SingleObjectiveSampler
+    wanted_feature_sampler: SingleObjectiveSampler
     novelty_sampler: SingleObjectiveSampler
     uniform_sampler: SingleObjectiveSampler
-    unfit_feature_detector: VariateModels.FeatureDetector
+    unwanted_feature_detector: VariateModels.FeatureDetector
     validator: VariateModels.CandidateValidator
 
     search_space: SearchSpace.SearchSpace
@@ -119,14 +119,14 @@ class Sampler:
     importance_of_novelty: float
 
     def __init__(self, search_space: SearchSpace.SearchSpace,
-                 fit_features: list[SearchSpace.Feature],
-                 unfit_features: list[SearchSpace.Feature],
+                 wanted_features: list[SearchSpace.Feature],
+                 unwanted_features: list[SearchSpace.Feature],
                  unpopular_features: list[SearchSpace.Feature],
                  importance_of_novelty=0.5):
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
-        self.fit_features = fit_features
-        self.unfit_features = unfit_features
+        self.wanted_features = wanted_features
+        self.unwanted_features = unwanted_features
         self.unpopular_features = unpopular_features
 
         self.validator = VariateModels.CandidateValidator(self.search_space)
@@ -134,17 +134,17 @@ class Sampler:
         def get_micro_sampler(features):
             return SingleObjectiveSampler(self.search_space, features, self.validator)
 
-        self.fit_sampler = get_micro_sampler(fit_features)
-        self.novelty_sampler = get_micro_sampler(unfit_features)
+        self.wanted_feature_sampler = get_micro_sampler(wanted_features)
+        self.novelty_sampler = get_micro_sampler(unwanted_features)
         self.uniform_sampler = get_micro_sampler(self.search_space.get_all_trivial_features())
-        self.unfit_feature_detector = VariateModels.FeatureDetector(self.search_space, unfit_features)
+        self.unwanted_feature_detector = VariateModels.FeatureDetector(self.search_space, unwanted_features)
 
         self.importance_of_randomness = 0.0
         self.importance_of_novelty = importance_of_novelty
 
     def train(self, training_data: PopulationSamplePrecomputedData):
         """uses the given data to train its models"""
-        self.fit_sampler.train_for_fitness(training_data)
+        self.wanted_feature_sampler.train_for_fitness(training_data)
         self.novelty_sampler.train_for_novelty(training_data)
         self.uniform_sampler.train_for_uniformity()
 
@@ -156,7 +156,7 @@ class Sampler:
 
     def contains_worst_features(self, candidateH):
         """returns true when the candidate contains features recognised by the unfit feature detector"""
-        return self.unfit_feature_detector.candidateH_contains_any_features(candidateH)
+        return self.unwanted_feature_detector.candidateH_contains_any_features(candidateH)
 
     @property
     def model_of_choice(self):
@@ -166,7 +166,7 @@ class Sampler:
         elif random.random() < self.importance_of_novelty:
             return self.novelty_sampler
         else:
-            return self.fit_sampler
+            return self.wanted_feature_sampler
 
     def erase_random_values(self, candidate: np.ndarray, amount: int):
         result = candidate.copy()

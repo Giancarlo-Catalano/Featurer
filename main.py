@@ -70,7 +70,8 @@ def get_features(problem: CombinatorialProblem,
 
 def get_sampler(problem: CombinatorialProblem,
                 training_data: PopulationSamplePrecomputedData,
-                amount_of_features_per_sampler) -> Sampler:
+                amount_of_features_per_sampler,
+                is_maximisation_task = True) -> Sampler:
     print("Constructing the sampler, involves finding:")
     print("\t -fit features")
     fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS, amount_of_features_per_sampler)
@@ -79,9 +80,11 @@ def get_sampler(problem: CombinatorialProblem,
     print("\t -novel features")
     novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
 
+    wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (unfit_features, fit_features)
+
     sampler = Sampler(search_space=problem.search_space,
-                      fit_features=fit_features,
-                      unfit_features=unfit_features,
+                      wanted_features=wanted_features,
+                      unwanted_features=unwanted_features,
                       unpopular_features=novel_features,
                       importance_of_novelty=0.1)
 
