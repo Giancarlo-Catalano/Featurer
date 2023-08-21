@@ -37,7 +37,7 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
-        problem.pretty_print_feature(featureC)
+        print(f"{problem.feature_repr(featureC)}")
 
     def print_with_or_without_score(maybe_pair):
         if with_scores:
@@ -91,7 +91,7 @@ def get_sampler(problem: CombinatorialProblem,
 
 
 if __name__ == '__main__':
-    problem = trap5
+    problem = checkerboard
     training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS
@@ -109,9 +109,8 @@ if __name__ == '__main__':
         new_individual = sampler.sample()
         actual_score = problem.score_of_candidate(new_individual)
 
-        problem.pretty_print_candidate(new_individual)
-        print(f"Has score {actual_score}")
-        print()
+        print(f"{problem.candidate_repr(new_individual)}\n"
+              f"Has score {actual_score}\n")
 
 
 

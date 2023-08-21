@@ -120,3 +120,11 @@ class SearchSpace:
 
 def merge_two_features(feature_a, feature_b):
     return Feature(feature_a.var_vals + feature_b.var_vals)
+
+
+def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate):
+    return Candidate(candidate_a.values+candidate_b.values)
+
+
+def merge_two_spaces(space_a: SearchSpace, space_b: SearchSpace):
+    return SearchSpace(space_a.cardinalities + space_b.cardinalities)

@@ -82,7 +82,6 @@ class BTProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
         self.workers = [Worker.random(amount_of_choices) for _ in range(amount_of_workers)]
         super().__init__(SearchSpace.SearchSpace([self.amount_of_choices] * self.total_workers))
 
-
     def __repr__(self):
         # return f"BTProblem:(" \
         #        f"\n\t workers: " + \
@@ -119,10 +118,10 @@ class BTProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
         roster = self.get_resulting_roster(candidate)
         return self.get_homogeneity_of_roster(roster)
 
-    def pretty_print_feature(self, feature):
+    def feature_repr(self, feature):
         def repr_of_var_val(var, val):
             worker = self.workers[var]
             chosen_schedule = worker.available_schedules[val]
             return f"{worker.name} with rota #{val}:{chosen_schedule.__repr__()}"
 
-        print("\n".join([repr_of_var_val(var, val) for (var, val) in feature.var_vals]))
+        return "\n".join([repr_of_var_val(var, val) for (var, val) in feature.var_vals])

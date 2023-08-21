@@ -73,6 +73,6 @@ class GraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combinatorial
 
         return score
 
-    def pretty_print_feature(self, feature):
-        for var, val in feature.var_vals:
-            print(f"{self.repr_of_node(var)} is {self.repr_of_colour(val)}")
+    def feature_repr(self, feature):
+        return "\n".join([f"{self.repr_of_node(var)} is {self.repr_of_colour(val)}"
+                          for var, val in feature.var_vals])
