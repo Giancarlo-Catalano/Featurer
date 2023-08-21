@@ -350,10 +350,7 @@ class FeatureDeveloper:
             use_heuristic = should_use_heuristic(weight)
             use_criteria = should_use_criteria(weight)
 
-            amount_to_consider = self.how_many_features_to_consider_in_weight_category(weight,
-                                                                                       thoroughness=self.thoroughness if use_heuristic else self.thoroughness/2)
-            thoroughness = 0.25 if use_heuristic else 0.125
-            amount_to_consider = self.how_many_features_to_consider_in_weight_category(weight, thoroughness=thoroughness)
+            amount_to_consider = self.how_many_features_to_consider_in_weight_category(weight, thoroughness=self.thoroughness)
             amount_to_keep = self.how_many_features_to_keep_in_weight_category(weight)
 
             print(f"On the {i}th loop of develop_features, {use_heuristic = },"

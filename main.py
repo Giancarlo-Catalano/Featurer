@@ -10,11 +10,11 @@ checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
-graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
+graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 10)
 
 depth = 4
-importance_of_explainability = 0.2
+importance_of_explainability = 0.5
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -95,18 +95,18 @@ def get_sampler(problem: CombinatorialProblem,
 
 
 if __name__ == '__main__':
-    problem = knapsack
-    maximise = False
+    problem = graph_colouring
+    maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = problem.search_space.total_cardinality
+    requested_amount_of_features = 60
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")
     pretty_print_features(problem, features, combinatorial=True)
 
-    sampler = get_sampler(problem, training_data, requested_amount_of_features//2)
+    sampler = get_sampler(problem, training_data, requested_amount_of_features)
 
     print("We can sample some individuals")
     how_many_to_sample = 6

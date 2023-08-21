@@ -172,7 +172,7 @@ class Sampler:
             self.importance_of_randomness = (attempts / too_many_attempts)
             tentative_specialisation = self.model_of_choice.specialise_unsafe(accumulator)
             if self.conglomerate_is_valid(tentative_specialisation):
-                if attempts < too_many_attempts and not self.contains_worst_features(tentative_specialisation):
+                if not (attempts < too_many_attempts and self.contains_worst_features(tentative_specialisation)):
                     accumulator = tentative_specialisation
             attempts += 1
 
