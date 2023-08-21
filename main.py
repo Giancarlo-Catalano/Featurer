@@ -12,14 +12,13 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 
-depth = 4
+depth = 5
 importance_of_explainability = 0.6
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
                               sample_size) -> (list[SearchSpace.Candidate], list[float]):
-    search_space = problem.search_space
-    random_candidates = [search_space.get_random_candidate() for _ in range(sample_size)]
+    random_candidates = [problem.get_random_candidate_solution() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
@@ -92,7 +91,7 @@ def get_sampler(problem: CombinatorialProblem,
 
 
 if __name__ == '__main__':
-    problem = onemax
+    problem = trap5
     training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS

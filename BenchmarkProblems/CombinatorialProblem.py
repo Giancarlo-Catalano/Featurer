@@ -13,6 +13,10 @@ class CombinatorialProblem:
     def __repr__(self):
         return f"Generic Combinatorial Problem"
 
+
+    def get_random_candidate_solution(self):
+        return self.search_space.get_random_candidate()
+
     def get_amount_of_bits_when_hot_encoded(self):
         return self.search_space.total_cardinality
 

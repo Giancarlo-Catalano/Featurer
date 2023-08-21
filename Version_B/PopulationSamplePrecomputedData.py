@@ -24,7 +24,7 @@ class PopulationSamplePrecomputedData:
     def from_problem(cls, problem: CombinatorialProblem.CombinatorialProblem,
                      amount_of_samples: int):
         search_space = problem.search_space
-        population = [search_space.get_random_candidate() for _ in range(amount_of_samples)]
+        population = [problem.get_random_candidate_solution() for _ in range(amount_of_samples)]
         fitnesses = [problem.score_of_candidate(candidate) for candidate in population]
         return cls(search_space, population, fitnesses)
 

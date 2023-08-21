@@ -53,7 +53,7 @@ def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
 
     print("We can generate some new candidates:")
     for _ in range(12):
-        new_candidate = search_space.get_random_candidate()
+        new_candidate = problem.get_random_candidate_solution()
         score = problem.score_of_candidate(new_candidate)
         problem.pretty_print_candidate(new_candidate)
         print(f"(has actual score of {score})\n")
