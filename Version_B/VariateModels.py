@@ -114,6 +114,18 @@ def get_feature_presence_matrix(candidate_matrix, hot_encoded_features) -> np.nd
     return get_feature_presence_matrix_from_feature_matrix(candidate_matrix, feature_matrix)
 
 
+def get_between_feature_clash_matrix(search_space: SearchSpace.SearchSpace,
+                                     features: list[SearchSpace.Feature]) -> np.ndarray:
+    amount_of_features = len(features)
+    result = np.zeros((amount_of_features, amount_of_features), dtype=float)
+    for row, row_feature in enumerate(features):
+        for column, column_feature in list(enumerate(features))[row:]:
+            merged = SearchSpace.merge_two_features(row_feature, column_feature)
+            result[row, column] = int(not search_space.feature_is_valid(merged))
+
+    return result + result.T - np.diag(result)
+
+
 class VariateModels:
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space

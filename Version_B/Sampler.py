@@ -15,7 +15,7 @@ class SingleObjectiveSampler:
     hot_encoder = HotEncoding.HotEncoder
     feature_detector: VariateModels.FeatureDetector
 
-    validator: VariateModels.CandidateValidator
+    between_feature_clash_matrix: np.ndarray
 
     def __init__(self, search_space: SearchSpace.SearchSpace,
                  features: list[SearchSpace.Feature]):
@@ -23,6 +23,8 @@ class SingleObjectiveSampler:
         self.features = features
         self.hot_encoder = HotEncoding.HotEncoder(search_space)
         self.feature_detector = VariateModels.FeatureDetector(self.search_space, features)
+
+        self.between_feature_clash_matrix = VariateModels.get_between_feature_clash_matrix(search_space, features)
 
         #  To be set during training
         self.bivariate_matrix = None
@@ -68,12 +70,22 @@ class SingleObjectiveSampler:
         hot_encoded_conglomerate = self.hot_encoder.feature_to_hot_encoding(conglomerate)
         return self.feature_detector.get_feature_presence_from_candidateH(hot_encoded_conglomerate)
 
+    def feature_clash_vector(self, feature_presence_vector: np.ndarray) -> np.ndarray:
+        """returns a vector where, for each feature, it has a 1 if there's a clash with the input, 0 if it's fine"""
+        wind_sum = utils.weighted_sum_of_columns(feature_presence_vector, self.between_feature_clash_matrix).ravel()
+        return np.minimum(wind_sum, 1)
+
+
+
+
     def specialise_unsafe(self, conglomerate: SearchSpace.Feature) -> SearchSpace.Feature:
         feature_presence_vector = self.get_feature_presence_vector_in_conglomerate(conglomerate)
         distribution = (feature_presence_vector @ self.bivariate_matrix).ravel()
 
         # we remove the features that are already present
         distribution *= (1.0 - feature_presence_vector.ravel())
+        exlusion_vector = self.feature_clash_vector(feature_presence_vector)
+        distribution *= (1.0 - exlusion_vector)
 
         if np.sum(distribution) <= 0.0:  # happens when no features are present, or edge cases
             new_feature = random.choice(self.features)
@@ -157,10 +169,11 @@ class Sampler:
         attempts = 0
         too_many_attempts = self.search_space.total_cardinality * 2
         while not self.conglomerate_is_complete(accumulator):
-            self.importance_of_randomness = (attempts / too_many_attempts) ** 2
+            self.importance_of_randomness = (attempts / too_many_attempts)
             tentative_specialisation = self.model_of_choice.specialise_unsafe(accumulator)
             if self.conglomerate_is_valid(tentative_specialisation):
-                accumulator = tentative_specialisation
+                if attempts < too_many_attempts and not self.contains_worst_features(tentative_specialisation):
+                    accumulator = tentative_specialisation
             attempts += 1
 
         return self.search_space.feature_to_candidate(accumulator)

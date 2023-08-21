@@ -119,7 +119,9 @@ class SearchSpace:
 
 
 def merge_two_features(feature_a, feature_b):
-    return Feature(feature_a.var_vals + feature_b.var_vals)
+    def remove_duplicates(input_list: list):
+        return list(set(input_list))
+    return Feature(remove_duplicates(feature_a.var_vals + feature_b.var_vals))
 
 
 def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate):
