@@ -41,14 +41,14 @@ class SurrogateScorer:
 
         return np.array(result_as_list, dtype=np.float)
 
-    def __init__(self, model_power: int, search_space: SearchSpace.SearchSpace, featuresH: list, with_inverse=False):
+    def __init__(self, model_power: int, search_space: SearchSpace.SearchSpace, features: list[SearchSpace.Feature], with_inverse=False):
         self.model_power = model_power
         self.search_space = search_space
-        self.feature_detector = Version_B.VariateModels.FeatureDetector(search_space, featuresH)
+        self.feature_detector = Version_B.VariateModels.FeatureDetector(search_space, features)
         self.with_inverse = with_inverse
 
         self.variate_model_generator = Version_B.VariateModels.VariateModels(self.search_space)
-        self.redundant_cell_matrix = self.get_diagonal_cell_matrix(len(featuresH), model_power)
+        self.redundant_cell_matrix = self.get_diagonal_cell_matrix(len(features), model_power)
 
         # these are filled during training
         self.S_matrix = None

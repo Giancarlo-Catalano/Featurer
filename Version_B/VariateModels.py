@@ -9,15 +9,14 @@ class FeatureDetector:
     search_space: SearchSpace.SearchSpace
     hot_encoder: HotEncoding.HotEncoder
     detection_matrix: np.ndarray
+    amount_of_features: int
 
-    def __init__(self, search_space, featureH_pool):
+    def __init__(self, search_space, features: list[SearchSpace.Feature]):
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
-        self.detection_matrix = np.transpose(np.array(featureH_pool))
-
-    @property
-    def amount_of_features(self):
-        return self.detection_matrix.shape[1]
+        hot_encoded_features = [self.hot_encoder.feature_to_hot_encoding(feature) for feature in features]
+        self.detection_matrix = np.transpose(np.array(hot_encoded_features))
+        self.amount_of_features = len(features)
 
     def __repr__(self):
         (total_cardinality, amount_of_features) = self.detection_matrix.shape
@@ -28,17 +27,24 @@ class FeatureDetector:
         positive_when_absent = (1 - candidate_matrix) @ self.detection_matrix
         return 1 - np.minimum(positive_when_absent, 1)
 
-
     def candidateH_contains_any_features(self, candidateH):
         feature_presence_vector = self.get_feature_presence_from_candidateH(candidateH)
         return sum(feature_presence_vector) > 0.0
+
+    def candidate_contains_any_features(self, candidate: SearchSpace.Candidate) -> bool:
+        hot_candidate = self.hot_encoder.candidate_to_hot_encoding(candidate)
+        return self.candidateH_contains_any_features(hot_candidate)
+
+    def feature_contains_any_features(self, feature: SearchSpace.Feature):
+        hot_feature = self.hot_encoder.feature_to_hot_encoding(feature)
+        return self.candidateH_contains_any_features(hot_feature)
 
     def get_feature_presence_matrix_from_candidates(self, candidatesC):
         """this might get used especially to process training data in batches"""
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(candidatesC)
         return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix)
 
-    def get_feature_presence_from_candidateC(self, candidateC):
+    def get_feature_presence_from_candidateC(self, candidateC: SearchSpace.Candidate) -> np.ndarray:
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix([candidateC])
         return self.get_feature_presence_matrix_from_candidate_matrix(candidate_matrix).ravel()
 
@@ -52,7 +58,8 @@ class CandidateValidator:
     hot_encoder: HotEncoding.HotEncoder
     clash_matrix: np.ndarray
 
-    def get_search_space_flat_clash_matrix(self, search_space: SearchSpace.SearchSpace):
+    @staticmethod
+    def get_search_space_clash_matrix(search_space: SearchSpace.SearchSpace):
         unflattened = np.zeros((search_space.total_cardinality, search_space.total_cardinality))
 
         def set_clash_matrix_for_variable(var_index):
@@ -63,12 +70,17 @@ class CandidateValidator:
         for var_index in range(search_space.dimensions):
             set_clash_matrix_for_variable(var_index)
 
+        return unflattened
+
+    @staticmethod
+    def get_search_space_flat_clash_matrix(search_space: SearchSpace.SearchSpace):
+        unflattened = CandidateValidator.get_search_space_clash_matrix(search_space)
         return unflattened.ravel()
 
     def __init__(self, search_space):
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
-        self.clash_matrix = self.get_search_space_flat_clash_matrix(self.search_space)
+        self.clash_matrix = CandidateValidator.get_search_space_flat_clash_matrix(self.search_space)
 
     def __repr__(self):
         rows = self.search_space.total_cardinality
@@ -84,18 +96,17 @@ class CandidateValidator:
         flat_outer_for_each_feature = utils.row_wise_self_outer_product(featureH_matrix)
         return flat_outer_for_each_feature @ self.clash_matrix
 
-
     def is_hot_encoded_candidate_valid(self, candidate: np.ndarray) -> bool:
         candidate_matrix = utils.as_row_matrix(candidate)
         flat_outer = utils.flat_outer_product(candidate_matrix)
         return np.dot(flat_outer, self.clash_matrix) == 0.0
 
 
-
 def get_feature_presence_matrix_from_feature_matrix(candidate_matrix: np.ndarray,
-                                                   feature_matrix: np.ndarray) -> np.ndarray:
+                                                    feature_matrix: np.ndarray) -> np.ndarray:
     positive_when_absent = (1 - candidate_matrix) @ feature_matrix
     return 1 - np.minimum(positive_when_absent, 1)
+
 
 def get_feature_presence_matrix(candidate_matrix, hot_encoded_features) -> np.ndarray:
     """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
@@ -103,13 +114,10 @@ def get_feature_presence_matrix(candidate_matrix, hot_encoded_features) -> np.nd
     return get_feature_presence_matrix_from_feature_matrix(candidate_matrix, feature_matrix)
 
 
-
-
 class VariateModels:
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space
         self.hot_encoder = HotEncoding.HotEncoder(search_space)
-
 
     def get_feature_presence_matrix(self, candidate_matrix, featureH_pool) -> np.ndarray:
         """returns a matrix in which element i, j is 1 if candidate i contains feature j"""
@@ -148,16 +156,16 @@ class VariateModels:
     def get_fitness_unstability_scores(self, feature_presence_matrix, fitness_array):
         """highly experimental function, probably not useful"""
         """calculates standard_deviation / mean for each feature"""
+
         def get_unstability(observed_array, presence_array):
             amount = np.sum(presence_array)
             if amount < 2:
                 return 0.0
-            mean = np.sum(observed_array)/amount
+            mean = np.sum(observed_array) / amount
             # i have to multiply by the presence array, to only remove the appropriate cases.
             numerator = np.sum(np.square(observed_array - presence_array * mean))
             standard_deviation = np.sqrt(numerator / (amount - 1))
             return standard_deviation / mean
-
 
         observations = feature_presence_matrix * utils.to_column_vector(
             fitness_array)  # TODO this is calculated elsewhere, perhaps it can be cached?
@@ -210,13 +218,12 @@ class VariateModels:
 
         candidate_matrix = self.hot_encoder.to_hot_encoded_matrix(sample_population)
         featuresH = [self.hot_encoder.feature_to_hot_encoding(feature) for feature in features]
-        feature_presence_matrix: np.ndarray = self.get_feature_presence_matrix(candidate_matrix,featuresH)
+        feature_presence_matrix: np.ndarray = self.get_feature_presence_matrix(candidate_matrix, featuresH)
         return self.get_average_fitness_of_features_from_matrix(feature_presence_matrix, fitness_array)
 
-
     def get_fitness_relevance_scores(self, features: list[SearchSpace.Feature],
-                                                    sample_population: list[SearchSpace.Candidate],
-                                                    fitness_array: np.ndarray):
+                                     sample_population: list[SearchSpace.Candidate],
+                                     fitness_array: np.ndarray):
         """
         Returns an array of values from 0 to 1 indicating how relevant each feature is to the fitness.
         Note that the score is high whether it's a "negative" feature or a "positive" feature.
@@ -230,11 +237,9 @@ class VariateModels:
         chi_squared_scores = utils.chi_squared(observed_averages, overall_average_fitness)
         return utils.remap_array_in_zero_one(chi_squared_scores)
 
-
     def get_observed_frequency_of_features(self, feature_presence_matrix):
         count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
         return count_for_each_feature
 
     def get_expected_bivariate_model_from_marginals(self, marginals):
         return np.outer(marginals, marginals)
-

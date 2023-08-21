@@ -11,24 +11,18 @@ import numpy as np
 
 class SingleObjectiveSampler:
     features: list[SearchSpace.Feature]
-    hot_encoded_features: list[np.ndarray]
     search_space: SearchSpace.SearchSpace
-    hot_encoder: HotEncoding.HotEncoder
-
+    hot_encoder = HotEncoding.HotEncoder
     feature_detector: VariateModels.FeatureDetector
 
     validator: VariateModels.CandidateValidator
 
     def __init__(self, search_space: SearchSpace.SearchSpace,
-                 features: list[SearchSpace.Feature],
-                 validator: VariateModels.CandidateValidator):
+                 features: list[SearchSpace.Feature]):
         self.search_space = search_space
-        self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.features = features
-        self.hot_encoded_features = [HotEncoding.hot_encode_feature(feature, self.search_space) for feature in features]
-
-        self.feature_detector = VariateModels.FeatureDetector(self.search_space, self.hot_encoded_features)
-        self.validator = validator
+        self.hot_encoder = HotEncoding.HotEncoder(search_space)
+        self.feature_detector = VariateModels.FeatureDetector(self.search_space, features)
 
         #  To be set during training
         self.bivariate_matrix = None
@@ -51,59 +45,42 @@ class SingleObjectiveSampler:
 
     def train_for_uniformity(self):
         """Basically the values are 1 when the trivial features can coexist"""
-        amount_of_features = len(self.hot_encoded_features)
-        self.bivariate_matrix = 1 - self.validator.clash_matrix.reshape((amount_of_features, -1))
+        """assumes that features are exactly the trivial features, in order of their hot encoding positions"""
+        clash_matrix = VariateModels.CandidateValidator.get_search_space_clash_matrix(self.search_space)
+        self.bivariate_matrix = 1 - clash_matrix
 
     def get_starting_pseudo_candidate(self) -> SearchSpace.Feature:
         distribution_grid = np.ndarray.tolist(self.bivariate_matrix)
 
         def get_tentative_result():
             (index_for_feature_a, index_for_feature_b) = list(utils.sample_from_grid_of_weights(distribution_grid))
-            return HotEncoding.merge_features(self.hot_encoded_features[index_for_feature_a],
-                                              self.hot_encoded_features[index_for_feature_b])
+            feature_a = self.features[index_for_feature_a]
+            feature_b = self.features[index_for_feature_b]
+
+            return SearchSpace.merge_two_features(feature_a, feature_b)
 
         while True:
             tentative_result = get_tentative_result()
-            if self.validator.is_hot_encoded_candidate_valid(tentative_result):
+            if self.search_space.feature_is_valid(tentative_result):
                 return tentative_result
 
-    def get_feature_presence_vector(self, pseudo_candidate: np.ndarray) -> np.ndarray:
-        return self.feature_detector \
-            .get_feature_presence_matrix_from_candidate_matrix(utils.as_row_matrix(pseudo_candidate))
+    def get_feature_presence_vector_in_conglomerate(self, conglomerate: SearchSpace.Feature) -> np.ndarray:
+        hot_encoded_conglomerate = self.hot_encoder.feature_to_hot_encoding(conglomerate)
+        return self.feature_detector.get_feature_presence_from_candidateH(hot_encoded_conglomerate)
 
-    def get_present_features(self, pseudo_candidate: np.ndarray):
-        feature_presence_vector = self.get_feature_presence_vector(pseudo_candidate)
-        return [index for (index, presence_value) in enumerate(feature_presence_vector)
-                if presence_value > 0.5]
-
-    def specialise_unsafe(self, pseudo_candidate: np.ndarray):
-        feature_presence_vector = self.get_feature_presence_vector(pseudo_candidate)
+    def specialise_unsafe(self, conglomerate: SearchSpace.Feature) -> SearchSpace.Feature:
+        feature_presence_vector = self.get_feature_presence_vector_in_conglomerate(conglomerate)
         distribution = (feature_presence_vector @ self.bivariate_matrix).ravel()
 
         # we remove the features that are already present
         distribution *= (1.0 - feature_presence_vector.ravel())
 
-        new_feature_index = None
         if np.sum(distribution) <= 0.0:  # happens when no features are present, or edge cases
-            new_feature_index = random.randrange(len(self.hot_encoded_features))
+            new_feature = random.choice(self.features)
         else:
-            new_feature_index = utils.sample_index_with_weights(distribution)
+            new_feature = random.choices(self.features, weights=distribution, k=1)[0]
 
-        new_feature = self.hot_encoded_features[new_feature_index]
-        return HotEncoding.merge_features(pseudo_candidate, new_feature)
-
-    def specialise(self, pseudo_candidate: np.ndarray):
-        """this was decommissioned because it would get stuck!"""
-        before_specialisation = pseudo_candidate.copy()
-
-        attempts = 0
-        while True:
-            if attempts > 10:
-                print("So many attempts!")
-            attempted_specialisation = self.specialise_unsafe(before_specialisation)
-            if self.validator.is_hot_encoded_candidate_valid(attempted_specialisation):
-                return attempted_specialisation
-            attempts += 1
+        return SearchSpace.merge_two_features(conglomerate, new_feature)
 
 
 class Sampler:
@@ -111,11 +88,8 @@ class Sampler:
     novelty_sampler: SingleObjectiveSampler
     uniform_sampler: SingleObjectiveSampler
     unwanted_feature_detector: VariateModels.FeatureDetector
-    validator: VariateModels.CandidateValidator
 
     search_space: SearchSpace.SearchSpace
-    hot_encoder: HotEncoding.HotEncoder
-
     importance_of_novelty: float
 
     def __init__(self, search_space: SearchSpace.SearchSpace,
@@ -124,15 +98,12 @@ class Sampler:
                  unpopular_features: list[SearchSpace.Feature],
                  importance_of_novelty=0.5):
         self.search_space = search_space
-        self.hot_encoder = HotEncoding.HotEncoder(self.search_space)
         self.wanted_features = wanted_features
         self.unwanted_features = unwanted_features
         self.unpopular_features = unpopular_features
 
-        self.validator = VariateModels.CandidateValidator(self.search_space)
-
         def get_micro_sampler(features):
-            return SingleObjectiveSampler(self.search_space, features, self.validator)
+            return SingleObjectiveSampler(self.search_space, features)
 
         self.wanted_feature_sampler = get_micro_sampler(wanted_features)
         self.novelty_sampler = get_micro_sampler(unwanted_features)
@@ -148,15 +119,14 @@ class Sampler:
         self.novelty_sampler.train_for_novelty(training_data)
         self.uniform_sampler.train_for_uniformity()
 
-    def candidate_is_complete(self, candidate: np.ndarray):
-        """returns true when the input is a fully filled candidate"""
-        combinatorial_candidate = self.hot_encoder.candidate_from_hot_encoding(candidate)
-        amount_of_nones = sum([1 if val is None else 0 for val in combinatorial_candidate.values])
-        return amount_of_nones == 0
+    def conglomerate_is_complete(self, conglomerate: SearchSpace.Feature):
+        return self.search_space.feature_is_complete(conglomerate)
 
-    def contains_worst_features(self, candidateH):
-        """returns true when the candidate contains features recognised by the unfit feature detector"""
-        return self.unwanted_feature_detector.candidateH_contains_any_features(candidateH)
+    def conglomerate_is_valid(self, conglomerate: SearchSpace.Feature):
+        return self.search_space.feature_is_valid(conglomerate)
+
+    def contains_worst_features(self, conglomerate: SearchSpace.Feature):
+        return self.unwanted_feature_detector.feature_contains_any_features(conglomerate)
 
     @property
     def model_of_choice(self):
@@ -168,62 +138,30 @@ class Sampler:
         else:
             return self.wanted_feature_sampler
 
-    def erase_random_values(self, candidate: np.ndarray, amount: int):
-        result = candidate.copy()
-        where_can_remove = [index for index in range(len(result)) if result[index] == 1.0]
-        if amount >= len(where_can_remove):
-            return candidate
-        indices_to_reset = random.choices(where_can_remove, k=amount)
-        for i in indices_to_reset:
-            result[i]=0.0
-        return result
+    def maybe_without_some_subfeatures(self, conglomerate: SearchSpace.Feature):
+        def with_erased_vars(feature: SearchSpace.Feature, amount_to_remove: int) -> SearchSpace.Feature:
+            present_vars = feature.var_vals
+            return SearchSpace.Feature(random.sample(present_vars, k=len(present_vars) - amount_to_remove))
 
-
-    def maybe_without_some_subfeatures(self, candidate: np.ndarray):
-        if random.random() < 0.3:
+        if random.random() < self.importance_of_randomness:
             amount_of_holes = random.randrange(1, 4)
-            return self.erase_random_values(candidate, amount_of_holes)
+            return with_erased_vars(conglomerate, amount_of_holes)
         else:
-            return candidate
+            return conglomerate
 
     def sample(self):
         """ Generates a new candidate by using the many models within"""
 
-        # General process:
-
-        """
-           current_solution = generate a starting solution
-           
-           repeat until current_solution is complete:
-                tentative_specialisation = (a model).specialise(current_solution)
-                
-                if (tentative_specialisation is valid 
-                    and does not contain any really bad features
-                    current_solution = tentative_specialisation
-                    
-            return current_solution
-        """
-
-        current_state: np.ndarray = self.model_of_choice.get_starting_pseudo_candidate()
+        accumulator: SearchSpace.Feature = self.model_of_choice.get_starting_pseudo_candidate()
 
         attempts = 0
         too_many_attempts = self.search_space.total_cardinality * 2
-        while True:
-            # the uniform sampler helps prevent getting stuck in "invalidity basins"
-            self.importance_of_randomness = attempts / too_many_attempts  # impatience grows with the amount of attempts
-            if self.candidate_is_complete(current_state):
-                break
-            if attempts < too_many_attempts:
-                concurrent_state = self.maybe_without_some_subfeatures(current_state)
-            tentative_specialisation = self.model_of_choice.specialise_unsafe(current_state)
-            if self.validator.is_hot_encoded_candidate_valid(tentative_specialisation) and \
-                    not (attempts > too_many_attempts and self.contains_worst_features(tentative_specialisation)):
-                current_state = tentative_specialisation
-
+        while not self.conglomerate_is_complete(accumulator):
+            self.importance_of_randomness = (attempts / too_many_attempts) ** 2
+            tentative_specialisation = self.model_of_choice.specialise_unsafe(accumulator)
+            if self.conglomerate_is_valid(tentative_specialisation):
+                # if (attempts < too_many_attempts) and not self.contains_worst_features(tentative_specialisation):
+                accumulator = tentative_specialisation
             attempts += 1
 
-        return self.hot_encoder.candidate_from_hot_encoding(current_state)
-
-
-
-    # TODO: somewhere the tentative candidate is being converted into an erroneous hot encoded form
+        return self.search_space.feature_to_candidate(accumulator)
