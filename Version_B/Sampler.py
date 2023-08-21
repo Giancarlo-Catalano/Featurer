@@ -106,7 +106,7 @@ class Sampler:
             return SingleObjectiveSampler(self.search_space, features)
 
         self.wanted_feature_sampler = get_micro_sampler(wanted_features)
-        self.novelty_sampler = get_micro_sampler(unwanted_features)
+        self.novelty_sampler = get_micro_sampler(unpopular_features)
         self.uniform_sampler = get_micro_sampler(self.search_space.get_all_trivial_features())
         self.unwanted_feature_detector = VariateModels.FeatureDetector(self.search_space, unwanted_features)
 
@@ -160,7 +160,6 @@ class Sampler:
             self.importance_of_randomness = (attempts / too_many_attempts) ** 2
             tentative_specialisation = self.model_of_choice.specialise_unsafe(accumulator)
             if self.conglomerate_is_valid(tentative_specialisation):
-                # if (attempts < too_many_attempts) and not self.contains_worst_features(tentative_specialisation):
                 accumulator = tentative_specialisation
             attempts += 1
 
