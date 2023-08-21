@@ -1,4 +1,4 @@
-from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
 from Version_B.Sampler import Sampler
 from Version_B.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
 import HotEncoding
@@ -11,9 +11,10 @@ onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
+knapsack = Knapsack.KnapsackProblem(50.00, 1000, 10)
 
-depth = 5
-importance_of_explainability = 0.6
+depth = 4
+importance_of_explainability = 0.2
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -91,10 +92,11 @@ def get_sampler(problem: CombinatorialProblem,
 
 
 if __name__ == '__main__':
-    problem = checkerboard
+    problem = knapsack
+    maximise = False
     training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem}")
-    criteria = ScoringCriterion.HIGH_FITNESS
+    criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = problem.search_space.total_cardinality
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 

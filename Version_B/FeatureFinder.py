@@ -329,8 +329,8 @@ class FeatureDeveloper:
     def how_many_features_to_keep_in_weight_category(self, weight):
         total_amount_possible = utils.binomial_coeff(self.search_space.dimensions, weight) * (
                 weight ** self.search_space.average_cardinality)
-        return int(utils.binomial_coeff(self.search_space.dimensions,
-                                        weight) * self.search_space.average_cardinality * self.depth)
+        return int(utils.binomial_coeff(self.depth,weight) *
+                   self.search_space.total_cardinality)
 
     def develop_features(self, heuristic=False):
 

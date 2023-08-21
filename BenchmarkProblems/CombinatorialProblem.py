@@ -5,6 +5,8 @@ import utils
 class CombinatorialProblem:
     """ A minimal definition involves
 
+        - repr of the problem
+
         - calculating the search space
             (in __init__(...): { search_space = ...; super(search_space)})
 

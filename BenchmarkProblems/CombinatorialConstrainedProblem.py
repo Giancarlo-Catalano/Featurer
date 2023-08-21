@@ -11,6 +11,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
       - contains an instance of CombinatorialProblem, because it's like a stove lighter containing a bic lighter"""
 
     """Minimal implementation:
+        - repr
         - the unconstrained problem definition
         - obtaining the constraint space
             in __init__(...): 
@@ -25,6 +26,9 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
 
     unconstrained_problem: CombinatorialProblem.CombinatorialProblem
     search_space: SearchSpace.SearchSpace
+
+    def __repr__(self):
+        pass
 
     def get_predicates(self, candidate_solution: SearchSpace.Candidate) -> SearchSpace.Candidate:
         pass
