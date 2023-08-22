@@ -49,17 +49,41 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
         self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
 
+    @property
+    def fitness_array(self) -> np.ndarray:
+        return self.population_sample_precomputed.fitness_array
+
+    @property
+    def sample_size(self) -> int:
+        return self.population_sample_precomputed.sample_size
+
     def get_average_fitness_vector(self) -> np.ndarray:
         """returns the vector of average fitnesses for each feature"""
         sum_of_fitnesses = utils.weighted_sum_of_rows(self.feature_presence_matrix,
-                                                      self.population_sample_precomputed.fitness_array)
+                                                      self.fitness_array)
 
         return utils.divide_arrays_safely(sum_of_fitnesses, self.count_for_each_feature)
 
     def get_overall_average_fitness(self):
         """returns the average fitness over the entire population"""
-        return np.mean(self.population_sample_precomputed.fitness_array)
+        return np.mean(self.fitness_array)
 
     def get_observed_proportions(self):
         """returns the observed proportion for every feature, from 0 to 1"""
-        return self.count_for_each_feature / self.population_sample_precomputed.sample_size
+        return self.count_for_each_feature / self.sample_size
+
+    def get_stabilties(self) -> np.ndarray:
+        """ calculates the t-scores"""
+        means = self.get_average_fitness_vector()
+        overall_average = self.get_overall_average_fitness()
+
+        #  this is the sum of (mean (of each feature) minus the overall mean)**2
+        numerators = utils.weighted_sum_of_rows(self.feature_presence_matrix,
+                                                np.square(self.fitness_array - overall_average))
+
+        standard_deviations = np.sqrt(utils.divide_arrays_safely(numerators, (self.count_for_each_feature - 1)))
+
+        sd_over_root_n = utils.divide_arrays_safely(standard_deviations, np.sqrt(self.count_for_each_feature))
+        t_scores = utils.divide_arrays_safely(means - overall_average, sd_over_root_n)
+
+        return t_scores

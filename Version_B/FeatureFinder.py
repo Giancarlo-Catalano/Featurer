@@ -7,7 +7,7 @@ import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import utils
 from Version_B.FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
-from enum import Enum
+from enum import Enum, auto
 from typing import Optional
 
 from Version_B.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, PopulationSampleWithFeaturesPrecomputedData
@@ -136,11 +136,14 @@ class FeatureMixer:
 
 
 class ScoringCriterion(Enum):
-    EXPLAINABILITY = 1
-    HIGH_FITNESS = 2
-    LOW_FITNESS = 3
-    POPULARITY = 4
-    NOVELTY = 5
+    EXPLAINABILITY = auto()
+    HIGH_FITNESS = auto()
+    LOW_FITNESS = auto()
+    POPULARITY = auto()
+    NOVELTY = auto()
+    STABILITY = auto()
+    STATISTICALLY_RELEVANT_HIGH_FITNESS = auto()
+    STATISTICALLY_RELEVANT_LOW_FITNESS = auto()
 
 
 class FeatureFilter:
@@ -192,6 +195,10 @@ class FeatureFilter:
         signed_chi_squareds = chi_squareds * which_are_good
         return utils.remap_array_in_zero_one(signed_chi_squareds)
 
+
+    def get_stability_array(self):
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_stabilties())
+
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()
 
@@ -206,6 +213,16 @@ class FeatureFilter:
             return self.get_popularity_array()
         elif criteria == ScoringCriterion.NOVELTY:
             return self.get_novelty_array()
+        elif criteria == ScoringCriterion.STABILITY:
+            return self.get_stability_array()
+        elif criteria == ScoringCriterion.STATISTICALLY_RELEVANT_HIGH_FITNESS:
+            high_fitness_scores = self.get_positive_fitness_correlation_array()
+            stabilities = self.get_stability_array()
+            return utils.weighted_sum(high_fitness_scores, 0.5, stabilities, 0.5)
+        elif criteria == ScoringCriterion.STATISTICALLY_RELEVANT_LOW_FITNESS:
+            low_fitness_scores = self.get_negative_fitness_correlation_array()
+            stabilities = self.get_stability_array()
+            return utils.weighted_sum(low_fitness_scores, 0.5, stabilities, 0.5)
         else:
             raise Exception("The criterion for scoring was not specified")
 
@@ -417,8 +434,7 @@ def give_explainability_and_average_fitnesses(features: list[SearchSpace.Feature
         criteria_scores = np.zeros_like(complexities)
 
     for feature, score_for_criteria, complexity in zip(features, criteria_scores, complexities):
-        problem.pretty_print_feature(feature)
-        print(f"Has {score_for_criteria = :.3f}, {complexity = :.2f}")
+        print(f"{problem.feature_repr(feature)}\nHas {score_for_criteria = :.3f}, {complexity = :.2f}")
 
     # TODO:
 
