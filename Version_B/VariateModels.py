@@ -126,6 +126,20 @@ def get_between_feature_clash_matrix(search_space: SearchSpace.SearchSpace,
     return result + result.T - np.diag(result)
 
 
+def get_between_feature_shouldnt_merge_matrix(search_space: SearchSpace.SearchSpace,
+                                     features: list[SearchSpace.Feature]) -> np.ndarray:
+    amount_of_features = len(features)
+    result = np.zeros((amount_of_features, amount_of_features), dtype=float)
+    for row, row_feature in enumerate(features):
+        for column, column_feature in list(enumerate(features))[row:]:
+            merged = SearchSpace.merge_two_features(row_feature, column_feature)
+            is_invalid = not search_space.feature_is_valid(merged)
+            is_redundant = (merged == row_feature) or (merged == column_feature)
+            result[row, column] = int(is_invalid or is_redundant)
+
+    return result + result.T - np.diag(result)
+
+
 class VariateModels:
     def __init__(self, search_space: SearchSpace.SearchSpace):
         self.search_space = search_space
@@ -199,7 +213,7 @@ class VariateModels:
                                       zip(weighted_sum_by_fitness, count_for_each_pair_of_features)])
 
         # average fitnesses needs to be re ranged and then reshaped
-        cooccurrence_matrix = utils.remap_array_in_zero_one_ignore_zeros(
+        cooccurrence_matrix = utils.remap_array_in_zero_one(
             average_fitnesses)  # NOTE that it ignores the zeros, which are the cases where features cannot exist together.
         amount_of_features = feature_presence_matrix.shape[1]
         return cooccurrence_matrix.reshape((amount_of_features, amount_of_features))

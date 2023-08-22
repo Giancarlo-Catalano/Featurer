@@ -24,7 +24,7 @@ class SingleObjectiveSampler:
         self.hot_encoder = HotEncoding.HotEncoder(search_space)
         self.feature_detector = VariateModels.FeatureDetector(self.search_space, features)
 
-        self.between_feature_clash_matrix = VariateModels.get_between_feature_clash_matrix(search_space, features)
+        self.between_feature_clash_matrix = VariateModels.get_between_feature_shouldnt_merge_matrix(search_space, features)
 
         #  To be set during training
         self.bivariate_matrix = None

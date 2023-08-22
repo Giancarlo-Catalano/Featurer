@@ -159,11 +159,13 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
 
     def candidate_contains_any(self, candidate: SearchSpace.Candidate, any_of_these):
         present_items = self.original_problem.get_items_brought_in_candidate(candidate)
-        return any(wanted_item in present_items for wanted_item in any_of_these)
+        result = any(wanted_item in present_items for wanted_item in any_of_these)
+        return result
 
     def candidate_contains_all(self, candidate: SearchSpace.Candidate, all_of_these):
         present_items = self.original_problem.get_items_brought_in_candidate(candidate)
-        return all(wanted_item in present_items for wanted_item in all_of_these)
+        result = all(wanted_item in present_items for wanted_item in all_of_these)
+        return result
 
     def can_drink(self, candidate: SearchSpace.Candidate) -> bool:
         drinkable = [water_bottle, oranges, energy_drink]
@@ -178,7 +180,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         return self.candidate_contains_any(candidate, payment_methods)
 
     def can_go_to_the_beach(self, candidate: SearchSpace.Candidate) -> bool:
-        for_the_beach = [hat, swimming_trunks, sunscreen]
+        for_the_beach = [hat, swimming_trunks, sunscreen, sunglasses]
         return self.candidate_contains_all(candidate, for_the_beach)
 
     def satisfies_constraint(self, candidate: SearchSpace.Candidate, constraint: KnapsackConstraint):

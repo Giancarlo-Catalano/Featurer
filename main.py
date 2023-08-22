@@ -15,7 +15,7 @@ knapsack = Knapsack.KnapsackProblem(50.00, 1000, 10)
 c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [Knapsack.KnapsackConstraint.BEACH, Knapsack.KnapsackConstraint.DRINK])
 
 depth = 4
-importance_of_explainability = 0.5
+importance_of_explainability = 0.2
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -98,7 +98,7 @@ def get_sampler(problem: CombinatorialProblem,
 if __name__ == '__main__':
     problem = c_knapsack
     maximise = False
-    training_data = get_problem_compact_training_data(problem, sample_size=10000)
+    training_data = get_problem_compact_training_data(problem, sample_size=1000)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = 60
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     print(f"For the problem {problem}, the found features are:")
     pretty_print_features(problem, features, combinatorial=True)
 
-    sampler = get_sampler(problem, training_data, requested_amount_of_features, maximise)
+    sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
 
     print("We can sample some individuals")
     how_many_to_sample = 6

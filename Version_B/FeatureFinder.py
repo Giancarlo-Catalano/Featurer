@@ -38,6 +38,10 @@ class ParentPool:
     def get_raw_features(self):
         return [intermediate.feature for intermediate in self.features]
 
+    @classmethod
+    def get_empty_parent_pool(cls):
+        return ParentPool([], [])
+
 
 class FeatureMixer:
     """ this class takes two sets of parents, and uses them to create new features"""
@@ -312,6 +316,8 @@ class FeatureDeveloper:
         else:
             considered_features = feature_mixer.efficient_get_stochastically_mixed_features(amount_to_consider)
 
+        if len(considered_features) == 0:
+            return ParentPool.get_empty_parent_pool()
         feature_filter = self.get_filter(considered_features)
 
         features, scores = feature_filter.get_the_best_features(amount_to_return,
@@ -330,7 +336,7 @@ class FeatureDeveloper:
         total_amount_possible = utils.binomial_coeff(self.search_space.dimensions, weight) * (
                 weight ** self.search_space.average_cardinality)
         return int(utils.binomial_coeff(self.depth,weight) *
-                   self.search_space.total_cardinality)
+                   self.search_space.total_cardinality * self.thoroughness)
 
     def develop_features(self, heuristic=False):
 
