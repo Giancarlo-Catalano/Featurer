@@ -8,16 +8,17 @@ from Version_B.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 
 trap5 = TrapK.TrapK(5, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
+checkerboard = CheckerBoard.CheckerBoardProblem(12, 12)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-BT = BT.BTProblem(25, 3)
+simpleBT = BT.SimplifiedBTProblem(25, 3)
+almostBT = BT.BTProblem(20, 4, 28)
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
 c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING, KnapsackConstraint.WITHIN_WEIGHT, KnapsackConstraint.WITHIN_VOLUME])
 
 depth = 4
-importance_of_explainability = 0.5
+importance_of_explainability = 0.25
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -108,12 +109,12 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = c_knapsack
+    problem = almostBT
     maximise = False
     training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = 60
+    requested_amount_of_features = problem.search_space.dimensions
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")
