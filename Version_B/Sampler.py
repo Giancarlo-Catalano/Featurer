@@ -125,6 +125,12 @@ class Sampler:
         self.importance_of_randomness = 0.0
         self.importance_of_novelty = importance_of_novelty
 
+
+    # TODO make a new constructor, which will take into consideration the fact that some problems might have constraints
+    # specifically, we should not be generating the constraints, but only the parameters, and then let the problem
+    # add the constraints. Perhaps I should make a wrapper class, with a function called sample_for_problem, having the
+    # parameter, uses constraints: bool
+
     def train(self, training_data: PopulationSamplePrecomputedData):
         """uses the given data to train its models"""
         self.wanted_feature_sampler.train_for_fitness(training_data)

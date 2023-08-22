@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 from typing import Optional
 
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
@@ -35,7 +35,7 @@ oranges = Item("oranges", 1.25, 400, 4)
 hat = Item("hat", 4.00, 100, 2)
 socks = Item("socks", 1.00, 200, 2)
 laptop = Item("laptop", 500.00, 200, 10)
-playing_cards = Item("cards", 1.00, 50, 2)
+playing_cards = Item("playing cards", 1.00, 50, 2)
 cash = Item("cash", 0.00, 100, 3)
 credit_card = Item("credit card", 0.00, 10, 1)
 phone_charger = Item("phone charger", 1.00, 15, 2)
@@ -59,12 +59,18 @@ swimming_trunks = Item("swimming_trunks", 3.00, 150, 4)
 bread = Item("bread", 0.75, 120, 5)
 coins = Item("coins", 0.00, 200, 3)
 sunscreen = Item("sunscreen", 2.00, 100, 3)
+deodorant = Item("deodorant", 1.00, 100, 3)
+razors = Item("razors", 3.00, 50, 2)
+sleep_mask = Item("sleep mask", 1.00, 10, 1)
+extra_bags = Item("extra bags", 0.10, 5, 2)
+passport = Item("passport", 0.00, 5, 1)
+batteries = Item("batteries", 2.00, 20, 2)
+
 
 all_items = [water_bottle, pen, bananas, oranges, hat, socks, laptop, playing_cards, cash, credit_card, phone_charger,
-             tissues,
-             book, candy, energy_drink, lock, local_map, jacket, knitting, shampoo, cutlery, headphones, earphones,
-             sunglasses,
-             travel_towel, thermos, crosswords, swimming_trunks, bread, coins, sunscreen]
+             tissues,book, candy, energy_drink, lock, local_map, jacket, knitting, shampoo, cutlery, headphones,
+             earphones, sunglasses, travel_towel, thermos, crosswords, swimming_trunks, bread, coins, sunscreen,
+             deodorant, razors, sleep_mask, extra_bags, passport, batteries]
 
 
 class KnapsackProblem(CombinatorialProblem):
@@ -98,7 +104,7 @@ class KnapsackProblem(CombinatorialProblem):
             result += f"DO NOT Bring:{absent_items}"
 
         price, weight, volume = self.get_properties_of_candidate(self.search_space.feature_to_candidate(feature))
-        # result += f"\n{price = }, {weight = }, {volume = }"
+        result += f"\n{price = }, {weight = }, {volume = }"
 
         return result
 
@@ -125,17 +131,18 @@ class KnapsackProblem(CombinatorialProblem):
                                                         self.expected_volume]))
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        return super().amount_of_set_values_in_feature(feature)
+        return (super().amount_of_set_values_in_feature(feature) + 1)// 2
 
 
 class KnapsackConstraint(Enum):
-    DRINK = 1
-    FOOD = 2
-    PAYMENT = 3
-    BEACH = 4
+    DRINK = auto()
+    FOOD = auto()
+    PAYMENT = auto()
+    BEACH = auto()
+    FLYING = auto()
 
     def __repr__(self):
-        return ["drink", "food", "payment", "beach"][self.value - 1]
+        return ["drink", "food", "payment", "beach", "flying"][self.value - 1]
 
     def __str__(self):
         return self.__repr__()
@@ -168,7 +175,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         return result
 
     def can_drink(self, candidate: SearchSpace.Candidate) -> bool:
-        drinkable = [water_bottle, oranges, energy_drink]
+        drinkable = [water_bottle, oranges, energy_drink, thermos]
         return self.candidate_contains_any(candidate, drinkable)
 
     def can_eat(self, candidate: SearchSpace.Candidate) -> bool:
@@ -183,6 +190,15 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         for_the_beach = [hat, swimming_trunks, sunscreen, sunglasses]
         return self.candidate_contains_all(candidate, for_the_beach)
 
+
+    def can_go_on_plane(self, candidate: SearchSpace.Candidate) -> bool:
+        liquids = [water_bottle, energy_drink]
+        not_allowed_on_plane = [deodorant, razors, batteries, thermos]
+        necessary = [passport]
+
+        return (self.candidate_contains_all(candidate, necessary) and
+                not self.candidate_contains_any(candidate, liquids + not_allowed_on_plane))
+
     def satisfies_constraint(self, candidate: SearchSpace.Candidate, constraint: KnapsackConstraint):
         if constraint == KnapsackConstraint.DRINK:
             return self.can_drink(candidate)
@@ -192,6 +208,8 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
             return self.can_pay(candidate)
         elif constraint == KnapsackConstraint.BEACH:
             return self.can_go_to_the_beach(candidate)
+        elif constraint == KnapsackConstraint.FLYING:
+            return self.can_go_on_plane(candidate)
         else:
             raise Exception("Constraint was not recognised")
 
@@ -213,7 +231,11 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         unconstrained_feature, predicates = super().split_feature(feature)
         complexity_of_parameters = self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
         complexity_of_predicate = len(predicates.var_vals)
-        return complexity_of_parameters + complexity_of_predicate*0
+
+        if complexity_of_parameters == 0:
+            return complexity_of_predicate
+        else:
+            return complexity_of_parameters + (complexity_of_predicate != 1)
 
     def all_constraints_are_satisfied(self, candidate: SearchSpace.Candidate):
         return all(self.satisfies_constraint(candidate, need) for need in self.needs)

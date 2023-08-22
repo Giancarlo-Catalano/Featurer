@@ -1,3 +1,4 @@
+import utils
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
 from Version_B.Sampler import Sampler
 from Version_B.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
@@ -11,11 +12,11 @@ onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
-knapsack = Knapsack.KnapsackProblem(50.00, 1000, 10)
-c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [Knapsack.KnapsackConstraint.BEACH, Knapsack.KnapsackConstraint.DRINK])
+knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
+c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [Knapsack.KnapsackConstraint.BEACH, Knapsack.KnapsackConstraint.FLYING])
 
 depth = 4
-importance_of_explainability = 0.2
+importance_of_explainability = 0.5
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -97,10 +98,17 @@ def get_sampler(problem: CombinatorialProblem,
     return sampler
 
 
+def get_good_samples(sampler, problem, attempts, keep, maximise=True):
+    samples = [sampler.sample() for _ in range(attempts)]
+    samples_with_scores = [(sample, problem.score_of_candidate(sample)) for sample in samples]
+    samples_with_scores.sort(key=utils.second, reverse=maximise)
+    return utils.unzip(samples_with_scores[:keep])
+
+
 
 if __name__ == '__main__':
-    problem = checkerboard
-    maximise = True
+    problem = c_knapsack
+    maximise = False
     training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
@@ -113,13 +121,9 @@ if __name__ == '__main__':
     sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
 
     print("We can sample some individuals")
-    how_many_to_sample = 6
-    for _ in range(how_many_to_sample):
-        new_individual = sampler.sample()
-        actual_score = problem.score_of_candidate(new_individual)
-
-        print(f"{problem.candidate_repr(new_individual)}\n"
-              f"Has score {actual_score:.2f}\n")
+    good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
+    for good_sample, good_score in zip(good_samples, good_sample_scores):
+        print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score})\n")
 
 
 
