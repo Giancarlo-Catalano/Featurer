@@ -180,10 +180,12 @@ class FeatureFilter:
         return 1.0 - self.get_complexity_array()
 
     def get_positive_fitness_correlation_array(self) -> np.ndarray:
-        average_fitnesses = self.precomputed_data_for_features.get_average_fitness_vector()
-        average_overall_fitness = self.precomputed_data_for_features.get_overall_average_fitness()
-        fitness_distance = average_fitnesses - average_overall_fitness  # TODO here use a t test instead
-        return utils.remap_array_in_zero_one(fitness_distance)
+        # average_fitnesses = self.precomputed_data_for_features.get_average_fitness_vector()
+        # average_overall_fitness = self.precomputed_data_for_features.get_overall_average_fitness()
+        # fitness_distance = average_fitnesses - average_overall_fitness  # TODO here use a t test instead
+        # return utils.remap_array_in_zero_one(fitness_distance)
+
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()
@@ -197,7 +199,7 @@ class FeatureFilter:
 
 
     def get_stability_array(self):
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_stabilties())
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
 
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()

@@ -100,10 +100,10 @@ def get_sampler(problem: CombinatorialProblem,
 
 if __name__ == '__main__':
     problem = checkerboard
-    maximise = False
+    maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")
-    criteria = ScoringCriterion.STATISTICALLY_RELEVANT_LOW_FITNESS# ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
+    criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = 60
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 

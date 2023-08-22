@@ -72,7 +72,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
         """returns the observed proportion for every feature, from 0 to 1"""
         return self.count_for_each_feature / self.sample_size
 
-    def get_stabilties(self) -> np.ndarray:
+    def get_t_scores(self) -> np.ndarray:
         """ calculates the t-scores"""
         means = self.get_average_fitness_vector()
         overall_average = self.get_overall_average_fitness()
