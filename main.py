@@ -5,6 +5,7 @@ from Version_B.FeatureFinder import ScoringCriterion, PopulationSamplePrecompute
 import HotEncoding
 import SearchSpace
 from Version_B.FeatureFinder import find_features
+from BenchmarkProblems.Knapsack import KnapsackConstraint
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(4, 4)
@@ -13,7 +14,7 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
-c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [Knapsack.KnapsackConstraint.BEACH, Knapsack.KnapsackConstraint.FLYING])
+c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING, KnapsackConstraint.WITHIN_WEIGHT, KnapsackConstraint.WITHIN_VOLUME])
 
 depth = 4
 importance_of_explainability = 0.5

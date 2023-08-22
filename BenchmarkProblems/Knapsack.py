@@ -111,6 +111,17 @@ class KnapsackProblem(CombinatorialProblem):
     def get_items_brought_in_candidate(self, candidate: SearchSpace.Candidate):
         return [item for item, bring in zip(all_items, candidate.values) if bring == 1]
 
+    def get_total_price_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
+        return sum(item.price for item in self.get_items_brought_in_candidate(candidate))
+
+
+    def get_total_weight_of_candidate(self, candidate: SearchSpace.Candidate) -> int:
+        return sum(item.weight for item in self.get_items_brought_in_candidate(candidate))
+
+
+    def get_total_volume_of_candidate(self, candidate: SearchSpace.Candidate) -> int:
+        return sum(item.volume for item in self.get_items_brought_in_candidate(candidate))
+
     def get_properties_of_candidate(self, candidate: SearchSpace.Candidate) -> (float, int, int):
         brought_items = self.get_items_brought_in_candidate(candidate)
         price = sum(item.price for item in brought_items)
@@ -140,9 +151,12 @@ class KnapsackConstraint(Enum):
     PAYMENT = auto()
     BEACH = auto()
     FLYING = auto()
+    WITHIN_PRICE = auto()
+    WITHIN_WEIGHT = auto()
+    WITHIN_VOLUME = auto()
 
     def __repr__(self):
-        return ["drink", "food", "payment", "beach", "flying"][self.value - 1]
+        return ["drink", "food", "payment", "beach", "flying", "within price", "within weight", "within volume"][self.value - 1]
 
     def __str__(self):
         return self.__repr__()
@@ -210,6 +224,12 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
             return self.can_go_to_the_beach(candidate)
         elif constraint == KnapsackConstraint.FLYING:
             return self.can_go_on_plane(candidate)
+        elif constraint == KnapsackConstraint.WITHIN_PRICE:
+            return self.original_problem.get_total_price_of_candidate(candidate) < self.original_problem.expected_price
+        elif constraint == KnapsackConstraint.WITHIN_WEIGHT:
+            return self.original_problem.get_total_weight_of_candidate(candidate) < self.original_problem.expected_weight
+        elif constraint == KnapsackConstraint.WITHIN_VOLUME:
+            return self.original_problem.get_total_volume_of_candidate(candidate) < self.original_problem.expected_volume
         else:
             raise Exception("Constraint was not recognised")
 
