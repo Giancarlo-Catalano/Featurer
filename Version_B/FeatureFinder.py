@@ -341,9 +341,9 @@ class FeatureDeveloper:
             else:
                 return heuristic
 
-        def should_use_criteria(iteration):
-            criteria_threshold = self.depth // 2
-            return iteration >= criteria_threshold
+        def should_use_criteria(weight):
+            # criteria_threshold = self.depth // 2
+            return weight == self.depth
 
         for i in range(self.depth - 1):
             weight = i + 2

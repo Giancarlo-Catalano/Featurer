@@ -1,5 +1,7 @@
 import math
 import random
+from typing import Optional, Iterable
+
 import utils
 
 
@@ -39,8 +41,10 @@ class Feature:
 
 class Candidate:
     # a wrapper for a tuple
-    def __init__(self, values):
-        self.values = values
+    values: tuple[int]
+
+    def __init__(self, values: Iterable[int]):
+        self.values = tuple(values)
 
     def __repr__(self):
         return "<" + (" ".join([value_to_string(val) for val in self.values])) + ">"
@@ -52,15 +56,19 @@ class Candidate:
         return self.values.__hash__()
 
     def as_feature(self):
-        return Feature(list((i, v) for i, v in enumerate(self.values) if v is not None))
+        return Feature([(i, v) for i, v in enumerate(self.values) if v is not None])
 
 
 class SearchSpace:
-    # cardinalities: list[int]
+    cardinalities: tuple[int]
+    precomputed_offsets: list[int]
+    amount_of_trivial_features: int
+    dimensions: int
+
     # precomputed_offsets: list[int] #used to convert into one-hot-encodings
 
-    def __init__(self, cardinalities):
-        self.cardinalities = cardinalities
+    def __init__(self, cardinalities: Iterable[int]):
+        self.cardinalities = tuple(cardinalities)
         self.precomputed_offsets = utils.cumulative_sum(cardinalities)
         self.amount_of_trivial_features = sum(self.cardinalities)
         self.dimensions = len(self.cardinalities)
@@ -118,15 +126,16 @@ class SearchSpace:
         return Candidate(tuple(result_list))
 
 
-def merge_two_features(feature_a, feature_b):
+def merge_two_features(feature_a, feature_b) -> Feature:
     def remove_duplicates(input_list: list):
         return list(set(input_list))
+
     return Feature(remove_duplicates(feature_a.var_vals + feature_b.var_vals))
 
 
-def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate):
-    return Candidate(candidate_a.values+candidate_b.values)
+def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate) -> Candidate:
+    return Candidate(candidate_a.values + candidate_b.values)
 
 
-def merge_two_spaces(space_a: SearchSpace, space_b: SearchSpace):
+def merge_two_spaces(space_a: SearchSpace, space_b: SearchSpace) -> SearchSpace:
     return SearchSpace(space_a.cardinalities + space_b.cardinalities)

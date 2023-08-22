@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional
 
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
@@ -97,7 +98,7 @@ class KnapsackProblem(CombinatorialProblem):
             result += f"DO NOT Bring:{absent_items}"
 
         price, weight, volume = self.get_properties_of_candidate(self.search_space.feature_to_candidate(feature))
-        result += f"\n{price = }, {weight = }, {volume = }"
+        # result += f"\n{price = }, {weight = }, {volume = }"
 
         return result
 
@@ -116,7 +117,7 @@ class KnapsackProblem(CombinatorialProblem):
         price, weight, volume = self.get_properties_of_candidate(candidate)
 
         def score_for_property(observed, expected):
-            return abs(observed-expected) / expected
+            return abs(observed - expected) / expected
 
         return sum(score_for_property(total_property, expected)
                    for total_property, expected in zip([price, weight, volume],
@@ -127,31 +128,34 @@ class KnapsackProblem(CombinatorialProblem):
         return super().amount_of_set_values_in_feature(feature)
 
 
+class KnapsackConstraint(Enum):
+    DRINK = 1
+    FOOD = 2
+    PAYMENT = 3
+    BEACH = 4
+
+    def __repr__(self):
+        return ["drink", "food", "payment", "beach"][self.value - 1]
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
-    need_to_drink: bool
-    need_to_eat: bool
-    need_to_pay: bool
-    going_to_the_beach: bool
-
+    needs: list[KnapsackConstraint]
     original_problem: KnapsackProblem
 
+    def __repr__(self):
+        price = self.original_problem.expected_price
+        weight = self.original_problem.expected_weight
+        volume = self.original_problem.expected_volume
+        return f"ConstrainedKnapSack(price = {price}, weight = {weight}, volume = {volume}, {self.needs})"
 
-    def get_list_of_needs(self):
-        return [self.need_to_drink, self.need_to_eat, self.need_to_pay, self.going_to_the_beach]
-
-
-    def __init__(self, unconstrained_problem: KnapsackProblem, need_to_drink=False, need_to_eat=False, need_to_pay=False, going_to_the_beach=False):
-        self.need_to_drink = need_to_drink
-        self.need_to_eat = need_to_eat
-        self.need_to_pay = need_to_pay
-        self.going_to_the_beach = going_to_the_beach
-        amount_of_predicates = sum(int(necessity) for necessity in self.get_list_of_needs())
-        constraint_space = SearchSpace.SearchSpace([2]*amount_of_predicates)
+    def __init__(self, unconstrained_problem: KnapsackProblem, needs: list[KnapsackConstraint]):
+        self.needs = needs
+        constraint_space = SearchSpace.SearchSpace(tuple(2 for need in self.needs))
         self.original_problem = unconstrained_problem
-        super().__init__(unconstrained_problem, SearchSpace.SearchSpace(constraint_space))
-
+        super().__init__(unconstrained_problem, constraint_space)
 
     def candidate_contains_any(self, candidate: SearchSpace.Candidate, any_of_these):
         present_items = self.original_problem.get_items_brought_in_candidate(candidate)
@@ -177,27 +181,32 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         for_the_beach = [hat, swimming_trunks, sunscreen]
         return self.candidate_contains_all(candidate, for_the_beach)
 
-    def get_predicates(self, candidate_solution: SearchSpace.Candidate) -> SearchSpace.Candidate:
-        result = []
-        if self.need_to_drink:
-            result.append(self.can_drink(candidate_solution))
-        if self.need_to_eat:
-            result.append(self.can_eat(candidate_solution))
-        if self.need_to_pay:
-            result.append(self.can_pay)
-        if self.going_to_the_beach:
-            result.append(self.can_go_to_the_beach(candidate_solution))
+    def satisfies_constraint(self, candidate: SearchSpace.Candidate, constraint: KnapsackConstraint):
+        if constraint == KnapsackConstraint.DRINK:
+            return self.can_drink(candidate)
+        elif constraint == KnapsackConstraint.FOOD:
+            return self.can_eat(candidate)
+        elif constraint == KnapsackConstraint.PAYMENT:
+            return self.can_pay(candidate)
+        elif constraint == KnapsackConstraint.BEACH:
+            return self.can_go_to_the_beach(candidate)
+        else:
+            raise Exception("Constraint was not recognised")
 
-        return SearchSpace.Candidate(result)
+    def get_predicates(self, candidate: SearchSpace.Candidate) -> SearchSpace.Candidate:
+        def value_for_need(need):
+            return int(self.satisfies_constraint(candidate, need))
 
+        return SearchSpace.Candidate(tuple(value_for_need(need) for need in self.needs))
 
-    def constraint_repr(self, constraint: SearchSpace.Candidate):
-        all_constraint_names = ["drink", "eat", "pay", "beach"]
-        used_constraints = [name for name, used in zip(all_constraint_names, self.get_list_of_needs())]
+    def predicate_feature_repr(self, constraint: SearchSpace.Feature) -> str:
 
-        result = ""
         yes = "✓"
         no = "⤬"
 
-        return ", ".join(f"{constraint_name}({yes if satisfied else no})"
-                         for (constraint_name, satisfied) in zip(used_constraints, constraint.values))
+        return ", ".join(f"{self.needs[need_index]}({yes if satisfied else no})"
+                         for (need_index, satisfied) in constraint.var_vals)
+
+    def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
+        unconstrained_feature, predicates = super().split_feature(feature)
+        return self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)

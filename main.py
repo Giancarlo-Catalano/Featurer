@@ -12,7 +12,7 @@ binval = BinVal.BinValProblem(12, 2)
 BT = BT.BTProblem(25, 3)
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 10)
-c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, going_to_the_beach=True, need_to_pay=True)
+c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [Knapsack.KnapsackConstraint.BEACH, Knapsack.KnapsackConstraint.DRINK])
 
 depth = 4
 importance_of_explainability = 0.5
