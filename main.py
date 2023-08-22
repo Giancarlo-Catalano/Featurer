@@ -29,6 +29,9 @@ def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem
 def get_problem_compact_training_data(problem: CombinatorialProblem.CombinatorialProblem,
                                       sample_size) -> PopulationSamplePrecomputedData:
     training_samples, fitness_list = get_problem_training_data(problem, sample_size)
+    # print("The generated samples are:")
+    # for sample, fitness in zip(training_samples, fitness_list):
+    #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness})")
     return PopulationSamplePrecomputedData(problem.search_space, training_samples, fitness_list)
 
 
@@ -98,7 +101,7 @@ def get_sampler(problem: CombinatorialProblem,
 if __name__ == '__main__':
     problem = c_knapsack
     maximise = False
-    training_data = get_problem_compact_training_data(problem, sample_size=1000)
+    training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = 60

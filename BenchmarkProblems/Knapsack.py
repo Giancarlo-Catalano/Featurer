@@ -211,4 +211,16 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
         unconstrained_feature, predicates = super().split_feature(feature)
-        return self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
+        complexity_of_parameters = self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
+        complexity_of_predicate = len(predicates.var_vals)
+        return complexity_of_parameters + complexity_of_predicate*0
+
+    def all_constraints_are_satisfied(self, candidate: SearchSpace.Candidate):
+        return all(self.satisfies_constraint(candidate, need) for need in self.needs)
+
+    def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
+        original_candidate, predicates = self.split_candidate(candidate)
+        if all(value == 1 for value in predicates.values):
+            return self.unconstrained_problem.score_of_candidate(original_candidate)
+        else:
+            return +1000

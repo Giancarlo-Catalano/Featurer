@@ -34,7 +34,8 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
         raise Exception("A class extending CombinatorialConstraintProblem does not implement .get_predicates(c)!")
 
     def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
-        raise Exception("A class extending CombinatorialConstraintProblem does not implement .predicate_feature_repr_(c)!")
+        raise Exception("A class extending CombinatorialConstraintProblem "
+                        "does not implement .predicate_feature_repr_(c)!")
 
     @property
     def dimensions_in_unconstrained_space(self) -> int:
@@ -57,7 +58,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
 
     def split_candidate(self, candidate: SearchSpace.Candidate) -> (SearchSpace.Candidate, SearchSpace.Candidate):
         without_predicates = SearchSpace.Candidate(candidate.values[:self.dimensions_in_unconstrained_space])
-        predicates = SearchSpace.Candidate(candidate.values[:self.dimensions_in_unconstrained_space])
+        predicates = SearchSpace.Candidate(candidate.values[self.dimensions_in_unconstrained_space:])
         return without_predicates, predicates
 
     # from here we implement CombinatorialProblem
@@ -71,7 +72,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
 
     def get_random_candidate_solution(self) -> SearchSpace.Candidate:
         # to get a random solution, we get a random point from the unconstrained problem
-        # and then we add the predicates
+        # , and then we add the predicates
         solution_without_predicates = self.unconstrained_problem.get_random_candidate_solution()
         extension = self.get_predicates(solution_without_predicates)
         return SearchSpace.merge_two_candidates(solution_without_predicates, extension)
@@ -79,8 +80,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
     def feature_repr(self, feature: SearchSpace.Feature) -> str:
         parameters, predicates = self.split_feature(feature)
         return (f"{self.unconstrained_problem.feature_repr(parameters)}\n"
-                f" Predicates: {self.predicate_feature_repr(predicates)}")
+                f" {self.predicate_feature_repr(predicates)}")
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
-        solution_without_predicates, _ = self.split_candidate(candidate)
-        return self.unconstrained_problem.score_of_candidate(solution_without_predicates)
+        raise Exception("A class extending CombinatorialConstraintProblem does not implement .score_of_candidate(c)!")
