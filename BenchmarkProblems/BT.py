@@ -1,3 +1,4 @@
+import itertools
 import random
 
 import SearchSpace
@@ -48,9 +49,30 @@ class WeeklySchedule:
         return self.working_days.__repr__()
 
 
-worker_names = ["Amy", "Bob", "Chris", "Darcy", "Elly", "Frank", "Gian", "Hugh", "Igo", "Joe", "Kyle", "Lola", "Moira",
+worker_first_names = ["Amy", "Bob", "Chris", "Darcy", "Elly", "Frank", "Gian", "Hugh", "Igo", "Joe", "Kyle", "Lola", "Moira",
                 "Naomi", "Otto", "Pascal", "Quinn", "Ruth", "Seth", "Ted", "Ugo", "Vicky", "Walter", "Xenia", "Yves",
                 "Zeno"]
+
+
+worker_surnames = ["Anderson", "Bokmal", "Catalano", "Devon", "Elsinor", "Fourier", "Gomez", "Hubert", "Immaut",
+"Jackson", "Kingstone", "Langton", "Morris", "Noivern", "Olowasamelori", "Pulitser", "Quasimodo", "Rossi", "Stradivarius", "Turner", "Umm Summa",
+"Vladivosov", "Wieux", "Xerox", "Ypritte", "Zeppelin"]
+
+def get_worker_names(amount_of_workers) -> list[str]:
+    if len(worker_first_names) >= amount_of_workers:
+        return worker_first_names[:amount_of_workers]
+
+    def add_surnames(surname_permutation):
+        return [first_name+" "+surname for first_name, surname in zip(worker_first_names, surname_permutation)]
+
+    resulting_names = []
+
+    while len(resulting_names) < amount_of_workers:
+        resulting_names.extend(add_surnames(random.choices(worker_surnames, k=len(worker_first_names))))
+        if len(resulting_names) >= amount_of_workers:
+            break
+
+    return resulting_names[:amount_of_workers]
 
 
 class SimpleWorker:
@@ -67,7 +89,7 @@ class SimpleWorker:
 
     @classmethod
     def random(cls, how_many_options):
-        random_name = random.choice(worker_names)
+        random_name = random.choice(worker_first_names)
         how_many_days_to_work = random.choice(range(1, 4))
         options = [WeeklySchedule.random(how_many_days_to_work) for _ in range(how_many_options)]
         return cls(random_name, options)
@@ -182,11 +204,17 @@ class BTProblem(CombinatorialProblem):
     amount_of_choices_per_worker: int
     workers: list[Worker]
     total_roster_length: int
+    
+    
+    def get_worker_names(self):
+        if self.total_workers < len(worker_first_names):
+            return worker_first_names[:self.total_workers]
 
     def __init__(self, total_workers, amount_of_choices_per_worker, total_rota_length):
         self.total_workers = total_workers
         self.amount_of_choices_per_worker = amount_of_choices_per_worker
-        self.workers = [Worker.get_random(name, amount_of_choices_per_worker) for name in worker_names[:total_workers]]
+        self.workers = [Worker.get_random(name, amount_of_choices_per_worker)
+                        for name in get_worker_names(self.total_workers)]
         self.total_roster_length = total_rota_length
 
         super().__init__(SearchSpace.SearchSpace(self.amount_of_choices_per_worker for worker in self.workers))
@@ -391,7 +419,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         def complexity_of_parameters(amount_of_workers: int):
             ideal_amount_of_workers = 4
-            return abs(amount_of_workers - ideal_amount_of_workers)
+            return abs(amount_of_workers - ideal_amount_of_workers)/2
 
         def complexity_of_predicate(predicate, value):
             if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
