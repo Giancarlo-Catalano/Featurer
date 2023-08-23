@@ -271,19 +271,20 @@ class BTPredicate(Enum):
     BAD_FRIDAY = auto()
     BAD_SATURDAY = auto()
     BAD_SUNDAY = auto()
+
     DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS = auto()
     NO_CONSECUTIVE_WEEKENDS = auto()
 
     def __repr__(self):
-        return ["Unstable Monday", "Unstable Tuesday", "Unstable Wednesday",
-                "Unstable Thursday", "Unstable Friday", "Unstable Saturday",
-                "Unstable Sunday", "Exceeds weekly working hours", "Has consecutive weekends"][self.value - 1]
+        return ["Stable Monday", "Stable Tuesday", "Stable Wednesday",
+                "Stable Thursday", "Stable Friday", "Stable Saturday",
+                "Stable Sunday", "Exceeds weekly working hours", "Has consecutive weekends"][self.value - 1]
 
     def __str__(self):
         return self.__repr__()
 
     def to_week_day(self):
-        return self.value  # THIS MEANS YOU CAN'T ADD MORE PREDICATES ABOVE MONDAY
+        return self.value-1  # THIS MEANS YOU CAN'T ADD MORE PREDICATES ABOVE MONDAY
 
 
 class ExpandedBTProblem(CombinatorialConstrainedProblem):
@@ -307,7 +308,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         extended_rota = self.original_problem.extend_rota_to_total_roster(worker_rota)
         as_matrix = np.array(extended_rota, dtype=int)
         as_matrix = as_matrix.reshape((-1, 7))
-        weekly_hours = np.sum(as_matrix, axis=1)
+        hours_per_day = 8
+        weekly_hours = np.sum(as_matrix, axis=1) * 8
         max_weekly_hours = np.max(weekly_hours)
         return max_weekly_hours > max_allowed_weekly_hours
 
@@ -334,6 +336,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         # in the future this might be returning a percentage of how many workers have to work consecutive weekdays
 
     def get_bad_weekdays(self, candidate: SearchSpace.Candidate) -> list[int]:
+        """Note: the week days are 0 indexed!!"""
         ranges = self.original_problem.get_range_scores_for_each_day(candidate)
         weekdays_and_scores = list(enumerate(ranges))
         weekdays_and_scores.sort(key=utils.second, reverse=True)
@@ -350,16 +353,25 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
                 return self.any_rotas_have_consecutive_weekends(candidate)
             else:  # weekday check
                 weekday = predicate.to_week_day()
-                return weekday in bad_weekdays
+                return weekday not in bad_weekdays
 
         return SearchSpace.Candidate([int(result_of_predicate(predicate)) for predicate in self.predicates])
 
     def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
+
+        def repr_predicate(predicate: BTPredicate, value):
+            if predicate ==  BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS:
+                return "Exceeds weekly hours" if value else "Within weekly hours"
+            elif predicate == BTPredicate.NO_CONSECUTIVE_WEEKENDS:
+                return "Contains consecutive working weekends" if value else "Does not have consecutive working weekends"
+            else:
+                weekday = predicate.to_week_day()
+                weekday_name = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
+                return  f"{weekday_name} is UNstable" if value else f"{weekday_name} is stable"
         yes = "✓"
         no = "⤬"
 
-        return ", ".join(f"{self.predicates[need_index]}({yes if satisfied else no})"
-                         for (need_index, satisfied) in predicates.var_vals)
+        return ", ".join(repr_predicate(self.predicates[var], bool(val)) for var, val in predicates.var_vals)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         original_candidate, predicates = self.split_candidate(candidate)
@@ -369,15 +381,21 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
                 and self.any_rotas_exceed_weekly_working_hours(original_candidate)):
                 return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
-            return
+            return normal_score
 
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         unconstrained_feature, predicates = super().split_feature(feature)
         complexity_of_parameters = self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
-        complexity_of_predicate = len(predicates.var_vals)
 
-        if complexity_of_parameters == 0:
-            return complexity_of_predicate
-        else:
-            return complexity_of_parameters + (complexity_of_predicate != 1)
+        def complexity_of_predicate(predicate, value):
+            if predicate ==  BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS:
+                return 2 if value else 4
+            elif predicate == BTPredicate.NO_CONSECUTIVE_WEEKENDS:
+                return 2 if value else 4
+            else:
+                return 1
+
+        complexity_of_predicates = sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
+
+        return complexity_of_parameters + complexity_of_predicates
