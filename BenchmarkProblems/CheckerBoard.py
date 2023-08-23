@@ -15,6 +15,9 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
     def __repr__(self):
         return f"CheckerBoard(rows={self.rows}, cols={self.cols})"
 
+    def long_repr(self):
+        return self.__repr__()
+
     @property
     def total_area(self):
         return self.rows * self.cols

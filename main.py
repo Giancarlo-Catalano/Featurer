@@ -13,9 +13,15 @@ onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 simpleBT = BT.SimplifiedBTProblem(25, 3)
 almostBT = BT.BTProblem(20, 4, 28)
+constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS,
+                                                BT.BTPredicate.BAD_SATURDAY,
+                                                BT.BTPredicate.BAD_SUNDAY])
+
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
-c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING, KnapsackConstraint.WITHIN_WEIGHT, KnapsackConstraint.WITHIN_VOLUME])
+c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
+                                                            KnapsackConstraint.WITHIN_WEIGHT,
+                                                            KnapsackConstraint.WITHIN_VOLUME])
 
 depth = 4
 importance_of_explainability = 0.2
@@ -78,7 +84,7 @@ def get_features(problem: CombinatorialProblem,
 def get_sampler(problem: CombinatorialProblem,
                 training_data: PopulationSamplePrecomputedData,
                 amount_of_features_per_sampler,
-                is_maximisation_task = True) -> Sampler:
+                is_maximisation_task=True) -> Sampler:
     print("Constructing the sampler, involves finding:")
     print("\t -fit features")
     fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS, amount_of_features_per_sampler)
@@ -87,7 +93,8 @@ def get_sampler(problem: CombinatorialProblem,
     print("\t -novel features")
     novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
 
-    wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (unfit_features, fit_features)
+    wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (
+    unfit_features, fit_features)
 
     sampler = Sampler(search_space=problem.search_space,
                       wanted_features=wanted_features,
@@ -107,12 +114,13 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
     return utils.unzip(samples_with_scores[:keep])
 
 
-
 if __name__ == '__main__':
     problem = almostBT
     maximise = False
     training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")
+    print("More specifically, it is")
+    print(problem.long_repr())
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = problem.search_space.dimensions
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
@@ -126,6 +134,3 @@ if __name__ == '__main__':
     good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
     for good_sample, good_score in zip(good_samples, good_sample_scores):
         print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
-
-
-

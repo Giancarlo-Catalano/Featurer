@@ -12,6 +12,10 @@ class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
     def __repr__(self):
         return f"OneMaxProblem(bits={self.amount_of_bits})"
 
+
+    def long_repr(self):
+        return self.__repr__()
+
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """returns area of bounding box / area of board"""
         return super().amount_of_set_values_in_feature(feature)

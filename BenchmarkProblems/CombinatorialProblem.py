@@ -6,6 +6,7 @@ class CombinatorialProblem:
     """ A minimal definition involves
 
         - repr of the problem
+        - long repr of the problem
 
         - calculating the search space
             (in __init__(...): { search_space = ...; super(search_space)})
@@ -38,6 +39,9 @@ class CombinatorialProblem:
 
     def __repr__(self):
         return f"Generic Combinatorial Problem"
+
+    def long_repr(self):
+        return f"Long Description of the Combinatorial Problem"
 
     def get_random_candidate_solution(self) -> SearchSpace.Candidate:
         return self.search_space.get_random_candidate()

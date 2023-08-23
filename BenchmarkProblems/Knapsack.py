@@ -170,7 +170,11 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         price = self.original_problem.expected_price
         weight = self.original_problem.expected_weight
         volume = self.original_problem.expected_volume
-        return f"ConstrainedKnapSack(price = {price}, weight = {weight}, volume = {volume}, {self.needs})"
+        return f"ConstrainedKnapSack({price}£, weight = {weight}g, volume = {volume} units, {self.needs})"
+
+
+    def long_repr(self):
+        return self.__repr__()
 
     def __init__(self, unconstrained_problem: KnapsackProblem, needs: list[KnapsackConstraint]):
         self.needs = needs

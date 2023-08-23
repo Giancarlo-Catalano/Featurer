@@ -14,6 +14,10 @@ class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
     def __repr__(self):
         return f"BinValProblem(bits={self.amount_of_bits}, base = {self.base})"
 
+
+    def long_repr(self):
+        return self.__repr__()
+
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         return super().get_area_of_smallest_bounding_box(feature)
 

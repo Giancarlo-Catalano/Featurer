@@ -11,15 +11,19 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
       - contains an instance of CombinatorialProblem, because it's like a stove lighter containing a bic lighter"""
 
     """Minimal implementation:
-        - repr
-        - the unconstrained problem definition
+        - the unconstrained problem, to be passed in the constructor
+        - satisfying some requirements of a combinatorial problem
+            - repr
+            - long_repr
+            - score_of_candidate
+            - get_complexity_of_feature
         - obtaining the constraint space
             in __init__(...): 
                 unconstrained_problem = ...
                 constraint_space = ...
-                super(unconstrained_problem, constraint_space)
+                super().__init(unconstrained_problem, constraint_space)
         - get_predicates(SearchSpace.Candidate) -> SearchSpace.Candidate
-        - constraint_repr(SearchSpace.Candidate) -> str
+        - predicate_feature_repr(SearchSpace.Candidate) -> str
         
     
     """
@@ -29,6 +33,10 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
 
     def __repr__(self):
         raise Exception("A class extending CombinatorialConstraintProblem does not implement __repr__(self)!")
+
+
+    def long_repr(self):
+        raise Exception("A class extending CombinatorialConstraintProblem does not implement long_repr")
 
     def get_predicates(self, candidate_solution: SearchSpace.Candidate) -> SearchSpace.Candidate:
         raise Exception("A class extending CombinatorialConstraintProblem does not implement .get_predicates(c)!")
@@ -84,3 +92,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         raise Exception("A class extending CombinatorialConstraintProblem does not implement .score_of_candidate(c)!")
+
+
+    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+        return super().amount_of_set_values_in_feature(feature)

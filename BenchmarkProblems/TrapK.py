@@ -15,6 +15,9 @@ class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
         super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
 
     def __repr__(self):
+        return f"TrapK({self.k}, {self.amount_of_groups})"
+
+    def long_repr(self):
         return f"TrapK(K={self.k}, amount of groups = {self.amount_of_groups})"
 
     def get_how_many_vars_per_group(self, feature: SearchSpace.Feature):
