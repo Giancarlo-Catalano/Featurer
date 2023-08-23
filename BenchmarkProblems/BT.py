@@ -396,7 +396,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
             else:
                 weekday = predicate.to_week_day()
                 weekday_name = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
-                return  f"{weekday_name} is UNstable" if value else f"{weekday_name} is stable"
+                return  f"{weekday_name} is UNstable" if value else f"{weekday_name} is Stable"
         yes = "✓"
         no = "⤬"
 
@@ -419,27 +419,30 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         def complexity_of_parameters(amount_of_workers: int):
             ideal_amount_of_workers = 4
-            return abs(amount_of_workers - ideal_amount_of_workers)/2
+            return abs(amount_of_workers - ideal_amount_of_workers)
 
         def complexity_of_predicate(predicate, value):
             if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
-                return 5 if value else 2
+                return 2 if value else 20
             elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
                 return 5 if value else 2
             else:
-                return 3 if value else 1
+                return 5 if value else 1
 
 
         def complexity_of_predicates(predicates: SearchSpace.Feature):
-            return sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
+            if predicates.var_vals:
+                return min(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
+            else:
+                0
 
 
         amount_of_workers = super().amount_of_set_values_in_feature(unconstrained_feature)
         complexity_of_unconstrained = complexity_of_parameters(amount_of_workers)
-        complexity_of_predicates = complexity_of_predicates(predicates)
+        complexity_of_predicates_in_feature = complexity_of_predicates(predicates)
         predicates_are_present = super().amount_of_set_values_in_feature(predicates) > 0
 
-        if predicates_are_present:
-            return complexity_of_predicates + complexity_of_unconstrained
+        if predicates_are_present and amount_of_workers > 0:
+            return complexity_of_predicates_in_feature + complexity_of_unconstrained * 100
         else:
-            return 10 + complexity_of_unconstrained
+            return 1000
