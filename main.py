@@ -115,7 +115,7 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = almostBT
+    problem = constrainedBT
     maximise = False
     training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")

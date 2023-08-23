@@ -7,6 +7,7 @@ from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from BenchmarkProblems.CombinatorialConstrainedProblem import CombinatorialConstrainedProblem
 import numpy as np
 
+
 class Weekday(Enum):
     MONDAY = 0
     TUESDAY = 1
@@ -136,12 +137,12 @@ class WorkerRota:
         self.week_size = week_size
         self.pattern = pattern
 
-
     def __repr__(self):
         week_starts = [day_index for day_index in range(len(self.pattern)) if day_index % self.week_size == 0]
-        weeks = [self.pattern[week_start:(week_start+self.week_size)] for week_start in week_starts]
+        weeks = [self.pattern[week_start:(week_start + self.week_size)] for week_start in week_starts]
+
         def repr_week(week):
-            return "["+"".join(["*" if works else "_" for works in week])+"]"
+            return "[" + "".join(["*" if works else "_" for works in week]) + "]"
 
         return " ".join(repr_week(week) for week in weeks)
 
@@ -156,16 +157,13 @@ class WorkerRota:
         return cls(week_size, [random_day() for _ in range(amount_of_days)])
 
 
-
 class Worker:
     name: str
     options: list[WorkerRota]
 
-
     def __init__(self, name, options):
         self.name = name
         self.options = options
-
 
     @classmethod
     def get_random(cls, name, amount_of_options):
@@ -173,12 +171,10 @@ class Worker:
         options = [WorkerRota.get_random(week_size) for _ in range(amount_of_options)]
         return cls(name, options)
 
-
     def __repr__(self):
-        return f"{self.name}, with rotas:\n\t\t"+ (
+        return f"{self.name}, with rotas:\n\t\t" + (
             "\n\t\t".join(f"{rota}" for rota in self.options)
         )
-
 
 
 class BTProblem(CombinatorialProblem):
@@ -186,7 +182,6 @@ class BTProblem(CombinatorialProblem):
     amount_of_choices_per_worker: int
     workers: list[Worker]
     total_roster_length: int
-
 
     def __init__(self, total_workers, amount_of_choices_per_worker, total_rota_length):
         self.total_workers = total_workers
@@ -196,10 +191,8 @@ class BTProblem(CombinatorialProblem):
 
         super().__init__(SearchSpace.SearchSpace(self.amount_of_choices_per_worker for worker in self.workers))
 
-
     def __repr__(self):
         return f"BTProblem({self.total_workers}, {self.amount_of_choices_per_worker}, {self.total_roster_length})"
-
 
     def long_repr(self):
         return f"The workers and their options are:\n\t" + "\n\t".join([f"{worker}" for worker in self.workers])
@@ -207,7 +200,6 @@ class BTProblem(CombinatorialProblem):
     def get_rotas_in_feature(self, feature: SearchSpace.Feature) -> list[WorkerRota]:
         return [self.workers[worker_index].options[which_rota]
                 for worker_index, which_rota in feature.var_vals]
-
 
     def get_rotas_in_candidate(self, candidate: SearchSpace.Candidate) -> list[WorkerRota]:
         return [worker.options[which_rota] for worker, which_rota in zip(self.workers, candidate.values)]
@@ -221,7 +213,6 @@ class BTProblem(CombinatorialProblem):
         return "\n".join(repr_worker_and_rota(worker_index, rota_index)
                          for worker_index, rota_index in feature.var_vals)
 
-
     def extend_rota_to_total_roster(self, rota: WorkerRota) -> list[bool]:
         result = []
         while len(result) < self.total_roster_length:
@@ -234,7 +225,6 @@ class BTProblem(CombinatorialProblem):
         as_int_grid = np.array(extended_rotas, dtype=int)
         return (np.sum(as_int_grid, axis=0))
 
-
     def get_min_and_max_for_each_work_day(self, candidate: SearchSpace.Candidate) -> list[(int, int)]:
         rotas = self.get_rotas_in_candidate(candidate)
         counts_for_each_day = self.get_counts_for_overlapped_rotas(rotas)
@@ -244,7 +234,7 @@ class BTProblem(CombinatorialProblem):
 
         return list(zip(list(minimums), list(maximums)))
 
-    def get_amount_of_first_choices(self, candidate:SearchSpace.Candidate) -> int:
+    def get_amount_of_first_choices(self, candidate: SearchSpace.Candidate) -> int:
         return len([value for value in candidate.values if value == 0])
 
     def get_range_scores_for_each_day(self, candidate: SearchSpace.Candidate) -> list[float]:
@@ -252,14 +242,15 @@ class BTProblem(CombinatorialProblem):
             if max_value == 0:
                 return 1000
             else:
-                return (max_value-min_value)/max_value
+                return (max_value - min_value) / max_value
+
         mins_and_maxs = self.get_min_and_max_for_each_work_day(candidate)
         return [range_score(max_val, min_val) for max_val, min_val in mins_and_maxs]
 
     def get_range_score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         range_scores = self.get_range_scores_for_each_day(candidate)
         weights_for_days = [1, 1, 1, 1, 1, 10, 10]
-        return sum((range_val**2) * weight for range_val, weight in zip(range_scores, weights_for_days))
+        return sum((range_val ** 2) * weight for range_val, weight in zip(range_scores, weights_for_days))
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         range_score = self.get_range_score_of_candidate(candidate)
@@ -283,7 +274,6 @@ class BTPredicate(Enum):
     DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS = auto()
     NO_CONSECUTIVE_WEEKENDS = auto()
 
-
     def __repr__(self):
         return ["Exceeds weekly working hours", "Has consecutive weekends",
                 "Unstable Monday", "Unstable Tuesday", "Unstable Wednesday",
@@ -294,7 +284,8 @@ class BTPredicate(Enum):
         return self.__repr__()
 
     def to_week_day(self):
-        return self.value   # THIS MEANS YOU CAN'T ADD MORE PREDICATES ABOVE MONDAY
+        return self.value  # THIS MEANS YOU CAN'T ADD MORE PREDICATES ABOVE MONDAY
+
 
 class ExpandedBTProblem(CombinatorialConstrainedProblem):
     original_problem: BTProblem
@@ -306,14 +297,18 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         constraint_space = SearchSpace.SearchSpace([2 for pred in self.predicates])
         super().__init__(original_problem, constraint_space)
 
+    def __repr__(self):
+        return f"ConstrainedBTProblem({self.original_problem}, {self.predicates})"
 
+    def long_repr(self):
+        return self.original_problem.long_repr()
 
     def rota_exceeds_weekly_working_hours(self, worker_rota: WorkerRota) -> bool:
         max_allowed_weekly_hours = 48
         extended_rota = self.original_problem.extend_rota_to_total_roster(worker_rota)
-        as_matrix = np.array(extended_rota, dype=int)
-        as_matrix.reshape((-1, 7))
-        weekly_hours = np.sum(as_matrix, axis = 1)
+        as_matrix = np.array(extended_rota, dtype=int)
+        as_matrix = as_matrix.reshape((-1, 7))
+        weekly_hours = np.sum(as_matrix, axis=1)
         max_weekly_hours = np.max(weekly_hours)
         return max_weekly_hours > max_allowed_weekly_hours
 
@@ -346,7 +341,6 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         bad_days = utils.unzip(weekdays_and_scores[:3])[0]
         return bad_days
 
-
     def get_predicates(self, candidate: SearchSpace.Candidate):
         bad_weekdays = self.get_bad_weekdays(candidate)
 
@@ -359,8 +353,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
                 weekday = predicate.to_week_day()
                 return weekday in bad_weekdays
 
-        return SearchSpace.Candidate([result_of_predicate(predicate) for predicate in self.predicates])
-
+        return SearchSpace.Candidate([int(result_of_predicate(predicate)) for predicate in self.predicates])
 
     def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
         yes = "✓"
@@ -373,18 +366,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         original_candidate, predicates = self.split_candidate(candidate)
         normal_score = self.original_problem.score_of_candidate(candidate)
 
-
-        if BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS in self.predicates:
-            if self.any_rotas_exceed_weekly_working_hours(original_candidate):
-                return 1000 # this is a minimisation task, so we return a big value when the constraint is broken
+        if (BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS in self.predicates
+                and self.any_rotas_exceed_weekly_working_hours(original_candidate)):
+                return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
             return normal_score
-
-
-
-
-
-
-
-
-
