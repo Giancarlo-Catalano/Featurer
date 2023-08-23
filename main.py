@@ -12,8 +12,13 @@ checkerboard = CheckerBoard.CheckerBoardProblem(12, 12)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 simpleBT = BT.SimplifiedBTProblem(25, 3)
-almostBT = BT.BTProblem(20, 4, 28)
+almostBT = BT.BTProblem(30, 4, 28)
 constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
+                                                BT.BTPredicate.BAD_MONDAY,
+                                                BT.BTPredicate.BAD_TUESDAY,
+                                                BT.BTPredicate.BAD_WEDNESDAY,
+                                                BT.BTPredicate.BAD_THURSDAY,
+                                                BT.BTPredicate.BAD_FRIDAY,
                                                 BT.BTPredicate.BAD_SATURDAY,
                                                 BT.BTPredicate.BAD_SUNDAY])
 
