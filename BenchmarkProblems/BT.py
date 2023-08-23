@@ -397,5 +397,9 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
                 return 1
 
         complexity_of_predicates = sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
+        predicates_are_present = super().amount_of_set_values_in_feature(predicates) > 0
 
-        return complexity_of_parameters + complexity_of_predicates
+        if predicates_are_present:
+            return complexity_of_predicates
+        else:
+            return 10 +  complexity_of_parameters
