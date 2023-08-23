@@ -275,10 +275,9 @@ class BTPredicate(Enum):
     NO_CONSECUTIVE_WEEKENDS = auto()
 
     def __repr__(self):
-        return ["Exceeds weekly working hours", "Has consecutive weekends",
-                "Unstable Monday", "Unstable Tuesday", "Unstable Wednesday",
+        return ["Unstable Monday", "Unstable Tuesday", "Unstable Wednesday",
                 "Unstable Thursday", "Unstable Friday", "Unstable Saturday",
-                "Unstable Sunday"][self.value - 1]
+                "Unstable Sunday", "Exceeds weekly working hours", "Has consecutive weekends"][self.value - 1]
 
     def __str__(self):
         return self.__repr__()
@@ -370,4 +369,15 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
                 and self.any_rotas_exceed_weekly_working_hours(original_candidate)):
                 return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
-            return normal_score
+            return
+
+
+    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+        unconstrained_feature, predicates = super().split_feature(feature)
+        complexity_of_parameters = self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
+        complexity_of_predicate = len(predicates.var_vals)
+
+        if complexity_of_parameters == 0:
+            return complexity_of_predicate
+        else:
+            return complexity_of_parameters + (complexity_of_predicate != 1)
