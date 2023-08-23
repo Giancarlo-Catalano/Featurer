@@ -13,7 +13,7 @@ onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 simpleBT = BT.SimplifiedBTProblem(25, 3)
 almostBT = BT.BTProblem(20, 4, 28)
-constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS,
+constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
                                                 BT.BTPredicate.BAD_SATURDAY,
                                                 BT.BTPredicate.BAD_SUNDAY])
 
@@ -23,8 +23,8 @@ c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.B
                                                             KnapsackConstraint.WITHIN_WEIGHT,
                                                             KnapsackConstraint.WITHIN_VOLUME])
 
-depth = 4
-importance_of_explainability = 0.2
+depth = 10
+importance_of_explainability = 0.5
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     print("More specifically, it is")
     print(problem.long_repr())
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = problem.search_space.dimensions
+    requested_amount_of_features = 30
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")

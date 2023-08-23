@@ -272,8 +272,8 @@ class BTPredicate(Enum):
     BAD_SATURDAY = auto()
     BAD_SUNDAY = auto()
 
-    DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS = auto()
-    NO_CONSECUTIVE_WEEKENDS = auto()
+    EXCEEDS_WEEKLY_HOURS = auto()
+    CONSECUTIVE_WEEKENDS = auto()
 
     def __repr__(self):
         return ["Stable Monday", "Stable Tuesday", "Stable Wednesday",
@@ -344,25 +344,26 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         return bad_days
 
     def get_predicates(self, candidate: SearchSpace.Candidate):
+        """the predicates are TRUE when the constraint is VIOLATED"""
         bad_weekdays = self.get_bad_weekdays(candidate)
 
         def result_of_predicate(predicate: BTPredicate):
-            if predicate == BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS:
+            if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return self.any_rotas_exceed_weekly_working_hours(candidate)
-            elif predicate == BTPredicate.NO_CONSECUTIVE_WEEKENDS:
+            elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
                 return self.any_rotas_have_consecutive_weekends(candidate)
             else:  # weekday check
                 weekday = predicate.to_week_day()
-                return weekday not in bad_weekdays
+                return weekday in bad_weekdays
 
         return SearchSpace.Candidate([int(result_of_predicate(predicate)) for predicate in self.predicates])
 
     def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
 
         def repr_predicate(predicate: BTPredicate, value):
-            if predicate ==  BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS:
+            if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return "Exceeds weekly hours" if value else "Within weekly hours"
-            elif predicate == BTPredicate.NO_CONSECUTIVE_WEEKENDS:
+            elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
                 return "Contains consecutive working weekends" if value else "Does not have consecutive working weekends"
             else:
                 weekday = predicate.to_week_day()
@@ -377,7 +378,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         original_candidate, predicates = self.split_candidate(candidate)
         normal_score = self.original_problem.score_of_candidate(candidate)
 
-        if (BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS in self.predicates
+        if (BTPredicate.EXCEEDS_WEEKLY_HOURS in self.predicates
                 and self.any_rotas_exceed_weekly_working_hours(original_candidate)):
                 return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
@@ -386,20 +387,23 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         unconstrained_feature, predicates = super().split_feature(feature)
-        complexity_of_parameters = self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
+
+        ideal_amount_of_workers = 4
+        amount_of_workers = super().amount_of_set_values_in_feature(unconstrained_feature)
+        complexity_of_parameters = abs(amount_of_workers - ideal_amount_of_workers)
 
         def complexity_of_predicate(predicate, value):
-            if predicate ==  BTPredicate.DOES_NOT_EXCEED_WEEKLY_WORKING_HOURS:
-                return 2 if value else 4
-            elif predicate == BTPredicate.NO_CONSECUTIVE_WEEKENDS:
-                return 2 if value else 4
+            if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
+                return 5 if value else 2
+            elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
+                return 5 if value else 2
             else:
-                return 1
+                return 3 if value else 1
 
         complexity_of_predicates = sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
         predicates_are_present = super().amount_of_set_values_in_feature(predicates) > 0
 
         if predicates_are_present:
-            return complexity_of_predicates
+            return complexity_of_predicates + complexity_of_parameters
         else:
             return 10 +  complexity_of_parameters
