@@ -16,7 +16,8 @@ float_type = np.single
 
 def cumulative_sum(elements):
     # in Python 3.11 return list(itertools.accumulate(elements, initial=0))
-    return [0] + list(itertools.accumulate(elements))
+    result = list(itertools.accumulate(elements, initial=0))
+    return result
 
 
 def adjacent_pairs(elements):

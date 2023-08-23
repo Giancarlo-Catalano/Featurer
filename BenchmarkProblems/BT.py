@@ -140,7 +140,7 @@ class WorkerRota:
         week_starts = [day_index for day_index in range(len(self.pattern)) if day_index % self.week_size == 0]
         weeks = [self.pattern[week_start:(week_start+self.week_size)] for week_start in week_starts]
         def repr_week(week):
-            return "".join(["*" if works else "_" for works in week])
+            return "["+"".join(["*" if works else "_" for works in week])+"]"
 
         return " ".join(repr_week(week) for week in weeks)
 
@@ -196,7 +196,7 @@ class BTProblem(CombinatorialProblem):
 
 
     def __repr__(self):
-        return f"BTProblem({self.total_workers}, {self.amount_of_choices_per_worker}, {self.total_roster_length}"
+        return f"BTProblem({self.total_workers}, {self.amount_of_choices_per_worker}, {self.total_roster_length})"
 
     def get_rotas_in_feature(self, feature: SearchSpace.Feature) -> list[WorkerRota]:
         return [self.workers[worker_index].options[which_rota]
@@ -210,7 +210,7 @@ class BTProblem(CombinatorialProblem):
         def repr_worker_and_rota(worker_index, rota_index):
             worker = self.workers[worker_index]
             rota = worker.options[rota_index]
-            return f"{worker.name} on #{rota_index} = {rota}"
+            return f"{worker.name} on #{rota_index} = \t\t{rota}"
 
         return "\n".join(repr_worker_and_rota(worker_index, rota_index)
                          for worker_index, rota_index in feature.var_vals)

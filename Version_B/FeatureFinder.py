@@ -261,8 +261,6 @@ class FeatureDeveloper:
     thoroughness: float
 
     def get_filter(self, intermediates: list[IntermediateFeature]):
-        # TODO: in the future you might want the expected proportions to be obtained from previous iterations of the GA!
-        # For now, they are obtained as if it always was the first generation (and the one before was uniformly random)
         expected_proportions = None
         if self.additional_criteria == ScoringCriterion.NOVELTY:
             expected_proportions = np.array([self.search_space.probability_of_feature_in_uniform(intermediate.feature)

@@ -69,7 +69,7 @@ class SearchSpace:
 
     def __init__(self, cardinalities: Iterable[int]):
         self.cardinalities = tuple(cardinalities)
-        self.precomputed_offsets = utils.cumulative_sum(cardinalities)
+        self.precomputed_offsets = utils.cumulative_sum(self.cardinalities)
         self.amount_of_trivial_features = sum(self.cardinalities)
         self.dimensions = len(self.cardinalities)
 

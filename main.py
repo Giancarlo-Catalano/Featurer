@@ -18,7 +18,7 @@ knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
 c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING, KnapsackConstraint.WITHIN_WEIGHT, KnapsackConstraint.WITHIN_VOLUME])
 
 depth = 4
-importance_of_explainability = 0.25
+importance_of_explainability = 0.2
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -34,7 +34,7 @@ def get_problem_compact_training_data(problem: CombinatorialProblem.Combinatoria
     training_samples, fitness_list = get_problem_training_data(problem, sample_size)
     # print("The generated samples are:")
     # for sample, fitness in zip(training_samples, fitness_list):
-    #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness})")
+    #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness:.2f})")
     return PopulationSamplePrecomputedData(problem.search_space, training_samples, fitness_list)
 
 
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     print("We can sample some individuals")
     good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
     for good_sample, good_score in zip(good_samples, good_sample_scores):
-        print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score})\n")
+        print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
 
 
 
