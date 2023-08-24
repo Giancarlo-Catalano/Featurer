@@ -194,8 +194,8 @@ class Worker:
         return cls(name, options)
 
     def __repr__(self):
-        return f"{self.name}, with rotas:\n\t\t" + (
-            "\n\t\t".join(f"{rota}" for rota in self.options)
+        return f"{self.name}, with rotas:\n\t" + (
+            "\n\t".join(f"{rota}" for rota in self.options)
         )
 
 

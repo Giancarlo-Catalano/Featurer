@@ -334,7 +334,8 @@ class FeatureDeveloper:
             considered_features = feature_mixer.efficient_get_stochastically_mixed_features(amount_to_consider)
 
         if len(considered_features) == 0:
-            return ParentPool.get_empty_parent_pool()
+            self.previous_iterations.append(ParentPool.get_empty_parent_pool())
+            return
         feature_filter = self.get_filter(considered_features)
 
         features, scores = feature_filter.get_the_best_features(amount_to_return,
