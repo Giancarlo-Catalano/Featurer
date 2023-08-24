@@ -103,8 +103,6 @@ class FeatureMixer:
                                 father: IntermediateFeature):
         if can_be_merged(mother, father):
             accumulator.add(merge_two_intermediate(mother, father))
-            return True
-        return False
 
     def get_heuristic_mixed_features_asexual(self, amount: int):
         result = set()
@@ -367,7 +365,7 @@ class FeatureDeveloper:
 
         def should_use_criteria(weight):
             # criteria_threshold = self.depth // 2
-            return weight == self.depth
+            return weight > self.depth // 2
 
         for i in range(self.depth - 1):
             weight = i + 2
