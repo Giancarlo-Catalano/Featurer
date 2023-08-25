@@ -223,8 +223,8 @@ def to_column_vector(row_vector):
  """
 
 
-def binomial_coeff(n, k):
-    return math.factorial(n) / (math.factorial(n - k) * math.factorial(k))
+def binomial_coeff(n, k) -> int:
+    return math.factorial(n) // (math.factorial(n - k) * math.factorial(k))
 
 
 def sigmoid(x):
@@ -396,7 +396,5 @@ def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
 
 def divide_arrays_safely(numerator, deniminator):
     return np.divide(numerator, deniminator, out=np.zeros_like(numerator), where=deniminator != 0.0)
-
-
 
 

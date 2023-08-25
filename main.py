@@ -1,10 +1,10 @@
 import utils
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
-from Version_B.Sampler import Sampler
-from Version_B.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
+from Version_C.Sampler import Sampler
+from Version_C.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
 import HotEncoding
 import SearchSpace
-from Version_B.FeatureFinder import find_features
+from Version_C.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 
 trap5 = TrapK.TrapK(5, 3)
@@ -12,7 +12,7 @@ checkerboard = CheckerBoard.CheckerBoardProblem(12, 12)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 simpleBT = BT.SimplifiedBTProblem(25, 3)
-almostBT = BT.BTProblem(30, 4, 28)
+almostBT = BT.BTProblem(6, 4, 28)
 constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
                                                 BT.BTPredicate.BAD_MONDAY,
                                                 BT.BTPredicate.BAD_TUESDAY,

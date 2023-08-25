@@ -432,9 +432,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         def complexity_of_predicates(predicates: SearchSpace.Feature):
             if predicates.var_vals:
-                return min(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
-            else:
-                0
+                return sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
 
 
         amount_of_workers = super().amount_of_set_values_in_feature(unconstrained_feature)
