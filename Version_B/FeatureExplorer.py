@@ -6,7 +6,7 @@ import Version_B.VariateModels
 import utils
 
 
-class IntermediateFeature:
+class LegacyIntermediateFeature:
     """A feature, with added information on leftmost and rightmost set parameter"""
     start: int
     end: int
@@ -32,17 +32,17 @@ class IntermediateFeature:
         return self.feature.__eq__(other.feature)
 
 
-def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature):
+def merge_two_intermediate(left: LegacyIntermediateFeature, right: LegacyIntermediateFeature):
     """creates the union of two intermediate features"""
     # NOTE: the order of the arguments matters!
     new_start = min(left.start, right.start)
     new_end = max(left.end, right.end)
     new_feature = SearchSpace.merge_two_features(left.feature, right.feature)
 
-    return IntermediateFeature(new_start, new_end, new_feature)
+    return LegacyIntermediateFeature(new_start, new_end, new_feature)
 
 
-def can_be_merged(a: IntermediateFeature, b: IntermediateFeature):
+def can_be_merged(a: LegacyIntermediateFeature, b: LegacyIntermediateFeature):
     """Returns true if the 2 features can be merged without overlaps"""
     return (a.end < b.start) or (b.end < a.start)
 
@@ -71,7 +71,7 @@ class IntermediateFeatureGroup:
     def get_trivial_weight_group(cls, search_space: SearchSpace.SearchSpace):
         weight = 1
         var_vals = search_space.get_all_var_val_pairs()
-        trivial_features = set(IntermediateFeature.get_trivial_feature(var, val)
+        trivial_features = set(LegacyIntermediateFeature.get_trivial_feature(var, val)
                                for (var, val) in var_vals)
         return cls(trivial_features, weight)
 

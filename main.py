@@ -7,12 +7,12 @@ import SearchSpace
 from Version_C.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 
-trap5 = TrapK.TrapK(5, 3)
+trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(12, 12)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 simpleBT = BT.SimplifiedBTProblem(25, 3)
-almostBT = BT.BTProblem(6, 4, 28)
+almostBT = BT.BTProblem(30, 4, 28)
 constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
                                                 BT.BTPredicate.BAD_MONDAY,
                                                 BT.BTPredicate.BAD_TUESDAY,
@@ -28,7 +28,7 @@ c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.B
                                                             KnapsackConstraint.WITHIN_WEIGHT,
                                                             KnapsackConstraint.WITHIN_VOLUME])
 
-depth = 10
+depth = 5
 importance_of_explainability = 0.5
 
 
@@ -120,14 +120,14 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = constrainedBT
-    maximise = False
+    problem = trap5
+    maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=500)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = 30
+    requested_amount_of_features = 60
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")

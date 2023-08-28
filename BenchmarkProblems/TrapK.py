@@ -27,6 +27,9 @@ class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
         return how_many_per_group
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+        count_per_group = self.get_how_many_vars_per_group(feature)
+        amount_of_used_groups = len([count for count in count_per_group if count > 0])
+        malus = 10 * amount_of_used_groups
         return utils.product([area + 1 for area in self.get_how_many_vars_per_group(feature)])
 
     def divide_candidate_in_groups(self, candidate: SearchSpace.Candidate):

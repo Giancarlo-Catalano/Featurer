@@ -1,7 +1,6 @@
 from typing import Any
 
 import numpy as np
-from bitarray import bitarray
 import random
 
 import BenchmarkProblems.CombinatorialProblem
@@ -14,39 +13,7 @@ from Version_B.PopulationSamplePrecomputedData import PopulationSamplePrecompute
     PopulationSampleWithFeaturesPrecomputedData
 
 
-class IntermediateFeature:
-    feature: SearchSpace.Feature
-    mask: bitarray
-
-    def __init__(self, feature: SearchSpace.Feature, mask: bitarray):
-        self.feature = feature
-        self.mask = mask
-
-    @classmethod
-    def from_trivial_feature(cls, var, val, search_space: SearchSpace.SearchSpace):
-        mask = bitarray(search_space.dimensions)
-        mask.setall(0)
-        mask[var] = True
-        feature = SearchSpace.Feature.trivial_feature(var, val)
-        return cls(feature, mask)
-
-    @classmethod
-    def get_all_trivial_features(cls, search_space: SearchSpace.SearchSpace):
-        return [IntermediateFeature.from_trivial_feature(var, val, search_space)
-                for var, val in search_space.get_all_var_val_pairs()]
-
-    def __repr__(self):
-        return f"IntermediateFeature({self.feature}, {self.mask})"
-
-
-def can_be_merged(first: IntermediateFeature, second: IntermediateFeature) -> bool:
-    return not (first.mask & second.mask).any()
-
-
-def merge_two_intermediate(first: IntermediateFeature, second: IntermediateFeature):
-    new_feature = SearchSpace.merge_two_features(first.feature, second.feature)
-    new_mask = first.mask | second.mask
-    return IntermediateFeature(new_feature, new_mask)
+from Version_C.Feature import Feature
 
 
 class ParentPool:
@@ -55,7 +22,7 @@ class ParentPool:
         These scores go from 0 to 1 and are also used to sample the features using weights.
         The main purpose of this class is to select a random feature and use it as a parent somewhere else
     """
-    features: list[IntermediateFeature]
+    features: list[Feature]
     weights: list[float]
 
     precomputed_cumulative_list: list[float]
@@ -71,8 +38,8 @@ class ParentPool:
     def select_n_parents_randomly(self, amount: int):
         return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list, k=amount)
 
-    def get_raw_features(self):
-        return [intermediate.feature for intermediate in self.features]
+    def get_raw_features(self) -> list[SearchSpace.Feature]:
+        return [feature.to_legacy_feature() for feature in self.features]
 
     @classmethod
     def get_empty_parent_pool(cls):
@@ -96,24 +63,18 @@ class FeatureMixer:
 
         self.asexual = asexual
 
-    def select_parents(self) -> (IntermediateFeature, IntermediateFeature):
+    def select_parents(self) -> (Feature, Feature):
         return self.parent_set_1.select_parent_randomly(), self.parent_set_2.select_parent_randomly()
 
-    def create_random_feature(self) -> IntermediateFeature:
-        while True:
-            parent_1, parent_2 = self.select_parents()
-            if can_be_merged(parent_1, parent_2):
-                return merge_two_intermediate(parent_1, parent_2)
-
-    def get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+    def get_stochastically_mixed_features(self, amount: int) -> list[Feature]:
         batch_size = amount
         result = set()
 
         def add_from_batch():
             batch_mothers = self.parent_set_1.select_n_parents_randomly(batch_size)
             batch_fathers = self.parent_set_2.select_n_parents_randomly(batch_size)
-            offspring = [merge_two_intermediate(mother, father) for mother, father in zip(batch_mothers, batch_fathers)
-                         if can_be_merged(mother, father)]
+            offspring = [Feature.merge(mother, father) for mother, father in zip(batch_mothers, batch_fathers)
+                         if Feature.are_disjoint(mother, father)]
             result.update(offspring)
 
         while len(result) < amount:
@@ -122,11 +83,12 @@ class FeatureMixer:
         return list(result)[:amount]
 
     @staticmethod
-    def add_merged_if_mergeable(accumulator: set[IntermediateFeature],
-                                mother: IntermediateFeature,
-                                father: IntermediateFeature):
-        if can_be_merged(mother, father):
-            accumulator.add(merge_two_intermediate(mother, father))
+    def add_merged_if_mergeable(accumulator: set[Feature],
+                                mother: Feature,
+                                father: Feature):
+        if Feature.are_disjoint(mother, father):
+            child = Feature.merge(mother, father)
+            accumulator.add(child)
 
     def get_heuristic_mixed_features_asexual(self, amount: int):
         result = set()
@@ -171,7 +133,7 @@ class FeatureFilter:
         * create scores based on their explainability + fitness / novelty
         * filter the given features based on those scores
     """
-    current_features: list[IntermediateFeature]
+    current_features: list[SearchSpace.Feature]
     precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
     complexity_array: np.ndarray
 
@@ -179,13 +141,13 @@ class FeatureFilter:
     expected_proportions: np.ndarray
 
     def __init__(self,
-                 initial_features,
+                 initial_features: list[Feature],
                  precomputed_sample_data,
                  complexity_function,
                  importance_of_explainability,
                  expected_proportions=None):
         self.current_features = initial_features
-        stripped_initial_features = [intermediate.feature for intermediate in initial_features]
+        stripped_initial_features = [intermediate.to_legacy_feature() for intermediate in initial_features]
         self.precomputed_data_for_features = PopulationSampleWithFeaturesPrecomputedData(precomputed_sample_data,
                                                                                          stripped_initial_features)
         self.complexity_array = np.array([complexity_function(feature) for feature in stripped_initial_features])
@@ -200,7 +162,8 @@ class FeatureFilter:
         return 1.0 - self.get_complexity_array()
 
     def get_positive_fitness_correlation_array(self) -> np.ndarray:
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_average_fitness_vector())
+        # return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()
@@ -246,7 +209,7 @@ class FeatureFilter:
 
     def get_the_best_features(self, how_many_to_keep: int,
                               additional_criteria: Optional[ScoringCriterion]) -> (
-            list[IntermediateFeature], np.ndarray):
+            list[Feature], np.ndarray):
         scores = self.get_scores_of_features(additional_criteria)
 
         sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
@@ -266,10 +229,10 @@ class FeatureDeveloper:
     amount_requested: int
     thoroughness: float
 
-    def get_filter(self, intermediates: list[IntermediateFeature]):
+    def get_filter(self, intermediates: list[Feature]):
         expected_proportions = None
         if self.additional_criteria == ScoringCriterion.NOVELTY:
-            expected_proportions = np.array([self.search_space.probability_of_feature_in_uniform(intermediate.feature)
+            expected_proportions = np.array([self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
                                              for intermediate in intermediates])
 
         return FeatureFilter(intermediates,
@@ -279,15 +242,12 @@ class FeatureDeveloper:
                              expected_proportions=expected_proportions)
 
     def get_trivial_parent_pool(self):
-        trivial_features = IntermediateFeature.get_all_trivial_features(self.search_space)
+        trivial_features = Feature.get_all_trivial_features(self.search_space)
 
         feature_filter = self.get_filter(trivial_features)
         scores = feature_filter.get_scores_of_features(additional_criteria=None)
 
         return ParentPool(trivial_features, scores)  # note how they don't get filtered!
-
-    def get_expected_amount_at_the_end(self) -> int:
-        return self.search_space.total_cardinality * self.depth
 
     def __init__(self,
                  search_space,
@@ -345,11 +305,34 @@ class FeatureDeveloper:
                                                                 if use_additional_criteria else None)
         self.previous_iterations.append(ParentPool(features, scores))
 
+    def get_settings_schedule(self):
+        def scale_to_have_sum(to_scale, final_sum):
+            current_sum = sum(to_scale)
+            return [int(old * final_sum / current_sum) for old in to_scale]
+
+        def multiply_by(to_scale, factor):
+            return [old * factor for old in to_scale]
+
+        weights = list(range(1, self.depth))
+        base = self.search_space.average_cardinality
+        dimensions = self.search_space.dimensions
+        depth = self.depth
+        total_sizes = [base * utils.binomial_coeff(dimensions, w) for w in weights]  # i'm aware that it should be **
+        total_amount_kept_at_the_end = self.amount_requested * depth * self.search_space.total_cardinality
+
+        to_keep = scale_to_have_sum(total_sizes, total_amount_kept_at_the_end)
+        deceptiveness = utils.binomial_coeff(dimensions, depth)
+        to_consider = multiply_by(to_keep, deceptiveness)
+
+        return list(zip(weights, to_keep, to_consider))
+
     def how_many_features_to_consider_in_weight_category(self, weight) -> int:
-        return self.amount_requested * weight * self.search_space.total_cardinality
+        total = (self.search_space.average_cardinality ** weight) * utils.binomial_coeff(self.search_space.dimensions,
+                                                                                         weight)
+        return int(total / weight)
 
     def how_many_features_to_keep_in_weight_category(self, weight) -> int:
-        return self.amount_requested * utils.binomial_coeff(self.depth, weight)
+        return self.how_many_features_to_consider_in_weight_category(weight)
 
     def develop_features(self, heuristic=False):
 
@@ -357,10 +340,10 @@ class FeatureDeveloper:
             if heuristic is True or heuristic is False:
                 return heuristic
             elif heuristic == "almost entirely":
-                return iteration+2 != self.depth
+                return iteration + 2 != self.depth
 
         def should_use_criteria(weight):
-            return weight > self.depth // 2
+            return weight == self.depth
 
         for i in range(self.depth - 1):
             weight = i + 2
@@ -381,7 +364,7 @@ class FeatureDeveloper:
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
         """This is the function which returns the features you'll be using in the future!"""
-        developed_features: list[IntermediateFeature] = utils.concat([parent_pool.features
+        developed_features: list[Feature] = utils.concat([parent_pool.features
                                                                       for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features)
 
@@ -406,7 +389,7 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
     feature_developer.develop_features(heuristic=heuristic)
 
     intermediate_features, scores = feature_developer.get_developed_features()
-    raw_features = [intermediate.feature for intermediate in intermediate_features]
+    raw_features = [intermediate.to_legacy_feature() for intermediate in intermediate_features]
 
     # give_explainability_and_average_fitnesses(raw_features, sample_data, problem, criteria)
     return raw_features, scores

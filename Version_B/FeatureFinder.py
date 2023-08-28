@@ -6,7 +6,7 @@ import random
 import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import utils
-from Version_B.FeatureExplorer import IntermediateFeature, can_be_merged, merge_two_intermediate
+from Version_B.FeatureExplorer import LegacyIntermediateFeature, can_be_merged, merge_two_intermediate
 from enum import Enum, auto
 from typing import Optional
 
@@ -19,7 +19,7 @@ class ParentPool:
         These scores go from 0 to 1 and are also used to sample the features using weights.
         The main purpose of this class is to select a random feature and use it as a parent somewhere else
     """
-    features: list[IntermediateFeature]
+    features: list[LegacyIntermediateFeature]
     weights: list[float]
 
     precomputed_cumulative_list: list[float]
@@ -63,16 +63,16 @@ class FeatureMixer:
 
         self.asexual = asexual
 
-    def select_parents(self) -> (IntermediateFeature, IntermediateFeature):
+    def select_parents(self) -> (LegacyIntermediateFeature, LegacyIntermediateFeature):
         return (self.parent_set_1.select_parent_randomly(), self.parent_set_2.select_parent_randomly())
 
-    def create_random_feature(self) -> IntermediateFeature:
+    def create_random_feature(self) -> LegacyIntermediateFeature:
         while True:
             parent_1, parent_2 = self.select_parents()
             if can_be_merged(parent_1, parent_2):
                 return merge_two_intermediate(parent_1, parent_2)
 
-    def get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+    def get_stochastically_mixed_features(self, amount: int) -> list[LegacyIntermediateFeature]:
         # TODO make this more efficient
         """this is the stochastic approach"""
         result = set()
@@ -81,7 +81,7 @@ class FeatureMixer:
 
         return list(result)
 
-    def efficient_get_stochastically_mixed_features(self, amount: int) -> list[IntermediateFeature]:
+    def efficient_get_stochastically_mixed_features(self, amount: int) -> list[LegacyIntermediateFeature]:
         batch_size = amount
         result = set()
 
@@ -98,9 +98,9 @@ class FeatureMixer:
         return list(result)[:amount]
 
     @staticmethod
-    def add_merged_if_mergeable(accumulator: set[IntermediateFeature],
-                                mother: IntermediateFeature,
-                                father: IntermediateFeature):
+    def add_merged_if_mergeable(accumulator: set[LegacyIntermediateFeature],
+                                mother: LegacyIntermediateFeature,
+                                father: LegacyIntermediateFeature):
         if can_be_merged(mother, father):
             accumulator.add(merge_two_intermediate(mother, father))
 
@@ -149,7 +149,7 @@ class FeatureFilter:
         * create scores based on their explainability + fitness / novelty
         * filter the given features based on those scores
     """
-    current_features: list[IntermediateFeature]
+    current_features: list[LegacyIntermediateFeature]
     precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
     complexity_array: np.ndarray
 
@@ -238,7 +238,7 @@ class FeatureFilter:
 
     def get_the_best_features(self, how_many_to_keep: int,
                               additional_criteria: Optional[ScoringCriterion]) -> (
-            list[IntermediateFeature], np.ndarray):
+            list[LegacyIntermediateFeature], np.ndarray):
         scores = self.get_scores_of_features(additional_criteria)
 
         sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
@@ -258,7 +258,7 @@ class FeatureDeveloper:
     amount_requested: int
     thoroughness: float
 
-    def get_filter(self, intermediates: list[IntermediateFeature]):
+    def get_filter(self, intermediates: list[LegacyIntermediateFeature]):
         expected_proportions = None
         if self.additional_criteria == ScoringCriterion.NOVELTY:
             expected_proportions = np.array([self.search_space.probability_of_feature_in_uniform(intermediate.feature)
@@ -271,7 +271,7 @@ class FeatureDeveloper:
                              expected_proportions=expected_proportions)
 
     def get_trivial_parent_pool(self):
-        trivial_features = [IntermediateFeature.get_trivial_feature(var, val)
+        trivial_features = [LegacyIntermediateFeature.get_trivial_feature(var, val)
                             for var, val in self.search_space.get_all_var_val_pairs()]
 
         feature_filter = self.get_filter(trivial_features)
@@ -281,7 +281,7 @@ class FeatureDeveloper:
 
 
     def get_expected_amount_at_the_end(self) -> int:
-        return self.search_space.total_cardinality
+        return self.search_space.total_cardinality * self.depth
 
     def __init__(self,
                  search_space,
@@ -386,8 +386,8 @@ class FeatureDeveloper:
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
         """This is the function which returns the features you'll be using in the future!"""
-        developed_features: list[IntermediateFeature] = utils.concat([parent_pool.features
-                                                                      for parent_pool in self.previous_iterations])
+        developed_features: list[LegacyIntermediateFeature] = utils.concat([parent_pool.features
+                                                                            for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features)
 
         return feature_filterer.get_the_best_features(self.amount_requested, self.additional_criteria)
