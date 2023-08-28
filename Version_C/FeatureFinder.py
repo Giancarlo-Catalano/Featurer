@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 import numpy as np
@@ -329,7 +330,10 @@ class FeatureDeveloper:
     def how_many_features_to_consider_in_weight_category(self, weight) -> int:
         total = (self.search_space.average_cardinality ** weight) * utils.binomial_coeff(self.search_space.dimensions,
                                                                                          weight)
-        return int(total / weight)
+
+        midpoint = math.ceil(self.depth / 2)
+        denominator = 1 # if weight <= midpoint else weight - midpoint + 1
+        return int(total / denominator)
 
     def how_many_features_to_keep_in_weight_category(self, weight) -> int:
         return self.how_many_features_to_consider_in_weight_category(weight)
