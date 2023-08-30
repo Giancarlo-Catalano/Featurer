@@ -328,11 +328,14 @@ class FeatureDeveloper:
             return sum([utils.product(which_vars) for which_vars in
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
 
+        def get_likely_amount_of_important_features(weight_category: int):
+            return int(utils.binomial_coeff(self.search_space.dimensions, weight_category) * self.search_space.average_cardinality)
+
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:
                 return get_total_amount_of_features(weight_category)
             else:
-                return self.amount_requested
+                return get_likely_amount_of_important_features(weight_category)
 
         def amount_to_consider_for_weight(weight_category: int, kept_in_category: int):
             if weight_category <= self.guaranteed_depth:
