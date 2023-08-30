@@ -1,3 +1,4 @@
+import itertools
 import math
 from typing import Any
 
@@ -222,7 +223,7 @@ class FeatureDeveloper:
     """this class generates the useful, explainable features"""
     population_sample: PopulationSamplePrecomputedData
     previous_iterations: list[ParentPool]
-    depth: int
+    guaranteed_depth: int
     search_space: SearchSpace.SearchSpace
     complexity_function: Any  # SearchSpace.Feature -> float
     importance_of_explainability: float
@@ -253,14 +254,16 @@ class FeatureDeveloper:
     def __init__(self,
                  search_space,
                  population_sample,
-                 depth,
+                 guaranteed_depth,
+                 extra_depth,
                  complexity_function,
                  importance_of_explainability,
                  additional_criteria: Optional[ScoringCriterion],
                  amount_requested):
         self.search_space = search_space
         self.population_sample = population_sample
-        self.depth = depth
+        self.guaranteed_depth = guaranteed_depth
+        self.extra_depth = extra_depth
         self.complexity_function = complexity_function
         self.importance_of_explainability = importance_of_explainability
         self.additional_criteria = additional_criteria
@@ -306,61 +309,49 @@ class FeatureDeveloper:
                                                                 if use_additional_criteria else None)
         self.previous_iterations.append(ParentPool(features, scores))
 
-    def get_settings_schedule(self):
-        def scale_to_have_sum(to_scale, final_sum):
-            current_sum = sum(to_scale)
-            return [int(old * final_sum / current_sum) for old in to_scale]
+    def get_schedule(self, heuristic_strategy="where needed") -> list[(int, bool, bool, int, int)]:
+        def get_total_amount_of_features(weight_category: int):
+            """if all the variables had the same cardinality, this would be simpler"""
+            return sum([utils.product(which_vars) for which_vars in
+                        itertools.combinations(self.search_space.cardinalities, weight_category)])
 
-        def multiply_by(to_scale, factor):
-            return [old * factor for old in to_scale]
 
-        weights = list(range(1, self.depth))
-        base = self.search_space.average_cardinality
-        dimensions = self.search_space.dimensions
-        depth = self.depth
-        total_sizes = [base * utils.binomial_coeff(dimensions, w) for w in weights]  # i'm aware that it should be **
-        total_amount_kept_at_the_end = self.amount_requested * depth * self.search_space.total_cardinality
+        def amount_to_keep_for_weight(weight_category: int):
+            if weight_category <= self.guaranteed_depth:
+                return get_total_amount_of_features(weight_category)
+            else:
+                return self.amount_requested
 
-        to_keep = scale_to_have_sum(total_sizes, total_amount_kept_at_the_end)
-        deceptiveness = utils.binomial_coeff(dimensions, depth)
-        to_consider = multiply_by(to_keep, deceptiveness)
 
-        return list(zip(weights, to_keep, to_consider))
+        def amount_to_consider_for_weight(weight_category: int, kept_in_category: int):
+            if weight_category <= self.guaranteed_depth:
+                return kept_in_category
+            else:
+                return kept_in_category * 2 # TODO think about this more
 
-    def how_many_features_to_consider_in_weight_category(self, weight) -> int:
-        total = (self.search_space.average_cardinality ** weight) * utils.binomial_coeff(self.search_space.dimensions,
-                                                                                         weight)
+        def should_use_heuristic(weight_category: int):
+            return weight_category <= self.guaranteed_depth
 
-        midpoint = math.ceil(self.depth / 2)
-        denominator = 1 # if weight <= midpoint else weight - midpoint + 1
-        return int(total / denominator)
 
-    def how_many_features_to_keep_in_weight_category(self, weight) -> int:
-        return self.how_many_features_to_consider_in_weight_category(weight)
+        def should_use_criteria(weight_category: int):
+            return weight_category > (self.guaranteed_depth-1)
 
-    def develop_features(self, heuristic=False):
 
-        def should_use_heuristic(iteration):
-            if heuristic is True or heuristic is False:
-                return heuristic
-            elif heuristic == "almost entirely":
-                return iteration + 2 != self.depth
+        weights = list(range(2, self.guaranteed_depth+1))
+        should_be_heuristic = [should_use_heuristic(weight) for weight in weights]
+        should_use_criteria = [should_use_criteria(weight) for weight in weights]
+        kepts = [amount_to_keep_for_weight(weight) for weight in weights]
+        considereds = [amount_to_consider_for_weight(weight, kept) for weight, kept in zip(weights, kepts)]
 
-        def should_use_criteria(weight):
-            return weight == self.depth
+        return zip(weights, should_be_heuristic, should_use_criteria, kepts, considereds)
 
-        for i in range(self.depth - 1):
-            weight = i + 2
-            use_heuristic = should_use_heuristic(weight)
-            use_criteria = should_use_criteria(weight)
 
-            amount_to_consider: int = self.how_many_features_to_consider_in_weight_category(weight)
-            amount_to_keep: int = self.how_many_features_to_keep_in_weight_category(weight)
+    def develop_features(self, heuristic_strategy):
 
-            print(f"On the {i}th loop of develop_features, {use_heuristic = },"
-                  f" {use_criteria = }, "
-                  f"{amount_to_keep = }, "
-                  f"{amount_to_consider = }")
+        settings_schedule = self.get_schedule(heuristic_strategy)
+
+        for weight, use_heuristic, use_criteria, amount_to_keep, amount_to_consider in settings_schedule:
+            print(f"In iteration where {weight = }: {use_heuristic = }, {amount_to_keep = }, {amount_to_consider}")
             self.new_iteration(amount_to_consider,
                                amount_to_keep,
                                heuristic=use_heuristic,
@@ -376,21 +367,23 @@ class FeatureDeveloper:
 
 
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
-                  depth: int,
+                  guaranteed_depth: int,
+                  extra_depth: int,
                   importance_of_explainability: float,
                   sample_data: PopulationSamplePrecomputedData,
-                  heuristic,
+                  heuristic_strategy: Any,
                   criteria: Optional[ScoringCriterion],
                   amount_requested: int) -> (list[SearchSpace.Feature], np.ndarray):
     feature_developer = FeatureDeveloper(search_space=problem.search_space,
                                          population_sample=sample_data,
-                                         depth=depth,
+                                         guaranteed_depth=guaranteed_depth,
+                                         extra_depth=extra_depth,
                                          complexity_function=problem.get_complexity_of_feature,
                                          importance_of_explainability=importance_of_explainability,
                                          additional_criteria=criteria,
                                          amount_requested=amount_requested)
 
-    feature_developer.develop_features(heuristic=heuristic)
+    feature_developer.develop_features(heuristic_strategy=heuristic_strategy)
 
     intermediate_features, scores = feature_developer.get_developed_features()
     raw_features = [intermediate.to_legacy_feature() for intermediate in intermediate_features]

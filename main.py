@@ -28,7 +28,8 @@ c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.B
                                                             KnapsackConstraint.WITHIN_WEIGHT,
                                                             KnapsackConstraint.WITHIN_VOLUME])
 
-depth = 5
+guaranteed_depth = 5
+extra_depth = 10
 importance_of_explainability = 0.5
 
 
@@ -77,9 +78,10 @@ def get_features(problem: CombinatorialProblem,
                  amount_requested: int):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
-                                     depth=depth,
+                                     guaranteed_depth=guaranteed_depth,
+                                     extra_depth=extra_depth,
                                      importance_of_explainability=importance_of_explainability,
-                                     heuristic=True,
+                                     heuristic_strategy=True,
                                      sample_data=sample_data,
                                      criteria=criteria,
                                      amount_requested=amount_requested)
@@ -127,15 +129,15 @@ if __name__ == '__main__':
     print("More specifically, it is")
     print(problem.long_repr())
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = 60
+    requested_amount_of_features = 10
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")
     pretty_print_features(problem, features, combinatorial=True)
 
-    sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
+    # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
 
     print("We can sample some individuals")
-    good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
-    for good_sample, good_score in zip(good_samples, good_sample_scores):
-        print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
+    # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
+    # for good_sample, good_score in zip(good_samples, good_sample_scores):
+    #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
