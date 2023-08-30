@@ -74,16 +74,15 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
 def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
-                 criteria: ScoringCriterion,
+                 criterion: ScoringCriterion,
                  amount_requested: int):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
+                                     sample_data=sample_data,
+                                     criterion=criterion,
+                                     importance_of_explainability=importance_of_explainability,
                                      guaranteed_depth=guaranteed_depth,
                                      extra_depth=extra_depth,
-                                     importance_of_explainability=importance_of_explainability,
-                                     heuristic_strategy=True,
-                                     sample_data=sample_data,
-                                     criteria=criteria,
                                      amount_requested=amount_requested)
     return features
 
@@ -129,7 +128,7 @@ if __name__ == '__main__':
     print("More specifically, it is")
     print(problem.long_repr())
     criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = 10
+    requested_amount_of_features = 12
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
     print(f"For the problem {problem}, the found features are:")
@@ -137,7 +136,7 @@ if __name__ == '__main__':
 
     # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
 
-    print("We can sample some individuals")
+    # print("We can sample some individuals")
     # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
     # for good_sample, good_score in zip(good_samples, good_sample_scores):
     #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")

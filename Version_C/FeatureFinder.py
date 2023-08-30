@@ -14,7 +14,6 @@ from typing import Optional
 from Version_B.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, \
     PopulationSampleWithFeaturesPrecomputedData
 
-
 from Version_C.Feature import Feature
 
 
@@ -130,6 +129,13 @@ class ScoringCriterion(Enum):
     STABILITY = auto()
 
 
+    def __repr__(self):
+        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability"][self.value-1]
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class FeatureFilter:
     """this class accepts a list of features, and can
         * create scores based on their explainability + fitness / novelty
@@ -139,14 +145,15 @@ class FeatureFilter:
     precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
     complexity_array: np.ndarray
 
-    for_novelty: bool
     expected_proportions: np.ndarray
+    criteria: list[ScoringCriterion]
 
     def __init__(self,
                  initial_features: list[Feature],
                  precomputed_sample_data,
                  complexity_function,
                  importance_of_explainability,
+                 criteria: list[ScoringCriterion],
                  expected_proportions=None):
         self.current_features = initial_features
         stripped_initial_features = [intermediate.to_legacy_feature() for intermediate in initial_features]
@@ -154,7 +161,7 @@ class FeatureFilter:
                                                                                          stripped_initial_features)
         self.complexity_array = np.array([complexity_function(feature) for feature in stripped_initial_features])
         self.importance_of_explainability = importance_of_explainability
-        self.for_novelty = (expected_proportions is not None)
+        self.criteria = criteria
         self.expected_proportions = expected_proportions
 
     def get_complexity_array(self) -> np.ndarray:
@@ -183,37 +190,40 @@ class FeatureFilter:
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()
 
-    def get_requested_score(self, criteria: ScoringCriterion) -> np.ndarray:
-        if criteria == ScoringCriterion.EXPLAINABILITY:
+    def get_requested_atomic_score(self, criterion: ScoringCriterion) -> np.ndarray:
+        if criterion == ScoringCriterion.EXPLAINABILITY:
             return self.get_explainability_array()
-        elif criteria == ScoringCriterion.HIGH_FITNESS:
+        elif criterion == ScoringCriterion.HIGH_FITNESS:
             return self.get_positive_fitness_correlation_array()
-        elif criteria == ScoringCriterion.LOW_FITNESS:
+        elif criterion == ScoringCriterion.LOW_FITNESS:
             return self.get_negative_fitness_correlation_array()
-        elif criteria == ScoringCriterion.POPULARITY:
+        elif criterion == ScoringCriterion.POPULARITY:
             return self.get_popularity_array()
-        elif criteria == ScoringCriterion.NOVELTY:
+        elif criterion == ScoringCriterion.NOVELTY:
             return self.get_novelty_array()
-        elif criteria == ScoringCriterion.STABILITY:
+        elif criterion == ScoringCriterion.STABILITY:
             return self.get_stability_array()
         else:
             raise Exception("The criterion for scoring was not specified")
 
-    def get_scores_of_features(self, additional_criteria: Optional[ScoringCriterion]) -> np.ndarray:
-        explainabilities = self.get_requested_score(ScoringCriterion.EXPLAINABILITY)
+    def get_scores_of_features(self):
+        if len(self.criteria) == 0:
+            raise Exception("You requested a compound score composed of no criteria!")
 
-        if additional_criteria is None:
-            return explainabilities
+        if len(self.criteria) == 1:
+            return self.get_requested_atomic_score(self.criteria[0])
 
-        criteria_scores = self.get_requested_score(additional_criteria)
-        return utils.weighted_sum(explainabilities, self.importance_of_explainability,
-                                  criteria_scores, 1.0 - self.importance_of_explainability)
+        if len(self.criteria) == 2 and self.criteria[0] == ScoringCriterion.EXPLAINABILITY:
+            explainabilities = self.get_explainability_array()
+            other_criterion = self.get_requested_atomic_score(self.criteria[1])
+            return utils.weighted_sum(explainabilities, self.importance_of_explainability,
+                                      other_criterion, 1 - self.importance_of_explainability)
 
-    def get_the_best_features(self, how_many_to_keep: int,
-                              additional_criteria: Optional[ScoringCriterion]) -> (
-            list[Feature], np.ndarray):
-        scores = self.get_scores_of_features(additional_criteria)
+        # if the case is not handled
+        raise Exception(f"The provided criteria ({self.criteria}) could not be handled")
 
+    def get_the_best_features(self, how_many_to_keep: int) -> (list[Feature], np.ndarray):
+        scores = self.get_scores_of_features()
         sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
         features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
         return features, np.array(scores_list)
@@ -227,27 +237,29 @@ class FeatureDeveloper:
     search_space: SearchSpace.SearchSpace
     complexity_function: Any  # SearchSpace.Feature -> float
     importance_of_explainability: float
-    additional_criteria: Optional[ScoringCriterion]
+    criterion: ScoringCriterion
     amount_requested: int
     thoroughness: float
 
-    def get_filter(self, intermediates: list[Feature]):
+    def get_filter(self, intermediates: list[Feature], criteria: list[ScoringCriterion]):
         expected_proportions = None
-        if self.additional_criteria == ScoringCriterion.NOVELTY:
-            expected_proportions = np.array([self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
-                                             for intermediate in intermediates])
+        if ScoringCriterion.NOVELTY or ScoringCriterion.POPULARITY in criteria:
+            expected_proportions = np.array(
+                [self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
+                 for intermediate in intermediates])
 
         return FeatureFilter(intermediates,
                              self.population_sample,
                              self.complexity_function,
                              self.importance_of_explainability,
+                             criteria,
                              expected_proportions=expected_proportions)
 
     def get_trivial_parent_pool(self):
         trivial_features = Feature.get_all_trivial_features(self.search_space)
 
-        feature_filter = self.get_filter(trivial_features)
-        scores = feature_filter.get_scores_of_features(additional_criteria=None)
+        feature_filter = self.get_filter(trivial_features, [ScoringCriterion.EXPLAINABILITY])
+        scores = feature_filter.get_scores_of_features()
 
         return ParentPool(trivial_features, scores)  # note how they don't get filtered!
 
@@ -258,15 +270,17 @@ class FeatureDeveloper:
                  extra_depth,
                  complexity_function,
                  importance_of_explainability,
-                 additional_criteria: Optional[ScoringCriterion],
+                 criterion: ScoringCriterion,
                  amount_requested):
         self.search_space = search_space
+        maximum_depth = self.search_space.dimensions
+
         self.population_sample = population_sample
-        self.guaranteed_depth = guaranteed_depth
-        self.extra_depth = extra_depth
+        self.guaranteed_depth = min(guaranteed_depth, maximum_depth)
+        self.extra_depth = min(extra_depth, maximum_depth)
         self.complexity_function = complexity_function
         self.importance_of_explainability = importance_of_explainability
-        self.additional_criteria = additional_criteria
+        self.criterion = criterion
         self.previous_iterations = [self.get_trivial_parent_pool()]
         self.amount_requested = amount_requested
 
@@ -285,7 +299,9 @@ class FeatureDeveloper:
                       amount_to_consider: int,
                       amount_to_return: int,
                       heuristic=False,
-                      use_additional_criteria=True):
+                      criteria=None):
+        if criteria is None:
+            criteria = [ScoringCriterion.EXPLAINABILITY]
         new_weight = len(self.previous_iterations) + 1
         parent_weight_1, parent_weight_2 = self.get_mixing_parent_weights(new_weight)
 
@@ -300,21 +316,17 @@ class FeatureDeveloper:
             considered_features = feature_mixer.get_stochastically_mixed_features(amount_to_consider)
 
         if len(considered_features) == 0:
-            self.previous_iterations.append(ParentPool.get_empty_parent_pool())
-            return
-        feature_filter = self.get_filter(considered_features)
+            raise Exception("An iteration created no new features!")
+        feature_filter = self.get_filter(considered_features, criteria)
 
-        features, scores = feature_filter.get_the_best_features(amount_to_return,
-                                                                additional_criteria=self.additional_criteria
-                                                                if use_additional_criteria else None)
+        features, scores = feature_filter.get_the_best_features(amount_to_return)
         self.previous_iterations.append(ParentPool(features, scores))
 
-    def get_schedule(self, heuristic_strategy="where needed") -> list[(int, bool, bool, int, int)]:
+    def get_schedule(self, strategy="heuristic where needed") -> list[(int, bool, list[ScoringCriterion], int, int)]:
         def get_total_amount_of_features(weight_category: int):
             """if all the variables had the same cardinality, this would be simpler"""
             return sum([utils.product(which_vars) for which_vars in
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
-
 
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:
@@ -322,109 +334,76 @@ class FeatureDeveloper:
             else:
                 return self.amount_requested
 
-
         def amount_to_consider_for_weight(weight_category: int, kept_in_category: int):
             if weight_category <= self.guaranteed_depth:
                 return kept_in_category
             else:
-                return kept_in_category * 2 # TODO think about this more
+                return kept_in_category * 2  # TODO think about this more
 
         def should_use_heuristic(weight_category: int):
-            return weight_category <= self.guaranteed_depth
+            if strategy == "heuristic where needed":
+                return weight_category <= self.guaranteed_depth
+            else:
+                raise Exception(f"Requested an unknown strategy! ({strategy}")
 
+        def which_criteria_to_use(weight_category: int):
+            if weight_category <= self.guaranteed_depth - 1:
+                return [ScoringCriterion.EXPLAINABILITY]
+            else:
+                return [ScoringCriterion.EXPLAINABILITY, self.criterion]
 
-        def should_use_criteria(weight_category: int):
-            return weight_category > (self.guaranteed_depth-1)
-
-
-        weights = list(range(2, self.guaranteed_depth+1))
+        weights = list(range(2, self.extra_depth + 1))
         should_be_heuristic = [should_use_heuristic(weight) for weight in weights]
-        should_use_criteria = [should_use_criteria(weight) for weight in weights]
+        which_criteria = [which_criteria_to_use(weight) for weight in weights]
         kepts = [amount_to_keep_for_weight(weight) for weight in weights]
         considereds = [amount_to_consider_for_weight(weight, kept) for weight, kept in zip(weights, kepts)]
 
-        return zip(weights, should_be_heuristic, should_use_criteria, kepts, considereds)
-
+        return zip(weights, should_be_heuristic, which_criteria, kepts, considereds)
 
     def develop_features(self, heuristic_strategy):
-
         settings_schedule = self.get_schedule(heuristic_strategy)
 
-        for weight, use_heuristic, use_criteria, amount_to_keep, amount_to_consider in settings_schedule:
-            print(f"In iteration where {weight = }: {use_heuristic = }, {amount_to_keep = }, {amount_to_consider}")
+        for weight, use_heuristic, which_criteria, amount_to_keep, amount_to_consider in settings_schedule:
+            print(f"In iteration where {weight = }: {use_heuristic = }, {amount_to_keep = }, {amount_to_consider = }, {which_criteria = }")
             self.new_iteration(amount_to_consider,
                                amount_to_keep,
                                heuristic=use_heuristic,
-                               use_additional_criteria=use_criteria)
+                               criteria=which_criteria)
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
         """This is the function which returns the features you'll be using in the future!"""
         developed_features: list[Feature] = utils.concat([parent_pool.features
-                                                                      for parent_pool in self.previous_iterations])
-        feature_filterer = self.get_filter(developed_features)
+                                                          for parent_pool in self.previous_iterations])
+        feature_filterer = self.get_filter(developed_features, [ScoringCriterion.EXPLAINABILITY, self.criterion])
 
-        return feature_filterer.get_the_best_features(self.amount_requested, self.additional_criteria)
+        return feature_filterer.get_the_best_features(self.amount_requested)
 
 
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
-                  guaranteed_depth: int,
-                  extra_depth: int,
-                  importance_of_explainability: float,
                   sample_data: PopulationSamplePrecomputedData,
-                  heuristic_strategy: Any,
-                  criteria: Optional[ScoringCriterion],
-                  amount_requested: int) -> (list[SearchSpace.Feature], np.ndarray):
+                  importance_of_explainability=0.5,
+                  guaranteed_depth=None,
+                  extra_depth=None,
+                  criterion=ScoringCriterion.HIGH_FITNESS,
+                  amount_requested=12,
+                  strategy="heuristic where needed") -> (list[SearchSpace.Feature], np.ndarray):
+    if guaranteed_depth is None:
+        guaranteed_depth = 2
+    if extra_depth is None:
+        extra_depth = guaranteed_depth * 2
+
     feature_developer = FeatureDeveloper(search_space=problem.search_space,
                                          population_sample=sample_data,
                                          guaranteed_depth=guaranteed_depth,
                                          extra_depth=extra_depth,
                                          complexity_function=problem.get_complexity_of_feature,
                                          importance_of_explainability=importance_of_explainability,
-                                         additional_criteria=criteria,
+                                         criterion=criterion,
                                          amount_requested=amount_requested)
 
-    feature_developer.develop_features(heuristic_strategy=heuristic_strategy)
-
+    feature_developer.develop_features(heuristic_strategy=strategy)
     intermediate_features, scores = feature_developer.get_developed_features()
     raw_features = [intermediate.to_legacy_feature() for intermediate in intermediate_features]
 
     # give_explainability_and_average_fitnesses(raw_features, sample_data, problem, criteria)
     return raw_features, scores
-
-
-def give_explainability_and_average_fitnesses(features: list[SearchSpace.Feature],
-                                              population_sample: PopulationSamplePrecomputedData,
-                                              problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
-                                              criteria: Optional[ScoringCriterion]):
-    complexities = np.array([problem.get_complexity_of_feature(feature) for feature in features])
-
-    sample_with_features = PopulationSampleWithFeaturesPrecomputedData(population_sample, features)
-    criteria_scores = None
-    if criteria in {ScoringCriterion.LOW_FITNESS, ScoringCriterion.HIGH_FITNESS}:
-        criteria_scores = sample_with_features.get_average_fitness_vector()
-    elif criteria in {ScoringCriterion.NOVELTY, ScoringCriterion.POPULARITY}:
-        criteria_scores = sample_with_features.get_observed_proportions()
-    else:
-        criteria_scores = np.zeros_like(complexities)
-
-    for feature, score_for_criteria, complexity in zip(features, criteria_scores, complexities):
-        print(f"{problem.feature_repr(feature)}\nHas {score_for_criteria = :.3f}, {complexity = :.2f}")
-
-    # TODO:
-
-    """ 
-        * Clean up VariateModels
-        
-        * create the class which stores iterations and selects from them 
-            * perhaps FeatureFinder, which makes use of featurefilter to obtain scores and decide what to keep?
-            * perhaps there's 3 phases to featurefilter (3 states):
-                * struggle: be fed the features obtained from merging previous iterations
-                * grind: give scores to the features, select the best ones
-                * shine: remove the unwanted features, we store only the good features and their scores
-                
-                
-        TODO: currently if you set expected_proportions to none, it means you only look at the fitness
-        if it's set, it will only look at the novelty. This is confusing and nasty.
-        
-        * decide how the greedy heuristic approach should consider more features before returning.
-    """
