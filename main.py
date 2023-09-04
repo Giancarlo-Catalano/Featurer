@@ -119,12 +119,12 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 if __name__ == '__main__':
 
-    problem = constrained_knapsack
+    problem = checkerboard
     maximise = True
     guaranteed_depth = 2
     extra_depth = 5
 
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 6),
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 1),
                             (ScoringCriterion.STABILITY, 2),
                             (ScoringCriterion.HIGH_FITNESS, 3)]
 
