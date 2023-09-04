@@ -385,13 +385,11 @@ class FeatureDeveloper:
 def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
                   sample_data: PopulationSamplePrecomputedData,
                   importance_of_explainability=0.5,
-                  guaranteed_depth=None,
+                  guaranteed_depth=2,
                   extra_depth=None,
                   criterion=ScoringCriterion.HIGH_FITNESS,
                   amount_requested=12,
                   strategy="heuristic where needed") -> (list[SearchSpace.Feature], np.ndarray):
-    if guaranteed_depth is None:
-        guaranteed_depth = 2
     if extra_depth is None:
         extra_depth = guaranteed_depth * 2
 
