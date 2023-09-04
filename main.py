@@ -124,13 +124,22 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 if __name__ == '__main__':
     """ Spits out the interesting features for a given problem."""
     """ You can fiddle with the problem, the criteria etc.."""
-    problem = constrainedBT
+    file_path = "C:\\Users\\gac8\\backup\\items.txt"
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    # Sort the lines alphabetically
+    lines.sort()
+    # Write the sorted lines back to the original file
+    with open(file_path, 'w') as file:
+        file.writelines(lines)
+    print("File sorted and updated successfully.")
+    problem = constrained_knapsack
     maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    criteria = ScoringCriterion.ANTICORRELATION #  ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
+    criteria = ScoringCriterion.CORRELATION #  ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = 12
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
@@ -143,3 +152,13 @@ if __name__ == '__main__':
     # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
     # for good_sample, good_score in zip(good_samples, good_sample_scores):
     #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
+
+    file_path = "C:\\Users\\gac8\\backup\\items.txt"
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    # Sort the lines alphabetically
+    lines.sort()
+    # Write the sorted lines back to the original file
+    with open(file_path, 'w') as file:
+        file.writelines(lines)
+    print("File sorted and updated successfully.")

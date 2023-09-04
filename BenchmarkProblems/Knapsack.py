@@ -28,43 +28,44 @@ class Item:
         return self.name.__hash__()
 
 
-water_bottle = Item("water bottle", 1.00, 250, 3)
-pen = Item("pen", 0.20, 5, 1)
 bananas = Item("bananas", 1.25, 300, 4)
-oranges = Item("oranges", 1.25, 400, 4)
-hat = Item("hat", 4.00, 100, 2)
-socks = Item("socks", 1.00, 200, 2)
-laptop = Item("laptop", 500.00, 200, 10)
-playing_cards = Item("playing cards", 1.00, 50, 2)
-cash = Item("cash", 0.00, 100, 3)
-credit_card = Item("credit card", 0.00, 10, 1)
-phone_charger = Item("phone charger", 1.00, 15, 2)
-tissues = Item("tissues", 1.00, 5, 1)
+batteries = Item("batteries", 2.00, 20, 2)
 book = Item("book", 2.00, 250, 4)
+bread = Item("bread", 0.75, 120, 5)
 candy = Item("candy", 2.00, 100, 3)
+cash = Item("cash", 0.00, 100, 3)
+coins = Item("coins", 0.00, 200, 3)
+credit_card = Item("credit card", 0.00, 10, 1)
+crosswords = Item("crosswords", 1.50, 25, 3)
+cutlery = Item("cutlery", 2.00, 50, 2)
+deodorant = Item("deodorant", 1.00, 100, 3)
+earphones = Item("earphones", 4.00, 15, 3)
 energy_drink = Item("energy drink", 1.50, 150, 3)
-lock = Item("lock", 4.00, 50, 1)
-local_map = Item("local map", 3.00, 100, 2)
+extra_bags = Item("extra bags", 0.10, 5, 2)
+hat = Item("hat", 4.00, 100, 2)
+headphones = Item("headphones", 10.00, 150, 5)
 jacket = Item("jacket", 15.00, 500, 8)
 knitting = Item("knitting", 5.00, 300, 6)
-shampoo = Item("shampoo", 3.00, 250, 4)
-cutlery = Item("cutlery", 2.00, 50, 2)
-headphones = Item("headphones", 10.00, 150, 5)
-earphones = Item("earphones", 4.00, 15, 3)
-sunglasses = Item("sunglasses", 2.00, 20, 4)
-travel_towel = Item("travel towel", 2.00, 30, 7)
-thermos = Item("thermos", 2.00, 50, 6)
-crosswords = Item("crosswords", 1.50, 25, 3)
-swimming_trunks = Item("swimming_trunks", 3.00, 150, 4)
-bread = Item("bread", 0.75, 120, 5)
-coins = Item("coins", 0.00, 200, 3)
-sunscreen = Item("sunscreen", 2.00, 100, 3)
-deodorant = Item("deodorant", 1.00, 100, 3)
-razors = Item("razors", 3.00, 50, 2)
-sleep_mask = Item("sleep mask", 1.00, 10, 1)
-extra_bags = Item("extra bags", 0.10, 5, 2)
+laptop = Item("laptop", 500.00, 200, 10)
+local_map = Item("local map", 3.00, 100, 2)
+lock = Item("lock", 4.00, 50, 1)
+oranges = Item("oranges", 1.25, 400, 4)
 passport = Item("passport", 0.00, 5, 1)
-batteries = Item("batteries", 2.00, 20, 2)
+pen = Item("pen", 0.20, 5, 1)
+phone_charger = Item("phone charger", 1.00, 15, 2)
+playing_cards = Item("playing cards", 1.00, 50, 2)
+razors = Item("razors", 3.00, 50, 2)
+shampoo = Item("shampoo", 3.00, 250, 4)
+sleep_mask = Item("sleep mask", 1.00, 10, 1)
+socks = Item("socks", 1.00, 200, 2)
+sunglasses = Item("sunglasses", 2.00, 20, 4)
+sunscreen = Item("sunscreen", 2.00, 100, 3)
+swimming_trunks = Item("swimming trunks", 3.00, 150, 4)
+thermos = Item("thermos", 2.00, 50, 6)
+tissues = Item("tissues", 1.00, 5, 1)
+travel_towel = Item("travel towel", 2.00, 30, 7)
+water_bottle = Item("water bottle", 1.00, 250, 3)
+
 
 
 all_items = [water_bottle, pen, bananas, oranges, hat, socks, laptop, playing_cards, cash, credit_card, phone_charger,
@@ -103,8 +104,8 @@ class KnapsackProblem(CombinatorialProblem):
                 result += "\n"
             result += f"DO NOT Bring:{absent_items}"
 
-        price, weight, volume = self.get_properties_of_candidate(self.search_space.feature_to_candidate(feature))
-        result += f"\n{price = }, {weight = }, {volume = }"
+        # price, weight, volume = self.get_properties_of_candidate(self.search_space.feature_to_candidate(feature))
+        # result += f"\n{price = }, {weight = }, {volume = }"
 
         return result
 
@@ -215,7 +216,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         necessary = [passport]
 
         return (self.candidate_contains_all(candidate, necessary) and
-                not self.candidate_contains_any(candidate, liquids + not_allowed_on_plane))
+                (not self.candidate_contains_any(candidate, liquids + not_allowed_on_plane)))
 
     def satisfies_constraint(self, candidate: SearchSpace.Candidate, constraint: KnapsackConstraint):
         if constraint == KnapsackConstraint.DRINK:
@@ -252,14 +253,12 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
                          for (need_index, satisfied) in constraint.var_vals)
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
-        unconstrained_feature, predicates = super().split_feature(feature)
-        complexity_of_parameters = self.unconstrained_problem.get_complexity_of_feature(unconstrained_feature)
+        parameters, predicates = super().split_feature(feature)
+        complexity_of_parameters = super().amount_of_set_values_in_feature(parameters)
         complexity_of_predicate = len(predicates.var_vals)
 
-        if complexity_of_parameters == 0:
-            return complexity_of_predicate
-        else:
-            return complexity_of_parameters + (complexity_of_predicate != 1)
+
+        return complexity_of_parameters + (complexity_of_predicate)
 
     def all_constraints_are_satisfied(self, candidate: SearchSpace.Candidate):
         return all(self.satisfies_constraint(candidate, need) for need in self.needs)
