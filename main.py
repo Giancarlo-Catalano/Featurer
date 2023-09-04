@@ -8,7 +8,7 @@ from Version_C.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 
 trap5 = TrapK.TrapK(5, 2)
-checkerboard = CheckerBoard.CheckerBoardProblem(12, 12)
+checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 simpleBT = BT.SimplifiedBTProblem(25, 3)
@@ -29,7 +29,7 @@ c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.B
                                                             KnapsackConstraint.WITHIN_VOLUME])
 
 guaranteed_depth = 2
-extra_depth = 9
+extra_depth = 4
 importance_of_explainability = 0.5
 
 

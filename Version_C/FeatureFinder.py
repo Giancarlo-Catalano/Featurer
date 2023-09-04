@@ -171,8 +171,7 @@ class FeatureFilter:
         return 1.0 - self.get_complexity_array()
 
     def get_positive_fitness_correlation_array(self) -> np.ndarray:
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_average_fitness_vector())
-        # return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()
@@ -185,10 +184,11 @@ class FeatureFilter:
         return utils.remap_array_in_zero_one(signed_chi_squareds)
 
     def get_stability_array(self):
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+        pass
 
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()
+
 
     def get_requested_atomic_score(self, criterion: ScoringCriterion) -> np.ndarray:
         if criterion == ScoringCriterion.EXPLAINABILITY:
@@ -329,7 +329,7 @@ class FeatureDeveloper:
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
 
         def get_likely_amount_of_important_features(weight_category: int):
-            return int(utils.binomial_coeff(self.search_space.dimensions, weight_category) * self.search_space.average_cardinality)
+            return self.amount_requested * self.search_space.total_cardinality * weight_category
 
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:

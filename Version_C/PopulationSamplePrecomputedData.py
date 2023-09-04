@@ -32,6 +32,7 @@ class PopulationSamplePrecomputedData:
 class PopulationSampleWithFeaturesPrecomputedData:
     """this data structures stores matrices that are used around the other classes"""
     population_sample_precomputed: PopulationSamplePrecomputedData
+    feature_matrix: np.ndarray
     feature_presence_matrix: np.ndarray
 
     count_for_each_feature: np.ndarray
@@ -40,12 +41,12 @@ class PopulationSampleWithFeaturesPrecomputedData:
     def __init__(self, population_precomputed: PopulationSamplePrecomputedData,
                  raw_features: list[SearchSpace.Feature]):
         self.population_sample_precomputed = population_precomputed
-        feature_matrix = HotEncoding.hot_encode_feature_list(raw_features,
+        self.feature_matrix = HotEncoding.hot_encode_feature_list(raw_features,
                                                              self.population_sample_precomputed.search_space)
 
         self.feature_presence_matrix = VariateModels.get_feature_presence_matrix_from_feature_matrix(
             self.population_sample_precomputed.candidate_matrix,
-            feature_matrix)
+            self.feature_matrix)
 
         self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
 
@@ -56,6 +57,10 @@ class PopulationSampleWithFeaturesPrecomputedData:
     @property
     def sample_size(self) -> int:
         return self.population_sample_precomputed.sample_size
+
+    @property
+    def candidate_matrix(self) -> np.ndarray:
+        return self.population_sample_precomputed.candidate_matrix
 
     def get_average_fitness_vector(self) -> np.ndarray:
         """returns the vector of average fitnesses for each feature"""
@@ -87,3 +92,11 @@ class PopulationSampleWithFeaturesPrecomputedData:
         t_scores = utils.divide_arrays_safely(means - overall_average, sd_over_root_n)
 
         return t_scores
+
+
+    def get_off_by_one_feature_presence_matrix(self) -> np.ndarray:
+        return VariateModels.get_off_by_one_feature_presence_matrix(self.candidate_matrix, self.feature_matrix)
+
+
+
+
