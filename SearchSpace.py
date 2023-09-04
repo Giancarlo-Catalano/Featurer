@@ -1,9 +1,8 @@
-import copy
-import itertools
 import math
 import random
+from typing import Optional, Iterable
+
 import utils
-import numpy as np
 
 
 def value_to_string(val):
@@ -17,14 +16,19 @@ def value_to_string(val):
 
 class Feature:
     # a list of pairs (var, val)
+    var_vals: list[(int, int)]
+
     def __init__(self, var_vals):
-        self.var_vals = var_vals
+        self.var_vals = sorted(var_vals, key=utils.first)
 
     def __repr__(self):
         return "<" + (", ".join([f"[{var}]={val}" for var, val in self.var_vals])) + ">"
 
     def __hash__(self):
         return tuple(self.var_vals).__hash__()
+
+    def __eq__(self, other):
+        return self.var_vals == other.var_vals
 
     @classmethod
     def empty_feature(cls):
@@ -37,8 +41,10 @@ class Feature:
 
 class Candidate:
     # a wrapper for a tuple
-    def __init__(self, values):
-        self.values = values
+    values: tuple[int]
+
+    def __init__(self, values: Iterable[int]):
+        self.values = tuple(values)
 
     def __repr__(self):
         return "<" + (" ".join([value_to_string(val) for val in self.values])) + ">"
@@ -49,25 +55,31 @@ class Candidate:
     def __hash__(self):
         return self.values.__hash__()
 
-
     def as_feature(self):
-        return Feature(list((i,v) for i, v in enumerate(self.values) if v is not None))
-
+        return Feature([(i, v) for i, v in enumerate(self.values) if v is not None])
 
 
 class SearchSpace:
-    # cardinalities: list[int]
+    cardinalities: tuple[int]
+    precomputed_offsets: list[int]
+    amount_of_trivial_features: int
+    dimensions: int
+
     # precomputed_offsets: list[int] #used to convert into one-hot-encodings
 
-    def __init__(self, cardinalities):
-        self.cardinalities = cardinalities
-        self.precomputed_offsets = utils.cumulative_sum(cardinalities)
+    def __init__(self, cardinalities: Iterable[int]):
+        self.cardinalities = tuple(cardinalities)
+        self.precomputed_offsets = utils.cumulative_sum(self.cardinalities)
         self.amount_of_trivial_features = sum(self.cardinalities)
         self.dimensions = len(self.cardinalities)
 
     @property
     def total_cardinality(self):
         return sum(self.cardinalities)  # there's other ways, but this is more change resistant
+
+    @property
+    def average_cardinality(self):
+        return self.total_cardinality / self.dimensions
 
     def get_random_candidate(self):
         return Candidate(tuple((random.randrange(card) for card in self.cardinalities)))
@@ -91,14 +103,12 @@ class SearchSpace:
     def __repr__(self):
         return f"SearchSpace{self.cardinalities}"
 
-
     def feature_is_complete(self, feature: Feature):
         """returns true when the feature has all the variables set"""
-        used_vars = [False]*self.dimensions
+        used_vars = [False] * self.dimensions
         for (var, _) in feature.var_vals:
             used_vars[var] = True
         return all(used_vars)
-
 
     def feature_is_valid(self, feature: Feature):
         value_for_each_var = [None] * self.dimensions
@@ -111,10 +121,21 @@ class SearchSpace:
 
     def feature_to_candidate(self, feature: Feature) -> Candidate:
         result_list = [None] * self.dimensions
-        for var, val in feature:
+        for var, val in feature.var_vals:
             result_list[var] = val
         return Candidate(tuple(result_list))
 
-def merge_two_features(feature_a, feature_b):
-    return Feature(feature_a.var_vals + feature_b.var_vals)
 
+def merge_two_features(feature_a, feature_b) -> Feature:
+    def remove_duplicates(input_list: list):
+        return list(set(input_list))
+
+    return Feature(remove_duplicates(feature_a.var_vals + feature_b.var_vals))
+
+
+def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate) -> Candidate:
+    return Candidate(candidate_a.values + candidate_b.values)
+
+
+def merge_two_spaces(space_a: SearchSpace, space_b: SearchSpace) -> SearchSpace:
+    return SearchSpace(space_a.cardinalities + space_b.cardinalities)
