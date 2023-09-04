@@ -16,7 +16,8 @@ float_type = np.single
 
 def cumulative_sum(elements):
     # in Python 3.11 return list(itertools.accumulate(elements, initial=0))
-    return [0] + list(itertools.accumulate(elements))
+    result = list(itertools.accumulate(elements, initial=0))
+    return result
 
 
 def adjacent_pairs(elements):
@@ -222,8 +223,8 @@ def to_column_vector(row_vector):
  """
 
 
-def binomial_coeff(n, k):
-    return math.factorial(n) / (math.factorial(n - k) * math.factorial(k))
+def binomial_coeff(n, k) -> int:
+    return math.factorial(n) // (math.factorial(n - k) * math.factorial(k))
 
 
 def sigmoid(x):
@@ -306,9 +307,17 @@ def remap_array_in_zero_one(input_array):
     max_value = np.max(input_array)
 
     if (min_value == max_value):
-        return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
+        return np.ones_like(input_array)/2  # all 0.5!
 
     return (input_array - min_value) / (max_value - min_value)
+
+def remap_array_in_zero_one_ammortise(input_array):
+    amount_of_items = len(input_array)
+    positions = np.arange(start=0, stop=amount_of_items, dtype = float) / (amount_of_items-1)
+
+    zipped = sorted(zip(input_array, positions), key=utils.first)
+    _, rearranged_positions = unzip(zipped)
+    return np.array(rearranged_positions)
 
 
 def remap_array_in_zero_one_ignore_zeros(input_array):
@@ -379,5 +388,14 @@ def row_wise_nth_power_self_outer_product(input_matrix, n:int):
 
 def product(iterable):
     return functools.reduce(operator.mul, iterable)
+
+
+def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
+    return np.einsum('ij,i->j', matrix, weights)
+
+
+def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray):
+    """returns the element wise division between 2 arrays, and 0 where there was a zero denominator"""
+    return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0.0)
 
 

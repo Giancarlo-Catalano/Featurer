@@ -12,9 +12,11 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
         self.cols = cols
         super().__init__(SearchSpace.SearchSpace([2] * self.total_area))
 
-
     def __repr__(self):
         return f"CheckerBoard(rows={self.rows}, cols={self.cols})"
+
+    def long_repr(self):
+        return self.__repr__()
 
     @property
     def total_area(self):
@@ -65,7 +67,7 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
 
         return total_score
 
-    def pretty_print_feature(self, feature):
+    def feature_repr(self, feature):
         positional_values = super().get_positional_values(feature)
         as_grid = [positional_values[row * self.cols:(row + 1) * self.cols] for row in range(self.rows)]
 
@@ -75,7 +77,7 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
             else:
                 return str(cell)
 
-        for row in as_grid:
-            for cell in row:
-                print(f"{cell_repr(cell)} ", end="")
-            print()
+        def row_repr(row):
+            return " ".join([cell_repr(cell) for cell in row])
+
+        return "\n".join([row_repr(row) for row in as_grid])

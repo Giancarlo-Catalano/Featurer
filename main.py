@@ -1,53 +1,63 @@
-import datetime
-
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPRegressor
-
+import utils
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
+from Version_C.Sampler import Sampler
+from Version_C.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
 import HotEncoding
 import SearchSpace
-import numpy as np
-import utils
-from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring
+from Version_C.FeatureFinder import find_features
+from BenchmarkProblems.Knapsack import KnapsackConstraint
 
-import Version_B.outdated.FeatureDiscoverer
-from Version_B.Sampler import ESTEEM_Sampler
-from Version_B.SurrogateScorer import SurrogateScorer
-import Version_B.FeatureExplorer
-from Version_B.VariateModels import VariateModels
-import csv
-
-
-from sklearn.linear_model import LinearRegression, Lasso
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-
-
-trap5 = TrapK.TrapK(5, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
+trap5 = TrapK.TrapK(5, 2)
+checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-BT = BT.BTProblem(25, 3)
-graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
+simpleBT = BT.SimplifiedBTProblem(25, 3)
+almostBT = BT.BTProblem(30, 4, 28)
+constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
+                                                BT.BTPredicate.BAD_MONDAY,
+                                                BT.BTPredicate.BAD_TUESDAY,
+                                                BT.BTPredicate.BAD_WEDNESDAY,
+                                                BT.BTPredicate.BAD_THURSDAY,
+                                                BT.BTPredicate.BAD_FRIDAY,
+                                                BT.BTPredicate.BAD_SATURDAY,
+                                                BT.BTPredicate.BAD_SUNDAY])
 
-merging_power = 4
+graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
+knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
+c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
+                                                            KnapsackConstraint.WITHIN_WEIGHT,
+                                                            KnapsackConstraint.WITHIN_VOLUME])
+
+guaranteed_depth = 2
+extra_depth = 4
 importance_of_explainability = 0.5
 
 
-def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem, sample_size):
-    search_space = problem.search_space
-    random_candidates = [search_space.get_random_candidate() for _ in range(sample_size)]
+def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
+                              sample_size) -> (list[SearchSpace.Candidate], list[float]):
+    random_candidates = [problem.get_random_candidate_solution() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
+
+
+def get_problem_compact_training_data(problem: CombinatorialProblem.CombinatorialProblem,
+                                      sample_size) -> PopulationSamplePrecomputedData:
+    training_samples, fitness_list = get_problem_training_data(problem, sample_size)
+    # print("The generated samples are:")
+    # for sample, fitness in zip(training_samples, fitness_list):
+    #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness:.2f})")
+    return PopulationSamplePrecomputedData(problem.search_space, training_samples, fitness_list)
+
 
 def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
                           combinatorial=False):
     """prints the passed features, following the structure specified by the problem"""
     hot_encoder = HotEncoding.HotEncoder(problem.search_space)
+
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
-        problem.pretty_print_feature(featureC)
+        print(f"{problem.feature_repr(featureC)}")
 
     def print_with_or_without_score(maybe_pair):
         if with_scores:
@@ -59,281 +69,74 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
     for maybe_pair in input_list_of_features:
         print_with_or_without_score(maybe_pair)
-        print()
-
-def without_scores(features_with_scores):
-    return utils.unzip(features_with_scores)[0]
-
-def hot_encoded_features(problem, featuresC):
-    hot_encoder = HotEncoding.HotEncoder(problem.search_space)
-    return [hot_encoder.feature_to_hot_encoding(featureC) for featureC in featuresC]
-
-def output_onto_csv_file(filename, headers, generator_function, how_many_samples):
-    print(f"Writing the some output data onto {filename}")
-    with open(filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(headers)
-        writer.writerows([generator_function() for _ in range(how_many_samples)])
-
-def get_appropriate_filename(problem :CombinatorialProblem.CombinatorialProblem, tags = []):
-    directory = "outputs\\"
-    timestamp = datetime.datetime.now().strftime("%H'%M %d-%m-%Y")
-    tags_together = "["+"|".join(tags)+"]"
-    extension = ".csv"
-    return f"{directory}{problem} -- {timestamp}{tags_together}{extension}"
-
-def get_explainable_features(problem, training_data):
-    search_space = problem.search_space
-    print("Testing the explainable feature explorer")
-    print(f"The problem is {problem}")
-
-    print("Constructing the explorer")
-    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
-                                                         importance_of_explainability=importance_of_explainability)
-
-    training_samples, training_scores = training_data
-
-    print("Then we obtain the meaningful features")
-    (fit_features_and_scores), (unfit_features_and_scores), (popular_features_and_scores), (
-        unpopular_features_and_scores) = \
-        explorer.get_important_explainable_features(training_samples, training_scores)
-
-    print("The fit features are")
-    pretty_print_features(problem, fit_features_and_scores, combinatorial=True, with_scores=True)
-
-    print("\n\nThe unfit features are")
-    pretty_print_features(problem, unfit_features_and_scores, combinatorial=True, with_scores=True)
-
-    print("\n\nThe popular features are")
-    pretty_print_features(problem, popular_features_and_scores, combinatorial=True, with_scores=True)
-
-    print("\n\nThe unpopular features are")
-    pretty_print_features(problem, unpopular_features_and_scores, combinatorial=True, with_scores=True)
-
-    features_per_category = search_space.dimensions
-
-    (fit_features,
-     unfit_features,
-     pop_features,
-     unpop_features) = (hot_encoded_features(problem, without_scores(features_and_scores))[:features_per_category]
-                        for features_and_scores in (fit_features_and_scores,
-                                                    unfit_features_and_scores,
-                                                    popular_features_and_scores,
-                                                    unpopular_features_and_scores))
-    return (fit_features, unfit_features, pop_features, unpop_features)
-
-def test_sampler(problem):
-    search_space = problem.get_search_space()
-    training_data = get_problem_training_data(problem, 120)
-    (fit_features, unfit_features, pop_features, unpop_features) = get_explainable_features(problem, training_data)
-
-    sampler = ESTEEM_Sampler(search_space, fit_features, unfit_features, unpop_features, importance_of_novelty=0.3)
-    sampler.train(training_data[0], training_data[1])
-
-    for _ in range(10):
-        new_candidate = sampler.sample()
-        actual_score = problem.score_of_candidate(new_candidate)
-
-        problem.pretty_print_feature(new_candidate)
-        print(f"Has score {actual_score}\n")
-
-def test_explorer(problem):
-    search_space = problem.search_space
-    print("Testing the explainable feature explorer")
-    print(f"The problem is {problem}")
-
-    print("Constructing the explorer")
-    explorer = Version_B.FeatureExplorer.FeatureExplorer(search_space, merging_power, problem.get_complexity_of_feature,
-                                                         importance_of_explainability=importance_of_explainability)
-
-    training_samples, training_scores = get_problem_training_data(problem, 200)
-
-    print("Then we obtain the meaningful features")
-    (fit_features_and_scores), (unfit_features_and_scores), (popular_features_and_scores), (
-        unpopular_features_and_scores) = \
-        explorer.get_important_explainable_features(training_samples, training_scores)
-
-    print("The fit features are")
-    pretty_print_features(problem, fit_features_and_scores, combinatorial=True, with_scores=True)
-
-    print("\n\nThe unfit features are")
-    pretty_print_features(problem, unfit_features_and_scores, combinatorial=True, with_scores=True)
-
-    print("\n\nThe popular features are")
-    pretty_print_features(problem, popular_features_and_scores, combinatorial=True, with_scores=True)
-
-    print("\n\nThe unpopular features are")
-    pretty_print_features(problem, unpopular_features_and_scores, combinatorial=True, with_scores=True)
-
-
-    features_per_category = search_space.dimensions
-
-    (fit_features,
-     unfit_features,
-     pop_features,
-     unpop_features) = (hot_encoded_features(problem, without_scores(features_and_scores))[:features_per_category]
-                                for features_and_scores in (fit_features_and_scores,
-                                                            unfit_features_and_scores,
-                                                            popular_features_and_scores,
-                                                            unpopular_features_and_scores))
-
-    print("Then we sample some new candidates")
-    sampler = ESTEEM_Sampler(search_space, fit_features=fit_features,
-                             unfit_features=unfit_features, unpopular_features=unpop_features,
-                             importance_of_novelty=0.1)
-
-    sampler.train(training_samples, training_scores)
-
-    for _ in range(10):
-        new_candidate = sampler.sample()
-        actual_score = problem.score_of_candidate(new_candidate)
-
-        problem.pretty_print_candidate(new_candidate)
-        print(f"Has score {actual_score}\n")
-
-
-    print("We can then analyse the unstabilities")
-    features_to_be_considered = fit_features+unfit_features+pop_features
-    variate_model_generator = Version_B.VariateModels.VariateModels(search_space)
-
-    hot_encoder = HotEncoding.HotEncoder(search_space)
-    candidate_matrix = hot_encoder.to_hot_encoded_matrix(training_samples)
-    featuresH = features_to_be_considered
-    feature_presence_matrix = variate_model_generator.get_feature_presence_matrix(candidate_matrix, featuresH)
-
-
-    fitness_array = np.array(training_scores)
-    unstabilities = variate_model_generator.get_fitness_unstability_scores(feature_presence_matrix, fitness_array)
-    counterstabilities = variate_model_generator.get_fitness_unstability_scores(1.0-feature_presence_matrix, fitness_array)
-
-    features_with_unstabilities_and_counterstabilities = list(zip(features_to_be_considered, unstabilities, counterstabilities))
-
-    features_with_unstabilities_and_counterstabilities.sort(key=lambda x: min(x[1], x[2]))
-
-    for feature, unstability, counterstability in features_with_unstabilities_and_counterstabilities:
-        problem.pretty_print_feature(hot_encoder.feature_from_hot_encoding(feature))
-        print(f"(Has unstability = {unstability:.2f}, counterstability = {counterstability:.2f}")
-
-
-
-    print("We will be training the surrogate scorer using the most stable features")
-
-    def get_scorer_with_features(featuresH):
-        return Version_B.SurrogateScorer.SurrogateScorer(2,
-                                                         search_space=search_space,
-                                                         featuresH=featuresH,
-                                                         with_inverse=False)
-
-    def train_scorer(scorer):
-        scorer.train(training_samples, training_scores)
-        scorer.make_picky()
-
-    def get_surrogate_score(candidate, model):
-        return model.get_surrogate_score_of_fitness(candidateC=candidate, based_on_trust=False)
-
-    fit_scorer = get_scorer_with_features(fit_features)
-    unfit_scorer = get_scorer_with_features(unfit_features)
-    pop_scorer = get_scorer_with_features(pop_features)
-
-    scorers = [fit_scorer, unfit_scorer, pop_scorer]
-
-    print("Training the models...")
-    for scorer in scorers:
-        train_scorer(scorer)
-
-    print("Generating surrogate scores and comparing them to actual scores")
-
-def test_surrogate_model(problem: CombinatorialProblem.CombinatorialProblem):
-    search_space = problem.search_space
-    training_data = get_problem_training_data(problem, 2000)
-    explainable_features = get_explainable_features(problem, training_data)
-    (fit_features, unfit_features, pop_features, unpop_features) = explainable_features
-
-    sampler = Version_B.Sampler.ESTEEM_Sampler(search_space, fit_features, unfit_features, unpop_features,
-                                               importance_of_novelty=0)
-
-    sampler.train(*training_data)
-
-    print("We can generate some new candidates:")
-    for _ in range(12):
-        new_candidate = search_space.get_random_candidate()
-        score = problem.score_of_candidate(new_candidate)
-        problem.pretty_print_candidate(new_candidate)
-        print(f"(has actual score of {score})\n")
-
-
-    detectors = [Version_B.VariateModels.FeatureDetector(search_space, feature_list)
-                                                        for feature_list in [fit_features, unfit_features, pop_features]]
-    def candidate_to_model_input(candidateC):
-        [fit_feature_vector,
-         unfit_feature_vector,
-         popular_feature_vector] = [detector.get_feature_presence_from_candidateC(candidateC)
-                                    for detector in detectors]
-
-        return np.concatenate((fit_feature_vector, unfit_feature_vector, popular_feature_vector))
-
-    (original_candidates, scores) = training_data
-    datapoints_for_model = [candidate_to_model_input(candidateC) for candidateC in original_candidates]
-
-    X, y = np.array(datapoints_for_model), scores
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-
-    # own
-    own_regressor = Version_B.SurrogateScorer.SurrogateScorer(model_power=2, search_space=search_space, featuresH = fit_features+unfit_features+pop_features)
-    own_regressor.train(original_candidates, scores)
-    own_regressor.make_picky()
-
-    # decision tree
-    decision_tree_regressor = DecisionTreeRegressor(random_state=42)
-    decision_tree_regressor.fit(X_train, y_train)
-
-    # Lasso
-    lasso_regressor = Lasso(alpha=0.01)
-    lasso_regressor.fit(X_train, y_train)
-
-    # Gradient Boosting
-    gradient_boosting_regressor = GradientBoostingRegressor(random_state=42)
-    gradient_boosting_regressor.fit(X_train, y_train)
-
-    # Random Forest
-    random_forest_regressor = RandomForestRegressor(random_state=42)
-    random_forest_regressor.fit(X_train, y_train)
-
-    # MLP regressor
-    mlp_regressor = MLPRegressor(random_state=42)
-    mlp_regressor.fit(X_train, y_train)
-
-
-
-    regressors = [decision_tree_regressor, lasso_regressor, gradient_boosting_regressor, random_forest_regressor, mlp_regressor]
-    headers = ["actual", "own", "Decision Tree", "Lasso Prediction", "Gradient Boosting", "random_forest_regressor", "mlp_regressor"]
-
-
-    def get_test_datapoint():
-        candidate = search_space.get_random_candidate()
-        model_input = candidate_to_model_input(candidate)
-        model_input = model_input.reshape(1, -1)
-        actual_score = problem.score_of_candidate(candidate)
-        own_prediction = own_regressor.get_surrogate_score_of_fitness(candidate)
-        other_predictions = [regressor.predict(model_input)[0] for regressor in regressors]
-
-        return [actual_score, own_prediction] + other_predictions
-
-
-
-    output_onto_csv_file(get_appropriate_filename(problem, tags=["all"]),
-                         headers = headers,
-                         generator_function = get_test_datapoint,
-                         how_many_samples = 1000)
-
-
-
+        print("\n")
+
+
+def get_features(problem: CombinatorialProblem,
+                 sample_data: PopulationSamplePrecomputedData,
+                 criterion: ScoringCriterion,
+                 amount_requested: int):
+    print("Finding the features...")
+    features, scores = find_features(problem=problem,
+                                     sample_data=sample_data,
+                                     criterion=criterion,
+                                     importance_of_explainability=importance_of_explainability,
+                                     guaranteed_depth=guaranteed_depth,
+                                     extra_depth=extra_depth,
+                                     amount_requested=amount_requested)
+    return features
+
+
+def get_sampler(problem: CombinatorialProblem,
+                training_data: PopulationSamplePrecomputedData,
+                amount_of_features_per_sampler,
+                is_maximisation_task=True) -> Sampler:
+    print("Constructing the sampler, involves finding:")
+    print("\t -fit features")
+    fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS, amount_of_features_per_sampler)
+    print("\t -unfit features")
+    unfit_features = get_features(problem, training_data, ScoringCriterion.LOW_FITNESS, amount_of_features_per_sampler)
+    print("\t -novel features")
+    novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
+
+    wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (
+    unfit_features, fit_features)
+
+    sampler = Sampler(search_space=problem.search_space,
+                      wanted_features=wanted_features,
+                      unwanted_features=unwanted_features,
+                      unpopular_features=novel_features,
+                      importance_of_novelty=0.1)
+
+    print("Then we train the sampler")
+    sampler.train(training_data)
+    return sampler
+
+
+def get_good_samples(sampler, problem, attempts, keep, maximise=True):
+    samples = [sampler.sample() for _ in range(attempts)]
+    samples_with_scores = [(sample, problem.score_of_candidate(sample)) for sample in samples]
+    samples_with_scores.sort(key=utils.second, reverse=maximise)
+    return utils.unzip(samples_with_scores[:keep])
 
 
 if __name__ == '__main__':
-    problem = binval
-    get_explainable_features(problem, get_problem_training_data(problem, 600))
-    # big things are coming!
+    problem = checkerboard
+    maximise = True
+    training_data = get_problem_compact_training_data(problem, sample_size=1200)
+    print(f"The problem is {problem}")
+    print("More specifically, it is")
+    print(problem.long_repr())
+    criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
+    requested_amount_of_features = 12
+    features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
+    print(f"For the problem {problem}, the found features are:")
+    pretty_print_features(problem, features, combinatorial=True)
+
+    # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
+
+    # print("We can sample some individuals")
+    # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
+    # for good_sample, good_score in zip(good_samples, good_sample_scores):
+    #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")

@@ -9,9 +9,12 @@ class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
         self.amount_of_bits = amount_of_bits
         super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
 
-
     def __repr__(self):
         return f"OneMaxProblem(bits={self.amount_of_bits})"
+
+
+    def long_repr(self):
+        return self.__repr__()
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         """returns area of bounding box / area of board"""
@@ -20,12 +23,11 @@ class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         return sum(candidate.values)
 
-    def pretty_print_feature(self, feature):
+    def feature_repr(self, feature):
         def cell_repr(cell):
             if cell is None:
                 return "_"
             else:
                 return str(cell)
 
-        for cell in super().get_positional_values(feature):
-            print(f"{cell_repr(cell)} ", end="")
+        return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])

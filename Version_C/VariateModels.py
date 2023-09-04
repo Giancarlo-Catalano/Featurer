@@ -105,32 +105,7 @@ class CandidateValidator:
 def get_feature_presence_matrix_from_feature_matrix(candidate_matrix: np.ndarray,
                                                     feature_matrix: np.ndarray) -> np.ndarray:
     positive_when_absent = (1 - candidate_matrix) @ feature_matrix
-    return np.array(positive_when_absent == 0, dtype=float)
-
-
-def get_off_by_one_feature_presence_matrix(candidate_matrix: np.ndarray,
-                                           feature_matrix: np.ndarray) -> np.ndarray:
-    positive_when_absent = (1 - candidate_matrix) @ feature_matrix
-    """ The positive_when_absent matrix corresponds to counting the amount of 'errors' between a feature and 
-    a candidate solution. If errors = 0, the feature is present, if errors = 1, it's off by one,
-    
-    When getting the normal feature presence matrix, we only care about  == 0 (present) and >= 1 (absent), 
-    which is why we do 1 - min(error, 1), so that it becomes
-    
-    #errors  | value
-      0      |   1
-      >=1    |   0
-    
-    
-    In this particular function, we're interested in detecting off by one errors, thus
-    #errors  | value
-      0      |   0
-      1      |   1
-      >=2    |   0
-      
-    which can be calculated using 
-    """
-    return np.array(positive_when_absent == 1, dtype=float)
+    return 1 - np.minimum(positive_when_absent, 1)
 
 
 def get_feature_presence_matrix(candidate_matrix, hot_encoded_features) -> np.ndarray:
@@ -163,33 +138,6 @@ def get_between_feature_shouldnt_merge_matrix(search_space: SearchSpace.SearchSp
             result[row, column] = int(is_invalid or is_redundant)
 
     return result + result.T - np.diag(result)
-def get_normal_distribution_properties_from_fpm(feature_presence_matrix: np.ndarray, fitness_array: np.ndarray) -> list[(float, float, int)]:
-    fitness_where_present = feature_presence_matrix * utils.as_column_matrix(fitness_array)
-    count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
-    def get_average_for_each_column() -> np.ndarray:
-        sum_of_fitnesses = np.sum(fitness_where_present, axis=0)
-        return utils.divide_arrays_safely(sum_of_fitnesses, count_for_each_feature)
-
-    averages_for_each_feature = get_average_for_each_column()
-
-
-    def get_sd_for_each_column() -> np.ndarray:
-        averages_where_present = feature_presence_matrix * averages_for_each_feature
-        numerators = np.sum(((fitness_where_present - averages_where_present) ** 2), axis=0)
-        return np.sqrt(utils.divide_arrays_safely(numerators, (count_for_each_feature - 1)))
-
-    sd_for_each_feature = get_sd_for_each_column()
-
-    return list(zip(averages_for_each_feature.tolist(),
-                    sd_for_each_feature.tolist(),
-                    count_for_each_feature.tolist()))
-
-
-
-
-
-
-    return []
 
 
 class VariateModels:
