@@ -72,7 +72,7 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
 def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
-                 criteria_and_weights: [ScoringCriterion],
+                 criteria_and_weights: [(ScoringCriterion, float)],
                  amount_requested: int):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
@@ -119,13 +119,13 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 if __name__ == '__main__':
 
-    problem = checkerboard
+    problem = trap5
     maximise = True
-    guaranteed_depth = 2
+    guaranteed_depth = 5
     extra_depth = 5
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 1),
-                            (ScoringCriterion.STABILITY, 2),
+                            (ScoringCriterion.INSTABILITY, 2),
                             (ScoringCriterion.HIGH_FITNESS, 3)]
 
 

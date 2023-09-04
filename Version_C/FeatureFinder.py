@@ -289,7 +289,7 @@ class FeatureDeveloper:
         return FeatureFilter(intermediates,
                              self.population_sample,
                              self.complexity_function,
-                             criteria_and_weights,
+                             criteria_and_weights=criteria_and_weights,
                              expected_proportions=expected_proportions)
 
     def get_trivial_parent_pool(self):
@@ -360,7 +360,7 @@ class FeatureDeveloper:
         features, scores = feature_filter.get_the_best_features(amount_to_return)
         self.previous_iterations.append(ParentPool(features, scores))
 
-    def get_schedule(self, strategy="heuristic where needed") -> list[(int, bool, list[ScoringCriterion], int, int)]:
+    def get_schedule(self, strategy="heuristic where needed") -> list[(int, bool, list[(ScoringCriterion, float)], int, int)]:
         def get_total_amount_of_features(weight_category: int):
             """if all the variables had the same cardinality, this would be simpler"""
             return sum([utils.product(which_vars) for which_vars in
@@ -392,7 +392,7 @@ class FeatureDeveloper:
 
         def which_criteria_to_use(weight_category: int):
             if weight_category <= self.guaranteed_depth - 1:
-                return [ScoringCriterion.EXPLAINABILITY, 1]
+                return [(ScoringCriterion.EXPLAINABILITY, 1)]
             else:
                 return self.criteria_and_weights
 
