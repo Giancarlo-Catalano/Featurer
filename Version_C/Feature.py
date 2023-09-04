@@ -42,6 +42,12 @@ class Feature:
         return cls(new_mask, new_values)
 
     @classmethod
+    def force_merge(cls, first, second):
+        new_values = np.maximum(first.values_mask, second.values_mask)
+        new_mask = first.variable_mask | second.variable_mask
+        return cls(new_mask, new_values)
+
+    @classmethod
     def from_trivial_feature(cls, var, val, search_space: SearchSpace.SearchSpace):
         var_mask = bitarray(search_space.dimensions)
         var_mask.setall(0)

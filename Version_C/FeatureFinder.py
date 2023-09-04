@@ -51,6 +51,7 @@ class FeatureMixer:
     """ this class takes two sets of parents, and uses them to create new features"""
     """ it simply decides a parent from each set, and combines them"""
     """alternatively, you can use a greedy heuristic approach to get the best n"""
+    strict: bool  # determines whether we allow overlapping features to be merged or not
     parent_set_1: ParentPool
     parent_set_2: ParentPool
     """assumes parent_set_2 is either the same as parent_set_1 or bigger in len"""
@@ -58,6 +59,7 @@ class FeatureMixer:
     asexual: bool
 
     def __init__(self, parent_set_1: ParentPool, parent_set_2: ParentPool, asexual):
+        self.strict = False
         self.parent_set_1, self.parent_set_2 = parent_set_1, parent_set_2
         if len(parent_set_1.features) > len(parent_set_2.features):
             self.parent_set_1, self.parent_set_2 = self.parent_set_2, self.parent_set_1
@@ -83,13 +85,14 @@ class FeatureMixer:
 
         return list(result)[:amount]
 
-    @staticmethod
-    def add_merged_if_mergeable(accumulator: set[Feature],
+    def add_merged_if_mergeable(self, accumulator: set[Feature],
                                 mother: Feature,
                                 father: Feature):
-        if Feature.are_disjoint(mother, father):
+        if self.strict and Feature.are_disjoint(mother, father):
             child = Feature.merge(mother, father)
             accumulator.add(child)
+        else:
+            accumulator.add(Feature.force_merge(mother, father))
 
     def get_heuristic_mixed_features_asexual(self, amount: int):
         result = set()
@@ -98,7 +101,7 @@ class FeatureMixer:
             if len(result) >= amount:
                 break
             for column_feature in self.parent_set_2.features[-1:row:-1]:  # mamma mia
-                FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
+                self.add_merged_if_mergeable(result, row_feature, column_feature)
 
         return list(result)[:amount]
 
@@ -108,7 +111,7 @@ class FeatureMixer:
             if len(result) >= amount:
                 break
             for column_feature in reversed(self.parent_set_2.features):
-                FeatureMixer.add_merged_if_mergeable(result, row_feature, column_feature)
+                self.add_merged_if_mergeable(result, row_feature, column_feature)
 
         return list(result)[:amount]
 
@@ -119,6 +122,8 @@ class FeatureMixer:
         else:
             return self.get_heuristic_mixed_features_different_parents(amount)
 
+    def disable_strict_mixing(self):
+        self.strict = False
 
 class ScoringCriterion(Enum):
     EXPLAINABILITY = auto()
@@ -128,11 +133,13 @@ class ScoringCriterion(Enum):
     NOVELTY = auto()
     STABILITY = auto()
     INSTABILITY = auto()
-
+    CORRELATION = auto()
+    ANTICORRELATION = auto()
 
     def __repr__(self):
-        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability", "Instability"][self.value-1]
-
+        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability", "Instability",  "Correlation",
+                "Anti Correlation"][self.value-1]
+      
     def __str__(self):
         return self.__repr__()
 
@@ -172,8 +179,8 @@ class FeatureFilter:
         return 1.0 - self.get_complexity_array()
 
     def get_positive_fitness_correlation_array(self) -> np.ndarray:
-        #return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
         return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_average_fitness_vector())
+        # return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()
@@ -185,6 +192,42 @@ class FeatureFilter:
         signed_chi_squareds = chi_squareds * which_are_good
         return utils.remap_array_in_zero_one(signed_chi_squareds)
 
+    def get_phi_scores_for_each_feature(self) -> np.ndarray:
+        count_for_each_value = (self.precomputed_data_for_features
+                                .population_sample_precomputed
+                                .count_for_each_value())
+
+        observed_counts_for_each_feature = self.precomputed_data_for_features.count_for_each_feature
+
+        amount_of_candidates = self.precomputed_data_for_features.sample_size
+
+        def phi_score_for_feature(feature_index: int):
+            used_vars = self.current_features[feature_index].get_used_variables()
+            product_of_marginals = utils.product(count_for_each_value[var][val]
+                                                 for var, val in used_vars)
+            product_of_absences = utils.product((amount_of_candidates - count_for_each_value[var][val])
+                                                for var, val in used_vars)
+
+            n = amount_of_candidates
+            n_all = observed_counts_for_each_feature[feature_index]
+
+            if product_of_marginals * product_of_absences == 0:
+                return 0.0
+            else:
+                return (n * n_all - product_of_marginals) / (np.sqrt(product_of_marginals * product_of_absences))
+
+        return np.array([phi_score_for_feature(feature_index)
+                         for feature_index in range(self.precomputed_data_for_features.amount_of_features)])
+
+    def get_correlation_array(self) -> np.ndarray:
+        return utils.remap_array_in_zero_one(self.get_phi_scores_for_each_feature())
+
+    def get_anticorrelation_array(self) -> np.ndarray:
+        return 1 - self.get_correlation_array()
+
+    def get_stability_array(self):
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+      
     def get_instability_array(self):
         z_scores = self.precomputed_data_for_features.get_z_scores_compared_to_off_by_one()
         return utils.remap_array_in_zero_one(z_scores)
@@ -194,7 +237,6 @@ class FeatureFilter:
 
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()
-
 
     def get_requested_atomic_score(self, criterion: ScoringCriterion) -> np.ndarray:
         if criterion == ScoringCriterion.EXPLAINABILITY:
@@ -209,6 +251,10 @@ class FeatureFilter:
             return self.get_novelty_array()
         elif criterion == ScoringCriterion.STABILITY:
             return self.get_stability_array()
+        elif criterion == ScoringCriterion.CORRELATION:
+            return self.get_correlation_array()
+        elif criterion == ScoringCriterion.ANTICORRELATION:
+            return self.get_anticorrelation_array()
         elif criterion == ScoringCriterion.INSTABILITY:
             return self.get_instability_array()
         else:
@@ -307,7 +353,8 @@ class FeatureDeveloper:
                       amount_to_consider: int,
                       amount_to_return: int,
                       heuristic=False,
-                      criteria=None):
+                      criteria=None,
+                      strict=True):
         if criteria is None:
             criteria = [ScoringCriterion.EXPLAINABILITY]
         new_weight = len(self.previous_iterations) + 1
@@ -317,14 +364,18 @@ class FeatureDeveloper:
         feature_mixer = FeatureMixer(self.get_parent_pool_of_weight(parent_weight_1),
                                      self.get_parent_pool_of_weight(parent_weight_2),
                                      asexual_mixing)
-
+        if not strict:
+            feature_mixer.disable_strict_mixing()
         if heuristic:
             considered_features = feature_mixer.get_heuristically_mixed_features(amount_to_consider)
         else:
             considered_features = feature_mixer.get_stochastically_mixed_features(amount_to_consider)
-
-        if len(considered_features) == 0:
-            raise Exception("An iteration created no new features!")
+            
+        if len(considered_features) == 0 and not strict: # EMERGENCY! No good features could be generated
+            # solution: allow to merge overlapping features
+            print("Warning! The feature explorer ran out of mergable features, so strict merging was temporarly disabled")
+            self.new_iteration(amount_to_consider, amount_to_return, heuristic, criteria, strict=False)
+            return
         feature_filter = self.get_filter(considered_features, criteria)
 
         features, scores = feature_filter.get_the_best_features(amount_to_return)
@@ -351,11 +402,14 @@ class FeatureDeveloper:
             else:
                 return kept_in_category * 2  # TODO think about this more
 
-        def should_use_heuristic(weight_category: int):
+        def should_use_heuristic(weight_category: int) -> bool:
             if strategy == "heuristic where needed":
                 return weight_category <= self.guaranteed_depth
-            else:
-                raise Exception(f"Requested an unknown strategy! ({strategy}")
+            elif strategy == "always heuristic":
+                return True
+            elif strategy == "never heuristic":
+                return False
+            raise Exception(f"Requested an unknown strategy! ({strategy}")
 
         def which_criteria_to_use(weight_category: int):
             if weight_category <= self.guaranteed_depth - 1:

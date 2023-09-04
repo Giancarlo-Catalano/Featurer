@@ -24,12 +24,13 @@ constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HO
 
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
-c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
-                                                            KnapsackConstraint.WITHIN_WEIGHT,
-                                                            KnapsackConstraint.WITHIN_VOLUME])
+constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
+                                                                      KnapsackConstraint.WITHIN_WEIGHT,
+                                                                      KnapsackConstraint.WITHIN_VOLUME])
 
-guaranteed_depth = 5
-extra_depth = 5
+guaranteed_depth = 2
+extra_depth = 6
+
 importance_of_explainability = 0.5
 
 
@@ -121,8 +122,9 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    """I hate git so very much"""
-    problem = trap5
+    """ Spits out the interesting features for a given problem."""
+    """ You can fiddle with the problem, the criteria etc.."""
+    problem = constrainedBT
     maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
@@ -132,7 +134,7 @@ if __name__ == '__main__':
     requested_amount_of_features = 12
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
-    print(f"For the problem {problem}, the found features are:")
+    print(f"For the problem {problem}, the found features with {criteria = } are:")
     pretty_print_features(problem, features, combinatorial=True)
 
     # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)

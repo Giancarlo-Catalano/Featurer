@@ -337,9 +337,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         as_matrix = np.array(extended_rota, dtype=int)
         as_matrix = as_matrix.reshape((-1, 7))
         hours_per_day = 8
-        weekly_hours = np.sum(as_matrix, axis=1) * 8
-        max_weekly_hours = np.max(weekly_hours)
-        return max_weekly_hours > max_allowed_weekly_hours
+        weekly_hours = np.sum(as_matrix, axis=1) * hours_per_day
+        return any(week_hours > max_allowed_weekly_hours for week_hours in weekly_hours)
 
     def any_rotas_exceed_weekly_working_hours(self, candidate: SearchSpace.Candidate):
         rotas = self.original_problem.get_rotas_in_candidate(candidate)

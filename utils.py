@@ -387,7 +387,15 @@ def row_wise_nth_power_self_outer_product(input_matrix, n:int):
 
 
 def product(iterable):
-    return functools.reduce(operator.mul, iterable)
+    return functools.reduce(operator.mul, iterable, 1)
+
+
+def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
+    return np.einsum('ij,i->j', matrix, weights)
+
+
+def divide_arrays_safely(numerator, deniminator):
+    return np.divide(numerator, deniminator, out=np.zeros_like(numerator), where=deniminator != 0.0)
 
 
 def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):

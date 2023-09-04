@@ -93,7 +93,6 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
         return t_scores
 
-
     def get_off_by_one_feature_presence_matrix(self) -> np.ndarray:
         return VariateModels.get_off_by_one_feature_presence_matrix(self.candidate_matrix, self.feature_matrix)
 
@@ -115,9 +114,4 @@ class PopulationSampleWithFeaturesPrecomputedData:
             return np.abs(numerator / denominator)
 
         return np.array([z_score(perf, off) for perf, off in zip(perfect_properties, off_by_one_properties)])
-
-
-
-
-
 
