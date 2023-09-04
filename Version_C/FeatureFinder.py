@@ -11,7 +11,7 @@ import utils
 from enum import Enum, auto
 from typing import Optional
 
-from Version_B.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, \
+from Version_C.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, \
     PopulationSampleWithFeaturesPrecomputedData
 
 from Version_C.Feature import Feature
@@ -127,10 +127,11 @@ class ScoringCriterion(Enum):
     POPULARITY = auto()
     NOVELTY = auto()
     STABILITY = auto()
+    INSTABILITY = auto()
 
 
     def __repr__(self):
-        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability"][self.value-1]
+        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability", "Instability"][self.value-1]
 
     def __str__(self):
         return self.__repr__()
@@ -171,7 +172,8 @@ class FeatureFilter:
         return 1.0 - self.get_complexity_array()
 
     def get_positive_fitness_correlation_array(self) -> np.ndarray:
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+        #return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_average_fitness_vector())
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()
@@ -183,8 +185,12 @@ class FeatureFilter:
         signed_chi_squareds = chi_squareds * which_are_good
         return utils.remap_array_in_zero_one(signed_chi_squareds)
 
+    def get_instability_array(self):
+        z_scores = self.precomputed_data_for_features.get_z_scores_compared_to_off_by_one()
+        return utils.remap_array_in_zero_one(z_scores)
+
     def get_stability_array(self):
-        pass
+        return 1.0-self.get_instability_array()
 
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()
@@ -203,6 +209,8 @@ class FeatureFilter:
             return self.get_novelty_array()
         elif criterion == ScoringCriterion.STABILITY:
             return self.get_stability_array()
+        elif criterion == ScoringCriterion.INSTABILITY:
+            return self.get_instability_array()
         else:
             raise Exception("The criterion for scoring was not specified")
 

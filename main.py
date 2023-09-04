@@ -28,8 +28,8 @@ c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.B
                                                             KnapsackConstraint.WITHIN_WEIGHT,
                                                             KnapsackConstraint.WITHIN_VOLUME])
 
-guaranteed_depth = 2
-extra_depth = 4
+guaranteed_depth = 5
+extra_depth = 5
 importance_of_explainability = 0.5
 
 
@@ -121,7 +121,7 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = checkerboard
+    problem = trap5
     maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")

@@ -163,7 +163,8 @@ def get_between_feature_shouldnt_merge_matrix(search_space: SearchSpace.SearchSp
             result[row, column] = int(is_invalid or is_redundant)
 
     return result + result.T - np.diag(result)
-def get_normal_distribution_properties_from_fpm(feature_presence_matrix: np.ndarray, fitness_array: np.ndarray) -> list[(float, float, int)]:
+def get_normal_distribution_properties_from_fpm(feature_presence_matrix: np.ndarray, fitness_array: np.ndarray)\
+        -> list[(float, float, int)]:
     fitness_where_present = feature_presence_matrix * utils.as_column_matrix(fitness_array)
     count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
     def get_average_for_each_column() -> np.ndarray:

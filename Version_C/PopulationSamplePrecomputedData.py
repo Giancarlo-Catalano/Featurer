@@ -99,4 +99,25 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
 
 
+    def get_z_scores_compared_to_off_by_one(self) -> np.ndarray:
+        perfect_properties = VariateModels.get_normal_distribution_properties_from_fpm(self.feature_presence_matrix,
+                                                                                       self.fitness_array)
+        off_by_one_properties = VariateModels.get_normal_distribution_properties_from_fpm(self.get_off_by_one_feature_presence_matrix(),
+                                                                                          self.fitness_array)
+
+        def z_score(properties_1, properties_2):
+            mean_1, sd_1, n_1 = properties_1
+            mean_2, sd_2, n_2 = properties_2
+            numerator = mean_1 - mean_2
+            s_over_n_1 = (sd_1 ** 2) / n_1
+            s_over_n_2 = (sd_2 ** 2) / n_2
+            denominator = np.sqrt(s_over_n_1 + s_over_n_2)
+            return np.abs(numerator / denominator)
+
+        return np.array([z_score(perf, off) for perf, off in zip(perfect_properties, off_by_one_properties)])
+
+
+
+
+
 
