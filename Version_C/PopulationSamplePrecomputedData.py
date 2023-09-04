@@ -117,6 +117,8 @@ class PopulationSampleWithFeaturesPrecomputedData:
         def z_score(properties_1, properties_2):
             mean_1, sd_1, n_1 = properties_1
             mean_2, sd_2, n_2 = properties_2
+            if (n_1 == 0 or n_2 == 0):
+                return 0.0  # panic
             numerator = mean_1 - mean_2
             s_over_n_1 = (sd_1 ** 2) / n_1
             s_over_n_2 = (sd_2 ** 2) / n_2

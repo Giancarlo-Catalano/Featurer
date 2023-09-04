@@ -270,7 +270,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         original_candidate, predicates = self.split_candidate(candidate)
-        if all(value == 1 for value in predicates.values):
-            return self.unconstrained_problem.score_of_candidate(original_candidate)
-        else:
-            return +1000
+
+        malus_for_each_violation = 100
+        amount_of_violations = sum([value for value in predicates.values if value == False])
+        return self.unconstrained_problem.score_of_candidate(original_candidate) + amount_of_violations * malus_for_each_violation

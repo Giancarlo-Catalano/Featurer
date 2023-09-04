@@ -185,7 +185,7 @@ def from_hot_encoding_old(hot_encoding):
 
 
 def weighted_sum_of_columns(weights, matrix):
-    return np.sum(matrix @ np.diag(weights), axis=1)
+    return np.sum(matrix * weights, axis=1)
 
 
 def negate_list(iterable):
@@ -394,16 +394,18 @@ def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
     return np.einsum('ij,i->j', matrix, weights)
 
 
-def divide_arrays_safely(numerator, deniminator):
-    return np.divide(numerator, deniminator, out=np.zeros_like(numerator), where=deniminator != 0.0)
-
-
-def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
-    return np.einsum('ij,i->j', matrix, weights)
-
-
 def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray):
     """returns the element wise division between 2 arrays, and 0 where there was a zero denominator"""
     return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0.0)
 
 
+def weighted_average_of_columns(matrix: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    sum_for_each_row = weighted_sum_of_columns(weights, matrix)
+    denominator = np.sum(weights)
+    return sum_for_each_row / denominator
+
+
+def weighted_average_of_rows(matrix: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    sum_for_each_row = weighted_sum_of_rows(matrix, weights)
+    denominator = np.sum(weights)
+    return sum_for_each_row / denominator
