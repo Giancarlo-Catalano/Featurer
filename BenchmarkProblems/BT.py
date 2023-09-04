@@ -54,8 +54,8 @@ worker_first_names = ["Amy", "Bob", "Chris", "Darcy", "Elly", "Frank", "Gian", "
                 "Zeno"]
 
 
-worker_surnames = ["Anderson", "Bokmal", "Catalano", "Devon", "Elsinor", "Fourier", "Gomez", "Hubert", "Immaut",
-"Jackson", "Kingstone", "Langton", "Morris", "Noivern", "Olowasamelori", "Pulitser", "Quasimodo", "Rossi", "Stradivarius", "Turner", "Umm Summa",
+worker_surnames = ["Anderson", "Bokmal", "Catalano", "Devon", "Elsinor", "Fourier", "Gomez", "Hayashi", "Immaut",
+"Jackson", "Kingstone", "Ling", "Morris", "Noivern", "Olowasamelori", "Pulitser", "Quasimodo", "Rossi", "Stradivarius", "Turner", "Umm Summa",
 "Vladivosov", "Wieux", "Xerox", "Ypritte", "Zeppelin"]
 
 def get_worker_names(amount_of_workers) -> list[str]:

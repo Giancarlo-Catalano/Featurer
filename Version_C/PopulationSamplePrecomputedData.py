@@ -28,6 +28,14 @@ class PopulationSamplePrecomputedData:
         fitnesses = [problem.score_of_candidate(candidate) for candidate in population]
         return cls(search_space, population, fitnesses)
 
+    def count_for_each_var_val(self) -> list[list[float]]:
+        sum_in_hot_encoding_order: list[float] = np.sum(self.candidate_matrix, axis=0).tolist()
+        def counts_for_each_variable(var_index):
+            start, end = self.search_space.precomputed_offsets[var_index: var_index+2]
+            return sum_in_hot_encoding_order[start:end]
+
+        return [counts_for_each_variable(var_index) for var_index in range(self.search_space.dimensions)]
+
 
 class PopulationSampleWithFeaturesPrecomputedData:
     """this data structures stores matrices that are used around the other classes"""
@@ -37,6 +45,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
     count_for_each_feature: np.ndarray
     complexity_array: np.ndarray
+    amount_of_features: int
 
     def __init__(self, population_precomputed: PopulationSamplePrecomputedData,
                  raw_features: list[SearchSpace.Feature]):
@@ -49,6 +58,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
             self.feature_matrix)
 
         self.count_for_each_feature = np.sum(self.feature_presence_matrix, axis=0)
+        self.amount_of_features = len(raw_features)
 
     @property
     def fitness_array(self) -> np.ndarray:

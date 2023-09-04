@@ -1,5 +1,4 @@
 import itertools
-import math
 from typing import Any
 
 import numpy as np
@@ -9,7 +8,6 @@ import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 import utils
 from enum import Enum, auto
-from typing import Optional
 
 from Version_C.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, \
     PopulationSampleWithFeaturesPrecomputedData
@@ -149,7 +147,7 @@ class FeatureFilter:
         * create scores based on their explainability + fitness / novelty
         * filter the given features based on those scores
     """
-    current_features: list[SearchSpace.Feature]
+    current_features: list[Feature]
     precomputed_data_for_features: PopulationSampleWithFeaturesPrecomputedData
     complexity_array: np.ndarray
 
@@ -195,7 +193,7 @@ class FeatureFilter:
     def get_phi_scores_for_each_feature(self) -> np.ndarray:
         count_for_each_value = (self.precomputed_data_for_features
                                 .population_sample_precomputed
-                                .count_for_each_value())
+                                .count_for_each_var_val())
 
         observed_counts_for_each_feature = self.precomputed_data_for_features.count_for_each_feature
 
@@ -224,10 +222,6 @@ class FeatureFilter:
 
     def get_anticorrelation_array(self) -> np.ndarray:
         return 1 - self.get_correlation_array()
-
-    def get_stability_array(self):
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
-      
     def get_instability_array(self):
         z_scores = self.precomputed_data_for_features.get_z_scores_compared_to_off_by_one()
         return utils.remap_array_in_zero_one(z_scores)

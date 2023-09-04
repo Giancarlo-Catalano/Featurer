@@ -130,7 +130,7 @@ if __name__ == '__main__':
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
+    criteria = ScoringCriterion.ANTICORRELATION #  ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
     requested_amount_of_features = 12
     features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
