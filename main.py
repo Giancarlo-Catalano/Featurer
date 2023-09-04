@@ -121,6 +121,7 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
+    """I hate git so much"""
     problem = trap5
     maximise = True
     training_data = get_problem_compact_training_data(problem, sample_size=1200)
