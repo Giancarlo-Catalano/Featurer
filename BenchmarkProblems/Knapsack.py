@@ -257,8 +257,13 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         complexity_of_parameters = super().amount_of_set_values_in_feature(parameters)
         complexity_of_predicate = len(predicates.var_vals)
 
+        total_amount_of_elements = super().amount_of_set_values_in_feature(parameters) + super().amount_of_set_values_in_feature(predicates)
 
-        return complexity_of_parameters + (complexity_of_predicate)
+        if total_amount_of_elements < 2:
+            return 100
+
+
+        return complexity_of_parameters + complexity_of_predicate
 
     def all_constraints_are_satisfied(self, candidate: SearchSpace.Candidate):
         return all(self.satisfies_constraint(candidate, need) for need in self.needs)

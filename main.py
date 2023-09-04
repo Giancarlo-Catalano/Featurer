@@ -29,9 +29,9 @@ constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackCo
                                                                       KnapsackConstraint.WITHIN_VOLUME])
 
 guaranteed_depth = 2
-extra_depth = 6
+extra_depth = 5
 
-importance_of_explainability = 0.5
+importance_of_explainability = 0.7
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
