@@ -6,7 +6,7 @@ import Version_B.VariateModels
 import utils
 
 
-class IntermediateFeature:
+class LegacyIntermediateFeature:
     """A feature, with added information on leftmost and rightmost set parameter"""
     start: int
     end: int
@@ -25,21 +25,26 @@ class IntermediateFeature:
         return cls(var, var, SearchSpace.Feature.trivial_feature(var, val))
 
 
-def merge_two_intermediate(left: IntermediateFeature, right: IntermediateFeature):
+    def __hash__(self):
+        return self.feature.__hash__()
+
+    def __eq__(self, other):
+        return self.feature.__eq__(other.feature)
+
+
+def merge_two_intermediate(left: LegacyIntermediateFeature, right: LegacyIntermediateFeature):
     """creates the union of two intermediate features"""
     # NOTE: the order of the arguments matters!
-    new_start = left.start
-    new_end = right.end
+    new_start = min(left.start, right.start)
+    new_end = max(left.end, right.end)
     new_feature = SearchSpace.merge_two_features(left.feature, right.feature)
 
-    return IntermediateFeature(new_start, new_end, new_feature)
+    return LegacyIntermediateFeature(new_start, new_end, new_feature)
 
 
-def can_be_merged(left: IntermediateFeature, right: IntermediateFeature):
+def can_be_merged(a: LegacyIntermediateFeature, b: LegacyIntermediateFeature):
     """Returns true if the 2 features can be merged without overlaps"""
-    """Additionally, it only allows two features to be merged in one way (ie AB is allowed, BA is not)"""
-    # NOTE: the order of the arguments matters!
-    return left.end < right.start
+    return (a.end < b.start) or (b.end < a.start)
 
 
 class IntermediateFeatureGroup:
@@ -66,7 +71,7 @@ class IntermediateFeatureGroup:
     def get_trivial_weight_group(cls, search_space: SearchSpace.SearchSpace):
         weight = 1
         var_vals = search_space.get_all_var_val_pairs()
-        trivial_features = set(IntermediateFeature.get_trivial_feature(var, val)
+        trivial_features = set(LegacyIntermediateFeature.get_trivial_feature(var, val)
                                for (var, val) in var_vals)
         return cls(trivial_features, weight)
 
@@ -170,7 +175,7 @@ class FeatureExplorer:
         fitness_array = np.array(fitness_list)
 
         average_fitnesses = self.variate_model_generator.\
-            get_average_fitness_of_features(feature_presence_matrix, fitness_array)
+            get_average_fitness_of_features_from_matrix(feature_presence_matrix, fitness_array)
         frequencies = self.variate_model_generator.get_observed_frequency_of_features(feature_presence_matrix)
 
         return average_fitnesses, frequencies

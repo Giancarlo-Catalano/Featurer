@@ -417,7 +417,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
 
         def complexity_of_parameters(amount_of_workers: int):
-            return abs(amount_of_workers - 3) if amount_of_workers < 5 else 200
+            ideal_amount_of_workers = 4
+            return abs(amount_of_workers - ideal_amount_of_workers)
 
         def complexity_of_predicate(predicate, value):
             if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
@@ -430,15 +431,15 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         def complexity_of_predicates(predicates: SearchSpace.Feature):
             if predicates.var_vals:
-                return max(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
-            else:
-                return 100
+                return sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
 
 
         amount_of_workers = super().amount_of_set_values_in_feature(unconstrained_feature)
-        amount_of_predicates = super().amount_of_set_values_in_feature(predicates)
-
         complexity_of_unconstrained = complexity_of_parameters(amount_of_workers)
         complexity_of_predicates_in_feature = complexity_of_predicates(predicates)
+        predicates_are_present = super().amount_of_set_values_in_feature(predicates) > 0
 
-        return complexity_of_predicates_in_feature + complexity_of_unconstrained
+        if predicates_are_present and amount_of_workers > 0:
+            return complexity_of_predicates_in_feature + complexity_of_unconstrained * 100
+        else:
+            return 1000

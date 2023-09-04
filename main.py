@@ -30,6 +30,7 @@ constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackCo
 
 guaranteed_depth = 2
 extra_depth = 6
+
 importance_of_explainability = 0.5
 
 
@@ -83,7 +84,6 @@ def get_features(problem: CombinatorialProblem,
                                      importance_of_explainability=importance_of_explainability,
                                      guaranteed_depth=guaranteed_depth,
                                      extra_depth=extra_depth,
-                                     strategy="always heuristic",
                                      amount_requested=amount_requested)
     return features
 
