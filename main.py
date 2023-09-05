@@ -124,9 +124,9 @@ if __name__ == '__main__':
     guaranteed_depth = 5
     extra_depth = 5
 
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 6),
-                            (ScoringCriterion.INSTABILITY, 2),
-                            (ScoringCriterion.HIGH_FITNESS, 4)]
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, -1),
+                            (ScoringCriterion.RESILIENCY, -2),
+                            (ScoringCriterion.HIGH_FITNESS, 0)]
 
 
     training_data = get_problem_compact_training_data(problem, sample_size=1200)

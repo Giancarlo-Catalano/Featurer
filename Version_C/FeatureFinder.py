@@ -258,13 +258,18 @@ class FeatureFilter:
         else:
             raise Exception("The criterion for scoring was not specified")
 
+    def invert_scores(self, scores: np.ndarray) -> np.ndarray:
+        return 1.0 - scores
+
     def get_scores_of_features(self) -> np.ndarray:
         if len(self.criteria_and_weights) == 0:
             raise Exception("You requested a compound score composed of no criteria!")
 
         criteria, weights = utils.unzip(self.criteria_and_weights)
-        individual_scores = np.array([self.get_requested_atomic_score(criterion) for criterion in criteria])
-        return utils.weighted_average_of_rows(individual_scores, weights)
+        individual_scores = [self.get_requested_atomic_score(criterion) for criterion in criteria]
+        appropriately_inverted_scores = np.array([self.invert_scores(scores) if weight < 0 else scores
+                                                  for weight, scores in zip(weights, individual_scores)])
+        return utils.weighted_average_of_rows(appropriately_inverted_scores, np.abs(np.array(weights)))
 
     def get_the_best_features(self, how_many_to_keep: int) -> (list[Feature], np.ndarray):
         scores = self.get_scores_of_features()
@@ -306,12 +311,18 @@ class FeatureDeveloper:
                              criteria_and_weights=criteria_and_weights,
                              expected_proportions=expected_proportions)
 
+    def get_just_explainability_filter(self, intermediates: list[Feature]):
+        just_explainability = [(criterion, score) for criterion, score
+                               in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
+        # that is done so that the coefficient's sign is preserved
+        return self.get_filter(intermediates, just_explainability)
+
+    def get_unfiltering_filter(self, intermediates: list[Feature]):
+        return self.get_filter(intermediates, [])
+
     def get_trivial_parent_pool(self):
         trivial_features = Feature.get_all_trivial_features(self.search_space)
-
-        feature_filter = self.get_filter(trivial_features, [(ScoringCriterion.EXPLAINABILITY, 1)])
-        scores = feature_filter.get_scores_of_features()
-
+        scores = self.get_just_explainability_filter(trivial_features).get_scores_of_features()
         return ParentPool(trivial_features, scores)  # note how they don't get filtered!
 
     def __init__(self,
