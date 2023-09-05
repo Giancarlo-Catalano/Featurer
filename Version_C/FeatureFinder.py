@@ -268,6 +268,16 @@ class FeatureFilter:
         return features, np.array(scores_list)
 
 
+
+def criteria_and_weights_requires_expected_proportions(criteria_and_weights: list[(ScoringCriterion, float)]) -> bool:
+    if len(criteria_and_weights) == 0:
+        return False
+    else:
+        criteria, weights = utils.unzip(criteria_and_weights)
+        special_criteria = [ScoringCriterion.NOVELTY, ScoringCriterion.POPULARITY]
+        return any(special_criterion in criteria for special_criterion in special_criteria)
+
+
 class FeatureDeveloper:
     """this class generates the useful, explainable features"""
     population_sample: PopulationSamplePrecomputedData
@@ -281,10 +291,10 @@ class FeatureDeveloper:
 
     def get_filter(self, intermediates: list[Feature], criteria_and_weights: list[(ScoringCriterion, float)]):
         expected_proportions = None
-        #if ScoringCriterion.NOVELTY or ScoringCriterion.POPULARITY in utils.unzip(criteria_and_weights)[1]:
-        #    expected_proportions = np.array(
-        #        [self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
-        #         for intermediate in intermediates])
+        if criteria_and_weights_requires_expected_proportions(criteria_and_weights):
+           expected_proportions = np.array(
+               [self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
+                for intermediate in intermediates])
 
         return FeatureFilter(intermediates,
                              self.population_sample,
