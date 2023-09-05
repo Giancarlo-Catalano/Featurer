@@ -57,7 +57,7 @@ class FeatureMixer:
     asexual: bool
 
     def __init__(self, parent_set_1: ParentPool, parent_set_2: ParentPool, asexual):
-        self.strict = False
+        self.strict = True
         self.parent_set_1, self.parent_set_2 = parent_set_1, parent_set_2
         if len(parent_set_1.features) > len(parent_set_2.features):
             self.parent_set_1, self.parent_set_2 = self.parent_set_2, self.parent_set_1
@@ -74,9 +74,8 @@ class FeatureMixer:
         def add_from_batch():
             batch_mothers = self.parent_set_1.select_n_parents_randomly(batch_size)
             batch_fathers = self.parent_set_2.select_n_parents_randomly(batch_size)
-            offspring = [Feature.merge(mother, father) for mother, father in zip(batch_mothers, batch_fathers)
-                         if Feature.are_disjoint(mother, father)]
-            result.update(offspring)
+            for mother, father in zip(batch_mothers, batch_fathers):
+                self.add_merged_if_mergeable(result, mother, father)
 
         while len(result) < amount:
             add_from_batch()
@@ -128,17 +127,17 @@ class ScoringCriterion(Enum):
     EXPLAINABILITY = auto()
     HIGH_FITNESS = auto()
     LOW_FITNESS = auto()
+    FITNESS_CONSISTENCY = auto()
     POPULARITY = auto()
     NOVELTY = auto()
-    STABILITY = auto()
+    RESILIENCY = auto()
     INSTABILITY = auto()
     CORRELATION = auto()
     ANTICORRELATION = auto()
 
     def __repr__(self):
-        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability", "Instability",
-                "Correlation",
-                "Anti Correlation"][self.value - 1]
+        return ["Explainability", "High Fitness", "Low Fitness", "Fitness Consistency", "Popularity", "Novelty",
+                "Resiliency", "Instability", "Correlation", "Anti Correlation"][self.value - 1]
 
     def __str__(self):
         return self.__repr__()
@@ -179,6 +178,10 @@ class FeatureFilter:
     def get_positive_fitness_correlation_array(self) -> np.ndarray:
         return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_average_fitness_vector())
         # return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_t_scores())
+
+    def get_fitness_consistency_array(self) -> np.ndarray:
+        t_scores = np.abs(self.precomputed_data_for_features.get_t_scores())
+        return utils.remap_array_in_zero_one(t_scores)
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()
@@ -240,11 +243,13 @@ class FeatureFilter:
             return self.get_positive_fitness_correlation_array()
         elif criterion == ScoringCriterion.LOW_FITNESS:
             return self.get_negative_fitness_correlation_array()
+        elif criterion == ScoringCriterion.FITNESS_CONSISTENCY:
+            return self.get_fitness_consistency_array()
         elif criterion == ScoringCriterion.POPULARITY:
             return self.get_popularity_array()
         elif criterion == ScoringCriterion.NOVELTY:
             return self.get_novelty_array()
-        elif criterion == ScoringCriterion.STABILITY:
+        elif criterion == ScoringCriterion.RESILIENCY:
             return self.get_stability_array()
         elif criterion == ScoringCriterion.CORRELATION:
             return self.get_correlation_array()
