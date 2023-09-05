@@ -311,10 +311,9 @@ class FeatureDeveloper:
                              criteria_and_weights=criteria_and_weights,
                              expected_proportions=expected_proportions)
 
-
     def get_early_stages_criteria(self) -> list[(ScoringCriterion, float)]:
         return [(criterion, score) for criterion, score
-                               in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
+                in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
 
     def get_just_explainability_filter(self, intermediates: list[Feature]):
         just_explainability = self.get_early_stages_criteria()
@@ -399,7 +398,7 @@ class FeatureDeveloper:
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
 
         def get_likely_amount_of_important_features(weight_category: int):
-            return self.amount_requested * self.search_space.total_cardinality * weight_category
+            return self.amount_requested * self.search_space.total_cardinality
 
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:
@@ -452,8 +451,8 @@ class FeatureDeveloper:
 
     def get_developed_features(self) -> (list[SearchSpace.Feature], np.ndarray):
         """This is the function which returns the features you'll be using in the future!"""
-        developed_features: list[Feature] = utils.concat([parent_pool.features
-                                                          for parent_pool in self.previous_iterations])
+        developed_features: list[Feature] = utils.concat_lists([parent_pool.features
+                                                                for parent_pool in self.previous_iterations])
         feature_filterer = self.get_filter(developed_features, self.criteria_and_weights)
 
         return feature_filterer.get_the_best_features(self.amount_requested)

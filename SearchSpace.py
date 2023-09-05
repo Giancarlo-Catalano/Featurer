@@ -139,3 +139,7 @@ def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate) -> Cand
 
 def merge_two_spaces(space_a: SearchSpace, space_b: SearchSpace) -> SearchSpace:
     return SearchSpace(space_a.cardinalities + space_b.cardinalities)
+
+
+def merge_many_spaces(spaces: Iterable[SearchSpace]) -> SearchSpace:
+    return SearchSpace(utils.concat_tuples(space.cardinalities for space in spaces))

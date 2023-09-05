@@ -123,7 +123,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
             s_over_n_1 = (sd_1 ** 2) / n_1
             s_over_n_2 = (sd_2 ** 2) / n_2
             denominator = np.sqrt(s_over_n_1 + s_over_n_2)
-            return np.abs(numerator / denominator)
+            return np.abs(numerator / denominator) if denominator != 0 else 0
 
         return np.array([z_score(perf, off) for perf, off in zip(perfect_properties, off_by_one_properties)])
 

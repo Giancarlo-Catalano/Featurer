@@ -44,8 +44,12 @@ def sort_using_scores(elements, scores, increasing=False):
     return [first(pair) for pair in zipped]
 
 
-def concat(lists):
+def concat_lists(lists):
     return sum(lists, [])
+
+
+def concat_tuples(tuples):
+    return sum(tuples, ())
 
 
 def group(iterable, key_function=lambda x: x):
@@ -250,7 +254,7 @@ def chi_squared(observed, expected):
 
 def sample_from_grid_of_weights(probabilities):
     rows = len(probabilities)
-    flattened_probabilities = concat(probabilities)
+    flattened_probabilities = concat_lists(probabilities)
     aggregated_index = sample_index_with_weights(flattened_probabilities)
     return divmod(aggregated_index, rows)
 

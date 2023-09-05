@@ -11,7 +11,6 @@ trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-simpleBT = BT.SimplifiedBTProblem(25, 3)
 almostBT = BT.BTProblem(30, 4, 28)
 constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
                                                 BT.BTPredicate.BAD_MONDAY,
@@ -119,12 +118,12 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 if __name__ == '__main__':
 
-    problem = trap5
+    problem = constrainedBT
     maximise = True
-    guaranteed_depth = 5
-    extra_depth = 5
+    guaranteed_depth = 1
+    extra_depth = 6
 
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, -1),
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 4),
                             (ScoringCriterion.RESILIENCY, -2),
                             (ScoringCriterion.HIGH_FITNESS, 3),
                             (ScoringCriterion.FITNESS_CONSISTENCY, 2)]
