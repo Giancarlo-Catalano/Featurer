@@ -1,4 +1,3 @@
-import itertools
 import random
 from typing import Optional
 
@@ -195,7 +194,8 @@ class BTProblem(CombinatorialProblem):
                 for (worker, (which_rota, starting_day)) in zip(self.workers, rota_choices_and_starts)]
 
     def break_feature_by_worker(self, feature: SearchSpace.Feature) -> list[(Optional[int], Optional[int])]:
-        result: list[[Optional[int], Optional[int]]] = [[None, None] for worker in self.workers]
+        result: list[[Optional[int], Optional[int]]] = [[None, None] for _ in self.workers]
+
         # the items are lists of 2 values rather than tuples, because they will be mutated
         def update_result(var, val):
             worker_index, is_starting_day_var = divmod(var, 2)
@@ -237,7 +237,7 @@ class BTProblem(CombinatorialProblem):
     def get_counts_for_overlapped_rotas(self, rotas: list[WorkerRota]) -> np.ndarray:
         extended_rotas = [self.extend_rota_to_total_roster(rota) for rota in rotas]
         as_int_grid = np.array(extended_rotas, dtype=int)
-        return (np.sum(as_int_grid, axis=0))
+        return np.sum(as_int_grid, axis=0)
 
     def get_min_and_max_for_each_work_day(self, candidate: SearchSpace.Candidate) -> list[(int, int)]:
         rotas = self.get_rotas_in_candidate(candidate)
@@ -290,11 +290,11 @@ class BTProblem(CombinatorialProblem):
             elif (rota_index is not None) and (starting_day is not None):
                 return 1
 
-
         worker_params = self.break_feature_by_worker(feature)
-        amount_of_workers = len([1 for rota_index, starting_day in worker_params if rota_index is not None or starting_day is not None])
+        amount_of_workers = len(
+            [1 for rota_index, starting_day in worker_params if rota_index is not None or starting_day is not None])
         worker_amount_malus = abs(amount_of_workers - 3) * 5
-        return sum(complexity_for_values(*params) for params in worker_params)+worker_amount_malus
+        return sum(complexity_for_values(*params) for params in worker_params) # + worker_amount_malus
 
 
 class BTPredicate(Enum):
@@ -328,7 +328,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
     def __init__(self, original_problem, predicates: list[BTPredicate]):
         self.original_problem = original_problem
         self.predicates = predicates
-        constraint_space = SearchSpace.SearchSpace([2 for pred in self.predicates])
+        constraint_space = SearchSpace.SearchSpace([2 for _ in self.predicates])
         super().__init__(original_problem, constraint_space)
 
     def __repr__(self):
@@ -397,7 +397,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
             if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return "Exceeds weekly hours" if value else "Within weekly hours"
             elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
-                return "Contains consecutive working weekends" if value else "Does not have consecutive working weekends"
+                return "Contains consecutive working weekends" if value \
+                    else "Does not have consecutive working weekends"
             else:
                 weekday = predicate.to_week_day()
                 weekday_name = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
@@ -414,7 +415,6 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
             return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
             return normal_score
-
 
     def get_complexity_of_predicates(self, predicates: SearchSpace.Feature):
         def complexity_of_predicate(predicate, value):
@@ -436,7 +436,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         predicates_are_present = super().amount_of_set_values_in_feature(descriptors_partial_solution) > 0
 
         if predicates_are_present:
-            return self.original_problem.get_complexity_of_feature(partial_solution_parameters) + \
+            return amount_of_workers + \
                 self.get_complexity_of_predicates(descriptors_partial_solution)
         else:
             return 1000

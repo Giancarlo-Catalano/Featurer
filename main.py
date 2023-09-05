@@ -11,7 +11,7 @@ trap5 = TrapK.TrapK(5, 2)
 checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-almostBT = BT.BTProblem(30, 4, 28)
+almostBT = BT.BTProblem(12, 4, 28)
 constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
                                                 BT.BTPredicate.BAD_MONDAY,
                                                 BT.BTPredicate.BAD_TUESDAY,
@@ -23,11 +23,10 @@ constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HO
 
 graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
-constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
-                                                                      KnapsackConstraint.WITHIN_WEIGHT,
-                                                                      KnapsackConstraint.WITHIN_VOLUME])
-
-
+constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
+                                                           [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
+                                                            KnapsackConstraint.WITHIN_WEIGHT,
+                                                            KnapsackConstraint.WITHIN_VOLUME])
 
 
 def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
@@ -96,7 +95,7 @@ def get_sampler(problem: CombinatorialProblem,
     novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
 
     wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (
-    unfit_features, fit_features)
+        unfit_features, fit_features)
 
     sampler = Sampler(search_space=problem.search_space,
                       wanted_features=wanted_features,
@@ -117,7 +116,6 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-
     problem = constrainedBT
     maximise = True
     guaranteed_depth = 1
@@ -127,7 +125,6 @@ if __name__ == '__main__':
                             (ScoringCriterion.RESILIENCY, -2),
                             (ScoringCriterion.HIGH_FITNESS, 3),
                             (ScoringCriterion.FITNESS_CONSISTENCY, 2)]
-
 
     training_data = get_problem_compact_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
@@ -145,4 +142,3 @@ if __name__ == '__main__':
     # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
     # for good_sample, good_score in zip(good_samples, good_sample_scores):
     #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
-
