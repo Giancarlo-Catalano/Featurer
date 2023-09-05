@@ -88,8 +88,6 @@ class FeatureMixer:
         if self.strict and Feature.are_disjoint(mother, father):
             child = Feature.merge(mother, father)
             accumulator.add(child)
-        else:
-            accumulator.add(Feature.force_merge(mother, father))
 
     def get_heuristic_mixed_features_asexual(self, amount: int):
         result = set()
