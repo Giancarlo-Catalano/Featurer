@@ -123,6 +123,7 @@ class FeatureMixer:
     def disable_strict_mixing(self):
         self.strict = False
 
+
 class ScoringCriterion(Enum):
     EXPLAINABILITY = auto()
     HIGH_FITNESS = auto()
@@ -135,9 +136,10 @@ class ScoringCriterion(Enum):
     ANTICORRELATION = auto()
 
     def __repr__(self):
-        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability", "Instability",  "Correlation",
-                "Anti Correlation"][self.value-1]
-      
+        return ["Explainability", "High Fitness", "Low Fitness", "Popularity", "Novelty", "Stability", "Instability",
+                "Correlation",
+                "Anti Correlation"][self.value - 1]
+
     def __str__(self):
         return self.__repr__()
 
@@ -220,12 +222,13 @@ class FeatureFilter:
 
     def get_anticorrelation_array(self) -> np.ndarray:
         return 1 - self.get_correlation_array()
+
     def get_instability_array(self):
         z_scores = self.precomputed_data_for_features.get_z_scores_compared_to_off_by_one()
         return utils.remap_array_in_zero_one(z_scores)
 
     def get_stability_array(self):
-        return 1.0-self.get_instability_array()
+        return 1.0 - self.get_instability_array()
 
     def get_novelty_array(self):
         return 1.0 - self.get_popularity_array()
@@ -260,13 +263,11 @@ class FeatureFilter:
         individual_scores = np.array([self.get_requested_atomic_score(criterion) for criterion in criteria])
         return utils.weighted_average_of_rows(individual_scores, weights)
 
-
     def get_the_best_features(self, how_many_to_keep: int) -> (list[Feature], np.ndarray):
         scores = self.get_scores_of_features()
         sorted_by_with_score = sorted(zip(self.current_features, scores), key=utils.second, reverse=True)
         features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
         return features, np.array(scores_list)
-
 
 
 def criteria_and_weights_requires_expected_proportions(criteria_and_weights: list[(ScoringCriterion, float)]) -> bool:
@@ -292,9 +293,9 @@ class FeatureDeveloper:
     def get_filter(self, intermediates: list[Feature], criteria_and_weights: list[(ScoringCriterion, float)]):
         expected_proportions = None
         if criteria_and_weights_requires_expected_proportions(criteria_and_weights):
-           expected_proportions = np.array(
-               [self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
-                for intermediate in intermediates])
+            expected_proportions = np.array(
+                [self.search_space.probability_of_feature_in_uniform(intermediate.to_legacy_feature())
+                 for intermediate in intermediates])
 
         return FeatureFilter(intermediates,
                              self.population_sample,
@@ -332,7 +333,8 @@ class FeatureDeveloper:
     def get_parent_pool_of_weight(self, weight):
         return self.previous_iterations[weight - 1]
 
-    def get_mixing_parent_weights(self, weight):
+    @staticmethod
+    def get_mixing_parent_weights(weight):
         parent_weight_1 = weight // 2
         parent_weight_2 = weight - parent_weight_1
         return parent_weight_1, parent_weight_2
@@ -347,7 +349,7 @@ class FeatureDeveloper:
                       criteria_and_weights=None,
                       strict=True):
         new_weight = len(self.previous_iterations) + 1
-        parent_weight_1, parent_weight_2 = self.get_mixing_parent_weights(new_weight)
+        parent_weight_1, parent_weight_2 = FeatureDeveloper.get_mixing_parent_weights(new_weight)
 
         asexual_mixing = parent_weight_1 == parent_weight_2
         feature_mixer = FeatureMixer(self.get_parent_pool_of_weight(parent_weight_1),
@@ -359,10 +361,11 @@ class FeatureDeveloper:
             considered_features = feature_mixer.get_heuristically_mixed_features(amount_to_consider)
         else:
             considered_features = feature_mixer.get_stochastically_mixed_features(amount_to_consider)
-            
-        if len(considered_features) == 0 and not strict: # EMERGENCY! No good features could be generated
+
+        if len(considered_features) == 0 and not strict:  # EMERGENCY! No good features could be generated
             # solution: allow to merge overlapping features
-            print("Warning! The feature explorer ran out of mergable features, so strict merging was temporarly disabled")
+            print("Warning! The feature explorer ran out of merge-able features,"
+                  " so strict merging was temporarily disabled")
             self.new_iteration(amount_to_consider, amount_to_return, heuristic, criteria_and_weights, strict=False)
             return
         feature_filter = self.get_filter(considered_features, criteria_and_weights)
@@ -370,7 +373,11 @@ class FeatureDeveloper:
         features, scores = feature_filter.get_the_best_features(amount_to_return)
         self.previous_iterations.append(ParentPool(features, scores))
 
-    def get_schedule(self, strategy="heuristic where needed") -> list[(int, bool, list[(ScoringCriterion, float)], int, int)]:
+    def get_schedule(self, strategy="heuristic where needed") -> list[(int,
+                                                                       bool,
+                                                                       list[(ScoringCriterion, float)],
+                                                                       int,
+                                                                       int)]:
         def get_total_amount_of_features(weight_category: int):
             """if all the variables had the same cardinality, this would be simpler"""
             return sum([utils.product(which_vars) for which_vars in
@@ -418,7 +425,11 @@ class FeatureDeveloper:
         settings_schedule = self.get_schedule(heuristic_strategy)
 
         for weight, use_heuristic, which_criteria, amount_to_keep, amount_to_consider in settings_schedule:
-            print(f"In iteration where {weight = }: {use_heuristic = }, {amount_to_keep = }, {amount_to_consider = }, {which_criteria = }")
+            print(
+                f"In iteration where {weight = }: {use_heuristic = }, "
+                f"{amount_to_keep = }, "
+                f"{amount_to_consider = }, "
+                f"{which_criteria = }")
             self.new_iteration(amount_to_consider,
                                amount_to_keep,
                                heuristic=use_heuristic,

@@ -73,7 +73,6 @@ class Feature:
     def to_legacy_feature(self) -> SearchSpace.Feature:
         return SearchSpace.Feature(self.get_used_variables())
 
-
     def __repr__(self):
         result = ""
         for is_used, val in zip(self.variable_mask, self.values_mask):

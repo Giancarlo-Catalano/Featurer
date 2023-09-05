@@ -1,10 +1,10 @@
 import random
 
-from Version_B import VariateModels
+from Version_C import VariateModels
 import utils
 import SearchSpace
 import HotEncoding
-from Version_B.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, \
+from Version_C.PopulationSamplePrecomputedData import PopulationSamplePrecomputedData, \
     PopulationSampleWithFeaturesPrecomputedData
 import numpy as np
 

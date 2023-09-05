@@ -2,7 +2,7 @@ import SearchSpace
 import numpy as np
 import HotEncoding
 from BenchmarkProblems import CombinatorialProblem
-from Version_B import VariateModels
+from Version_C import VariateModels
 import utils
 
 
@@ -126,4 +126,6 @@ class PopulationSampleWithFeaturesPrecomputedData:
             return np.abs(numerator / denominator)
 
         return np.array([z_score(perf, off) for perf, off in zip(perfect_properties, off_by_one_properties)])
+
+
 
