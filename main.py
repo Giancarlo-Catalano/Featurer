@@ -126,7 +126,8 @@ if __name__ == '__main__':
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, -1),
                             (ScoringCriterion.RESILIENCY, -2),
-                            (ScoringCriterion.HIGH_FITNESS, 0)]
+                            (ScoringCriterion.HIGH_FITNESS, 3),
+                            (ScoringCriterion.FITNESS_CONSISTENCY, 2)]
 
 
     training_data = get_problem_compact_training_data(problem, sample_size=1200)

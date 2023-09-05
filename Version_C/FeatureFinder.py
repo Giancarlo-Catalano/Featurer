@@ -311,14 +311,15 @@ class FeatureDeveloper:
                              criteria_and_weights=criteria_and_weights,
                              expected_proportions=expected_proportions)
 
-    def get_just_explainability_filter(self, intermediates: list[Feature]):
-        just_explainability = [(criterion, score) for criterion, score
+
+    def get_early_stages_criteria(self) -> list[(ScoringCriterion, float)]:
+        return [(criterion, score) for criterion, score
                                in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
+
+    def get_just_explainability_filter(self, intermediates: list[Feature]):
+        just_explainability = self.get_early_stages_criteria()
         # that is done so that the coefficient's sign is preserved
         return self.get_filter(intermediates, just_explainability)
-
-    def get_unfiltering_filter(self, intermediates: list[Feature]):
-        return self.get_filter(intermediates, [])
 
     def get_trivial_parent_pool(self):
         trivial_features = Feature.get_all_trivial_features(self.search_space)
@@ -423,7 +424,7 @@ class FeatureDeveloper:
 
         def which_criteria_to_use(weight_category: int):
             if weight_category <= self.guaranteed_depth - 1:
-                return [(ScoringCriterion.EXPLAINABILITY, 1)]
+                return self.get_early_stages_criteria()
             else:
                 return self.criteria_and_weights
 
