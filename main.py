@@ -7,7 +7,7 @@ import SearchSpace
 from Version_C.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 
-trap5 = TrapK.TrapK(5, 2)
+trap5 = TrapK.TrapK(5, 1)
 checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
@@ -117,14 +117,14 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = trap5
+    problem = knapsack
     guaranteed_depth = 2
     extra_depth = 6
 
-    criteria_and_weights = [# (ScoringCriterion.EXPLAINABILITY, 5),
-                           # (ScoringCriterion.HIGH_FITNESS, 3),
-                           # (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.RESILIENCY, -5)]
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, -6),
+                            (ScoringCriterion.HIGH_FITNESS, 5),
+                            (ScoringCriterion.FITNESS_CONSISTENCY, 2),
+                            (ScoringCriterion.RESILIENCY, 5)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")

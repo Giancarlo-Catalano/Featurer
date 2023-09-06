@@ -225,8 +225,7 @@ class FeatureFilter:
         return 1 - self.get_correlation_array()
 
     def get_instability_array(self):
-        z_scores = self.precomputed_data_for_features.get_z_scores_compared_to_off_by_one()
-        return utils.remap_array_in_zero_one(z_scores)
+        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_distance_in_fitness_with_one_change())
 
     def get_stability_array(self):
         return 1.0 - self.get_instability_array()

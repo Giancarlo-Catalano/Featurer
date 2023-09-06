@@ -295,6 +295,11 @@ def get_off_by_one_feature_presence_matrix(candidate_matrix: np.ndarray,
     """
     return np.array(positive_when_absent == 1, dtype=float)
 
+def get_means_from_fpm(feature_presence_matrix: np.ndarray, fitness_array: np.ndarray) -> np.ndarray:
+    fitness_where_present = feature_presence_matrix * utils.as_column_matrix(fitness_array)
+    count_for_each_feature = np.sum(feature_presence_matrix, axis=0)
+    sum_of_fitnesses = np.sum(fitness_where_present, axis=0)
+    return utils.divide_arrays_safely(sum_of_fitnesses, count_for_each_feature)
 
 def get_normal_distribution_properties_from_fpm(feature_presence_matrix: np.ndarray, fitness_array: np.ndarray) -> list[
     (float, float, int)]:

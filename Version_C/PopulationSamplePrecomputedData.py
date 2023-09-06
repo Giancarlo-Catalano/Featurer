@@ -108,24 +108,12 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
 
 
-    def get_z_scores_compared_to_off_by_one(self) -> np.ndarray:
-        perfect_properties = VariateModels.get_normal_distribution_properties_from_fpm(self.feature_presence_matrix,
-                                                                                       self.fitness_array)
-        off_by_one_properties = VariateModels.get_normal_distribution_properties_from_fpm(self.get_off_by_one_feature_presence_matrix(),
-                                                                                          self.fitness_array)
+    def get_distance_in_fitness_with_one_change(self) -> np.ndarray:
+        normal_means = self.get_average_fitness_vector()
+        off_by_one_means = VariateModels.get_means_from_fpm(self.get_off_by_one_feature_presence_matrix(),
+                                                            self.fitness_array)
 
-        def z_score(properties_1, properties_2):
-            mean_1, sd_1, n_1 = properties_1
-            mean_2, sd_2, n_2 = properties_2
-            if (n_1 == 0 or n_2 == 0):
-                return 0.0  # panic
-            numerator = mean_1 - mean_2
-            s_over_n_1 = (sd_1 / n_1) ** 2
-            s_over_n_2 = (sd_2 / n_2) ** 2
-            denominator = np.sqrt(s_over_n_1 + s_over_n_2)
-            return numerator / denominator if denominator != 0 else 0
-
-        return np.array([z_score(off, perf) for perf, off in zip(perfect_properties, off_by_one_properties)])
+        return (normal_means - off_by_one_means) / (1 + np.abs(normal_means) + np.abs(off_by_one_means))
 
 
 
