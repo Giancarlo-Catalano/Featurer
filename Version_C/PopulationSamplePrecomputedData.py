@@ -120,12 +120,12 @@ class PopulationSampleWithFeaturesPrecomputedData:
             if (n_1 == 0 or n_2 == 0):
                 return 0.0  # panic
             numerator = mean_1 - mean_2
-            s_over_n_1 = (sd_1 ** 2) / n_1
-            s_over_n_2 = (sd_2 ** 2) / n_2
+            s_over_n_1 = (sd_1 / n_1) ** 2
+            s_over_n_2 = (sd_2 / n_2) ** 2
             denominator = np.sqrt(s_over_n_1 + s_over_n_2)
-            return np.abs(numerator / denominator) if denominator != 0 else 0
+            return numerator / denominator if denominator != 0 else 0
 
-        return np.array([z_score(perf, off) for perf, off in zip(perfect_properties, off_by_one_properties)])
+        return np.array([z_score(off, perf) for perf, off in zip(perfect_properties, off_by_one_properties)])
 
 
 

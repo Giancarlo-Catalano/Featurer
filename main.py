@@ -78,7 +78,8 @@ def get_features(problem: CombinatorialProblem,
                                      criteria_and_weights=criteria_and_weights,
                                      guaranteed_depth=guaranteed_depth,
                                      extra_depth=extra_depth,
-                                     amount_requested=amount_requested)
+                                     amount_requested=amount_requested,
+                                     strategy="always heuristic")
     return features
 
 
@@ -116,20 +117,20 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = constrainedBT
-    guaranteed_depth = 1
+    problem = trap5
+    guaranteed_depth = 2
     extra_depth = 6
 
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 4),
-                            (ScoringCriterion.LOW_FITNESS, 3),
-                            (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.RESILIENCY, 2)]
+    criteria_and_weights = [# (ScoringCriterion.EXPLAINABILITY, 5),
+                           # (ScoringCriterion.HIGH_FITNESS, 3),
+                           # (ScoringCriterion.FITNESS_CONSISTENCY, 2),
+                            (ScoringCriterion.RESILIENCY, -5)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    features = get_features(problem, training_data, criteria_and_weights)
+    features = get_features(problem, training_data, criteria_and_weights, amount_requested=120)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)

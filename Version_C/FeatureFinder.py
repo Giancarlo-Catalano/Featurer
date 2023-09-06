@@ -312,8 +312,11 @@ class FeatureDeveloper:
                              expected_proportions=expected_proportions)
 
     def get_early_stages_criteria(self) -> list[(ScoringCriterion, float)]:
-        return [(criterion, score) for criterion, score
+        just_explainability =  [(criterion, score) for criterion, score
                 in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
+        if len(just_explainability) == 0:
+            return [(ScoringCriterion.EXPLAINABILITY, 1)]
+        return just_explainability
 
     def get_just_explainability_filter(self, intermediates: list[Feature]):
         just_explainability = self.get_early_stages_criteria()
@@ -435,8 +438,8 @@ class FeatureDeveloper:
 
         return zip(weights, should_be_heuristic, which_criteria, kepts, considereds)
 
-    def develop_features(self, heuristic_strategy):
-        settings_schedule = self.get_schedule(heuristic_strategy)
+    def develop_features(self, strategy):
+        settings_schedule = self.get_schedule(strategy)
 
         for weight, use_heuristic, which_criteria, amount_to_keep, amount_to_consider in settings_schedule:
             print(
@@ -476,7 +479,7 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                                          criteria_and_weights=criteria_and_weights,
                                          amount_requested=amount_requested)
 
-    feature_developer.develop_features(heuristic_strategy=strategy)
+    feature_developer.develop_features(strategy=strategy)
     intermediate_features, scores = feature_developer.get_developed_features()
     raw_features = [intermediate.to_legacy_feature() for intermediate in intermediate_features]
 
