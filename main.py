@@ -29,17 +29,17 @@ constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
                                                             KnapsackConstraint.WITHIN_VOLUME])
 
 
-def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
-                              sample_size) -> (list[SearchSpace.Candidate], list[float]):
+def get_random_candidates_and_fitnesses(problem: CombinatorialProblem.CombinatorialProblem,
+                                        sample_size) -> (list[SearchSpace.Candidate], list[float]):
     random_candidates = [problem.get_random_candidate_solution() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
 
 
-def get_problem_compact_training_data(problem: CombinatorialProblem.CombinatorialProblem,
-                                      sample_size) -> PopulationSamplePrecomputedData:
-    training_samples, fitness_list = get_problem_training_data(problem, sample_size)
+def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
+                      sample_size) -> PopulationSamplePrecomputedData:
+    training_samples, fitness_list = get_random_candidates_and_fitnesses(problem, sample_size)
     # print("The generated samples are:")
     # for sample, fitness in zip(training_samples, fitness_list):
     #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness:.2f})")
@@ -47,7 +47,7 @@ def get_problem_compact_training_data(problem: CombinatorialProblem.Combinatoria
 
 
 def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
-                          combinatorial=False):
+                          combinatorial=True):
     """prints the passed features, following the structure specified by the problem"""
     hot_encoder = HotEncoding.HotEncoder(problem.search_space)
 
@@ -71,7 +71,7 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
                  criteria_and_weights: [(ScoringCriterion, float)],
-                 amount_requested: int):
+                 amount_requested = 12):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
                                      sample_data=sample_data,
@@ -117,24 +117,22 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 if __name__ == '__main__':
     problem = constrainedBT
-    maximise = True
     guaranteed_depth = 1
     extra_depth = 6
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 4),
-                            (ScoringCriterion.RESILIENCY, -2),
-                            (ScoringCriterion.HIGH_FITNESS, 3),
-                            (ScoringCriterion.FITNESS_CONSISTENCY, 2)]
+                            (ScoringCriterion.LOW_FITNESS, 3),
+                            (ScoringCriterion.FITNESS_CONSISTENCY, 2),
+                            (ScoringCriterion.RESILIENCY, 2)]
 
-    training_data = get_problem_compact_training_data(problem, sample_size=1200)
+    training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    requested_amount_of_features = 12
-    features = get_features(problem, training_data, criteria_and_weights, requested_amount_of_features)
+    features = get_features(problem, training_data, criteria_and_weights)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
-    pretty_print_features(problem, features, combinatorial=True)
+    pretty_print_features(problem, features)
 
     # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
 
