@@ -40,8 +40,6 @@ def hot_encode_feature(feature: SearchSpace.Feature, search_space: SearchSpace) 
 
     for var, val in feature.var_vals:
         index = position_in_hot_encoded(var, val)
-        if index == 74:
-            print(f"Problem!! {index =}, {search_space.cardinalities =}, {feature =}, {search_space.precomputed_offsets = }, {var =}, {val =}")
         result[index] = 1.0
     return result
 

@@ -117,14 +117,14 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = knapsack
+    problem = constrained_knapsack
     guaranteed_depth = 2
     explored_depth = 6
 
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, -6),
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 6),
                             (ScoringCriterion.HIGH_FITNESS, 5),
                             (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.RESILIENCY, 5)]
+                            (ScoringCriterion.RESILIENCY, 0)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
