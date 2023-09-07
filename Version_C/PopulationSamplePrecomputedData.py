@@ -114,8 +114,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
     def get_distance_in_fitness_with_one_change(self) -> np.ndarray:
         normal_means = self.get_average_fitness_vector()
-        off_by_one_means = VariateModels.get_means_from_fpm(self.get_off_by_one_feature_presence_matrix(),
-                                                            self.fitness_array)
+        off_by_one_means = (self.get_off_by_one_feature_presence_matrix(), self.fitness_array)
 
         return (normal_means - off_by_one_means) / (1 + np.abs(normal_means) + np.abs(off_by_one_means))
 
