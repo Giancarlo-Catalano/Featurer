@@ -71,7 +71,9 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
                  criteria_and_weights: [(ScoringCriterion, float)],
-                 amount_requested = 12):
+                 amount_requested = 12,
+                 strategy = "always heuristic",
+                 search_multiplier = 2):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
                                      sample_data=sample_data,
@@ -79,7 +81,8 @@ def get_features(problem: CombinatorialProblem,
                                      guaranteed_depth=guaranteed_depth,
                                      extra_depth=explored_depth,
                                      amount_requested=amount_requested,
-                                     strategy="always heuristic")
+                                     strategy=strategy,
+                                     search_multiplier=search_multiplier)
     return features
 
 
@@ -117,20 +120,22 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = constrained_knapsack
+    problem = checkerboard
     guaranteed_depth = 2
     explored_depth = 6
 
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 6),
-                            # (ScoringCriterion.LOW_FITNESS, 5),
-                            # (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.CORRELATION, -6)]
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 8),
+                            (ScoringCriterion.HIGH_FITNESS, 5),
+                            #(ScoringCriterion.FITNESS_CONSISTENCY, 2),
+                            (ScoringCriterion.RESILIENCY, 4)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    features = get_features(problem, training_data, criteria_and_weights, amount_requested=12)
+    features = get_features(problem, training_data, criteria_and_weights,
+                            amount_requested=12,
+                            strategy="heuristic where needed")
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)

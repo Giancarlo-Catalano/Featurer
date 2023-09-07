@@ -242,10 +242,10 @@ class FeatureFilter:
     def get_correlation_array(self) -> np.ndarray:
         return 1 - self.get_anticorrelation_array()
 
-    def get_instability_array(self):
+    def get_stability_array(self):
         return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_distance_in_fitness_with_one_change())
 
-    def get_stability_array(self):
+    def get_instability_array(self):
         return 1.0 - self.get_instability_array()
 
     def get_novelty_array(self):
@@ -313,7 +313,7 @@ class FeatureDeveloper:
     complexity_function: Any  # SearchSpace.Feature -> float
     criteria_and_weights: [ScoringCriterion]
     amount_requested: int
-    thoroughness: float
+    search_multiplier: float
 
     def get_filter(self, intermediates: list[Feature], criteria_and_weights: list[(ScoringCriterion, float)]):
         assert(len(intermediates) > 0)
@@ -354,7 +354,8 @@ class FeatureDeveloper:
                  extra_depth,
                  complexity_function,
                  criteria_and_weights: [ScoringCriterion],
-                 amount_requested):
+                 amount_requested,
+                 search_multiplier = 1):
         self.search_space = search_space
         maximum_depth = self.search_space.dimensions
 
@@ -365,6 +366,7 @@ class FeatureDeveloper:
         self.criteria_and_weights = criteria_and_weights
         self.previous_iterations = [self.get_trivial_parent_pool()]
         self.amount_requested = amount_requested
+        self.search_multiplier = search_multiplier
 
     def get_parent_pool_of_weight(self, weight):
         return self.previous_iterations[weight - 1]
@@ -428,8 +430,7 @@ class FeatureDeveloper:
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
 
         def get_likely_amount_of_important_features(weight_category: int):
-            multiplier = weight_category * self.extra_depth
-            return self.search_space.total_cardinality * multiplier
+            return self.search_space.total_cardinality * weight_category * self.search_multiplier
 
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:
@@ -495,7 +496,8 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                   extra_depth=None,
                   criteria_and_weights=None,
                   amount_requested=12,
-                  strategy="heuristic where needed") -> (list[SearchSpace.Feature], np.ndarray):
+                  strategy="heuristic where needed",
+                  search_multiplier=1) -> (list[SearchSpace.Feature], np.ndarray):
     if extra_depth is None:
         extra_depth = guaranteed_depth * 2
 
@@ -505,7 +507,8 @@ def find_features(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialP
                                          extra_depth=extra_depth,
                                          complexity_function=problem.get_complexity_of_feature,
                                          criteria_and_weights=criteria_and_weights,
-                                         amount_requested=amount_requested)
+                                         amount_requested=amount_requested,
+                                         search_multiplier=search_multiplier)
 
     feature_developer.develop_features(strategy=strategy)
     intermediate_features, scores = feature_developer.get_developed_features()
