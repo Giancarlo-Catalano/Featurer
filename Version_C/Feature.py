@@ -38,13 +38,13 @@ class Feature:
         return not (overlap.any())
 
     @classmethod
-    def merge(cls, first, second):
+    def old_merge(cls, first, second):
         new_values = first.values_mask + second.values_mask  # assumes they are disjoint
         new_mask = first.variable_mask | second.variable_mask
         return cls(new_mask, new_values)
 
     @classmethod
-    def force_merge(cls, first, second):
+    def merge(cls, first, second):
         new_values = np.maximum(first.values_mask, second.values_mask)
         new_mask = first.variable_mask | second.variable_mask
         return cls(new_mask, new_values)

@@ -35,8 +35,14 @@ def hot_encode_candidate(candidate: SearchSpace.Candidate, search_space: SearchS
 
 def hot_encode_feature(feature: SearchSpace.Feature, search_space: SearchSpace) -> np.ndarray:
     result = np.zeros(search_space.total_cardinality, dtype=float)
+    def position_in_hot_encoded(var_index, val_index):
+        return search_space.precomputed_offsets[var_index] + val_index
+
     for var, val in feature.var_vals:
-        result[search_space.precomputed_offsets[var] + val] = 1.0
+        index = position_in_hot_encoded(var, val)
+        if index == 74:
+            print(f"Problem!! {index =}, {search_space.cardinalities =}, {feature =}, {search_space.precomputed_offsets = }, {var =}, {val =}")
+        result[index] = 1.0
     return result
 
 
