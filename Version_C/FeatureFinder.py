@@ -205,11 +205,21 @@ class FeatureFilter:
 
         amount_of_candidates = self.precomputed_data_for_features.sample_size
 
+
+        def is_variable_edge_case_slow(var_index):
+            return any(value_count == amount_of_candidates for value_count in count_for_each_value[var_index])
+
+        which_vars_are_edge_cases = [is_variable_edge_case_slow(var)
+                                 for var in range(self.precomputed_data_for_features.search_space.dimensions)]
+
         def phi_score_for_feature(feature_index: int):
             """ see the second formula in https://en.wikipedia.org/wiki/Phi_coefficient,
             readapted to consider multiple variables"""
 
-            used_var_vals = self.current_features[feature_index].get_used_variables()
+            used_var_vals = [(var, val) for var, val in self.current_features[feature_index].get_used_variables()
+                             if not which_vars_are_edge_cases[var]]
+
+
             product_of_marginals = utils.product(count_for_each_value[var][val]
                                                  for var, val in used_var_vals)
             product_of_absences = utils.product((amount_of_candidates - count_for_each_value[var][val])
@@ -226,11 +236,11 @@ class FeatureFilter:
         return np.array([phi_score_for_feature(feature_index)
                          for feature_index in range(self.precomputed_data_for_features.amount_of_features)])
 
-    def get_correlation_array(self) -> np.ndarray:
+    def get_anticorrelation_array(self) -> np.ndarray:
         return utils.remap_array_in_zero_one(self.get_phi_scores_for_each_feature())
 
-    def get_anticorrelation_array(self) -> np.ndarray:
-        return 1 - self.get_correlation_array()
+    def get_correlation_array(self) -> np.ndarray:
+        return 1 - self.get_anticorrelation_array()
 
     def get_instability_array(self):
         return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_distance_in_fitness_with_one_change())

@@ -66,10 +66,8 @@ tissues = Item("tissues", 1.00, 5, 1)
 travel_towel = Item("travel towel", 2.00, 30, 7)
 water_bottle = Item("water bottle", 1.00, 250, 3)
 
-
-
 all_items = [water_bottle, pen, bananas, oranges, hat, socks, laptop, playing_cards, cash, credit_card, phone_charger,
-             tissues,book, candy, energy_drink, lock, local_map, jacket, knitting, shampoo, cutlery, headphones,
+             tissues, book, candy, energy_drink, lock, local_map, jacket, knitting, shampoo, cutlery, headphones,
              earphones, sunglasses, travel_towel, thermos, crosswords, swimming_trunks, bread, coins, sunscreen,
              deodorant, razors, sleep_mask, extra_bags, passport, batteries]
 
@@ -93,9 +91,7 @@ class KnapsackProblem(CombinatorialProblem):
         return [None if value is None else bool(value) for value in super().get_positional_values(feature)]
 
     def feature_repr(self, feature: SearchSpace.Feature):
-        present_items = [all_items[var] for var, val in feature.var_vals if val == 1]
-        absent_items = [all_items[var] for var, val in feature.var_vals if val == 0]
-
+        present_items, absent_items = self.divide_feature_items_by_presence(feature)
         result = ""
         if len(present_items) > 0:
             result += f"Bring:{present_items}"
@@ -112,13 +108,31 @@ class KnapsackProblem(CombinatorialProblem):
     def get_items_brought_in_candidate(self, candidate: SearchSpace.Candidate):
         return [item for item, bring in zip(all_items, candidate.values) if bring == 1]
 
+
+    def divide_candidate_items_by_presence(self, candidate: SearchSpace.Candidate) -> (list[Item], list[Item]):
+        present = []
+        absent = []
+
+        for item, brought in zip(all_items, candidate.values):
+            (present if brought else absent).append(item)
+
+        return present, absent
+
+    def divide_feature_items_by_presence(self, feature: SearchSpace.Feature) -> (list[Item], list[Item]):
+        present = []
+        absent = []
+
+        for var, brought in feature.var_vals:
+            item = all_items[var]
+            (present if brought else absent).append(item)
+
+        return present, absent
+
     def get_total_price_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         return sum(item.price for item in self.get_items_brought_in_candidate(candidate))
 
-
     def get_total_weight_of_candidate(self, candidate: SearchSpace.Candidate) -> int:
         return sum(item.weight for item in self.get_items_brought_in_candidate(candidate))
-
 
     def get_total_volume_of_candidate(self, candidate: SearchSpace.Candidate) -> int:
         return sum(item.volume for item in self.get_items_brought_in_candidate(candidate))
@@ -143,7 +157,7 @@ class KnapsackProblem(CombinatorialProblem):
                                                         self.expected_volume]))
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        return (super().amount_of_set_values_in_feature(feature) + 1)// 2
+        return (super().amount_of_set_values_in_feature(feature) + 1) // 2
 
 
 class KnapsackConstraint(Enum):
@@ -157,7 +171,8 @@ class KnapsackConstraint(Enum):
     WITHIN_VOLUME = auto()
 
     def __repr__(self):
-        return ["drink", "food", "payment", "beach", "flying", "within price", "within weight", "within volume"][self.value - 1]
+        return ["drink", "food", "payment", "beach", "flying", "within price", "within weight", "within volume"][
+            self.value - 1]
 
     def __str__(self):
         return self.__repr__()
@@ -172,7 +187,6 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         weight = self.original_problem.expected_weight
         volume = self.original_problem.expected_volume
         return f"ConstrainedKnapSack({price}£, weight = {weight}g, volume = {volume} units, {self.needs})"
-
 
     def long_repr(self):
         return self.__repr__()
@@ -209,7 +223,6 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         for_the_beach = [hat, swimming_trunks, sunscreen, sunglasses]
         return self.candidate_contains_all(candidate, for_the_beach)
 
-
     def can_go_on_plane(self, candidate: SearchSpace.Candidate) -> bool:
         liquids = [water_bottle, energy_drink]
         not_allowed_on_plane = [deodorant, razors, batteries, thermos]
@@ -218,7 +231,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         return (self.candidate_contains_all(candidate, necessary) and
                 (not self.candidate_contains_any(candidate, liquids + not_allowed_on_plane)))
 
-    def satisfies_constraint(self, candidate: SearchSpace.Candidate, constraint: KnapsackConstraint):
+    def satisfies_constraint(self, candidate: SearchSpace.Candidate, constraint: KnapsackConstraint) -> bool:
         if constraint == KnapsackConstraint.DRINK:
             return self.can_drink(candidate)
         elif constraint == KnapsackConstraint.FOOD:
@@ -232,9 +245,11 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         elif constraint == KnapsackConstraint.WITHIN_PRICE:
             return self.original_problem.get_total_price_of_candidate(candidate) < self.original_problem.expected_price
         elif constraint == KnapsackConstraint.WITHIN_WEIGHT:
-            return self.original_problem.get_total_weight_of_candidate(candidate) < self.original_problem.expected_weight
+            return self.original_problem.get_total_weight_of_candidate(
+                candidate) < self.original_problem.expected_weight
         elif constraint == KnapsackConstraint.WITHIN_VOLUME:
-            return self.original_problem.get_total_volume_of_candidate(candidate) < self.original_problem.expected_volume
+            return self.original_problem.get_total_volume_of_candidate(
+                candidate) < self.original_problem.expected_volume
         else:
             raise Exception("Constraint was not recognised")
 
@@ -257,13 +272,10 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         amount_of_parameters = super().amount_of_set_values_in_feature(parameters)
         amount_of_predicates = super().amount_of_set_values_in_feature(predicates)
 
-
         ideal_amount_of_parameters = 5
         complexity_of_parameters = abs(amount_of_parameters - ideal_amount_of_parameters)
 
-        ideal_amount_of_predicates = 1.5
-        complexity_of_predicates = abs(amount_of_predicates - ideal_amount_of_predicates)
-
+        complexity_of_predicates = 20 if amount_of_predicates < 1 else 0
 
         return complexity_of_parameters + complexity_of_predicates * 2
 
@@ -273,6 +285,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         original_candidate, predicates = self.split_candidate(candidate)
 
-        malus_for_each_violation = 1000
+        malus_for_each_violation = 100
         amount_of_violations = sum([value for value in predicates.values if value == False])
-        return self.unconstrained_problem.score_of_candidate(original_candidate) + amount_of_violations * malus_for_each_violation
+        return self.unconstrained_problem.score_of_candidate(
+            original_candidate) + amount_of_violations * malus_for_each_violation

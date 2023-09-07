@@ -53,7 +53,7 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
-        print(f"{problem.feature_repr(featureC)}")
+        print(f"{problem.feature_repr(featureC)}\nRaw: {feature}")
 
     def print_with_or_without_score(maybe_pair):
         if with_scores:
@@ -122,9 +122,9 @@ if __name__ == '__main__':
     explored_depth = 6
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 6),
-                            (ScoringCriterion.LOW_FITNESS, 5),
-                            (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.CORRELATION, 6)]
+                            # (ScoringCriterion.LOW_FITNESS, 5),
+                            # (ScoringCriterion.FITNESS_CONSISTENCY, 2),
+                            (ScoringCriterion.CORRELATION, -6)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")

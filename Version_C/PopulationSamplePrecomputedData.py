@@ -72,6 +72,10 @@ class PopulationSampleWithFeaturesPrecomputedData:
     def candidate_matrix(self) -> np.ndarray:
         return self.population_sample_precomputed.candidate_matrix
 
+    @property
+    def search_space(self) -> SearchSpace.SearchSpace:
+        return self.population_sample_precomputed.search_space
+
     def get_average_fitness_vector(self) -> np.ndarray:
         """returns the vector of average fitnesses for each feature"""
         sum_of_fitnesses = utils.weighted_sum_of_rows(self.feature_presence_matrix,
