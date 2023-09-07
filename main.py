@@ -77,7 +77,7 @@ def get_features(problem: CombinatorialProblem,
                                      sample_data=sample_data,
                                      criteria_and_weights=criteria_and_weights,
                                      guaranteed_depth=guaranteed_depth,
-                                     extra_depth=extra_depth,
+                                     extra_depth=explored_depth,
                                      amount_requested=amount_requested,
                                      strategy="always heuristic")
     return features
@@ -119,7 +119,7 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 if __name__ == '__main__':
     problem = knapsack
     guaranteed_depth = 2
-    extra_depth = 6
+    explored_depth = 6
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, -6),
                             (ScoringCriterion.HIGH_FITNESS, 5),

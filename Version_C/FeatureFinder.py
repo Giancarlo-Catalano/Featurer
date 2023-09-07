@@ -85,9 +85,14 @@ class FeatureMixer:
     def add_merged_if_mergeable(self, accumulator: set[Feature],
                                 mother: Feature,
                                 father: Feature):
-        if self.strict and Feature.are_disjoint(mother, father):
-            child = Feature.merge(mother, father)
-            accumulator.add(child)
+        def add_child():
+            accumulator.add(Feature.merge(mother, father))
+
+        if self.strict:
+            if Feature.are_disjoint(mother, father):
+                add_child()
+        else:
+            add_child()
 
     def get_heuristic_mixed_features_asexual(self, amount: int):
         result = set()
@@ -298,6 +303,8 @@ class FeatureDeveloper:
     thoroughness: float
 
     def get_filter(self, intermediates: list[Feature], criteria_and_weights: list[(ScoringCriterion, float)]):
+        assert(len(intermediates) > 0)
+
         expected_proportions = None
         if criteria_and_weights_requires_expected_proportions(criteria_and_weights):
             expected_proportions = np.array(
@@ -373,17 +380,25 @@ class FeatureDeveloper:
                                      asexual_mixing)
         if not strict:
             feature_mixer.disable_strict_mixing()
+
         if heuristic:
             considered_features = feature_mixer.get_heuristically_mixed_features(amount_to_consider)
         else:
             considered_features = feature_mixer.get_stochastically_mixed_features(amount_to_consider)
 
-        if len(considered_features) == 0 and not strict:  # EMERGENCY! No good features could be generated
-            # solution: allow to merge overlapping features
-            print("Warning! The feature explorer ran out of merge-able features,"
-                  " so strict merging was temporarily disabled")
-            self.new_iteration(amount_to_consider, amount_to_return, heuristic, criteria_and_weights, strict=False)
-            return
+        if len(considered_features) == 0:  # EMERGENCY! No good features could be generated
+            if strict:
+                # solution: allow to merge overlapping features
+                print("Warning! The feature explorer ran out of merge-able features,"
+                      " so strict merging was temporarily disabled")
+                self.new_iteration(amount_to_consider, amount_to_return, heuristic, criteria_and_weights, strict=False)
+                return
+            else:
+                print(f"When generating the {new_weight = } layer, no features could be generated, "
+                      f"even with strictness disabled!")
+
+                raise Exception(f"No features could be generated for layer with {new_weight = }")
+
         feature_filter = self.get_filter(considered_features, criteria_and_weights)
 
         features, scores = feature_filter.get_the_best_features(amount_to_return)
@@ -400,7 +415,8 @@ class FeatureDeveloper:
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
 
         def get_likely_amount_of_important_features(weight_category: int):
-            return self.amount_requested * self.search_space.total_cardinality
+            multiplier = weight_category * self.extra_depth
+            return self.search_space.total_cardinality * multiplier
 
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:

@@ -33,7 +33,7 @@ def hot_encode_candidate(candidate: SearchSpace.Candidate, search_space: SearchS
          for (var, cardinality) in enumerate(search_space.cardinalities)])
 
 
-def hot_encode_feature(feature: SearchSpace.Feature, search_space: SearchSpace)-> np.ndarray:
+def hot_encode_feature(feature: SearchSpace.Feature, search_space: SearchSpace) -> np.ndarray:
     result = np.zeros(search_space.total_cardinality, dtype=float)
     for var, val in feature.var_vals:
         result[search_space.precomputed_offsets[var] + val] = 1.0
