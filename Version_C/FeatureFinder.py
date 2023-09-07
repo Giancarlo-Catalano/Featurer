@@ -206,11 +206,14 @@ class FeatureFilter:
         amount_of_candidates = self.precomputed_data_for_features.sample_size
 
         def phi_score_for_feature(feature_index: int):
-            used_vars = self.current_features[feature_index].get_used_variables()
+            """ see the second formula in https://en.wikipedia.org/wiki/Phi_coefficient,
+            readapted to consider multiple variables"""
+
+            used_var_vals = self.current_features[feature_index].get_used_variables()
             product_of_marginals = utils.product(count_for_each_value[var][val]
-                                                 for var, val in used_vars)
+                                                 for var, val in used_var_vals)
             product_of_absences = utils.product((amount_of_candidates - count_for_each_value[var][val])
-                                                for var, val in used_vars)
+                                                for var, val in used_var_vals)
 
             n = amount_of_candidates
             n_all = observed_counts_for_each_feature[feature_index]

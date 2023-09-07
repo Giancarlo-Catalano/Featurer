@@ -122,15 +122,15 @@ if __name__ == '__main__':
     explored_depth = 6
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 6),
-                            (ScoringCriterion.HIGH_FITNESS, 5),
+                            (ScoringCriterion.LOW_FITNESS, 5),
                             (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.RESILIENCY, 0)]
+                            (ScoringCriterion.CORRELATION, 6)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    features = get_features(problem, training_data, criteria_and_weights, amount_requested=120)
+    features = get_features(problem, training_data, criteria_and_weights, amount_requested=12)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)

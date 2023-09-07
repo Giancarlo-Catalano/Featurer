@@ -254,16 +254,18 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
         parameters, predicates = super().split_feature(feature)
-        complexity_of_parameters = super().amount_of_set_values_in_feature(parameters)
-        complexity_of_predicate = len(predicates.var_vals)
-
-        total_amount_of_elements = super().amount_of_set_values_in_feature(parameters) + super().amount_of_set_values_in_feature(predicates)
-
-        if total_amount_of_elements < 2:
-            return 100
+        amount_of_parameters = super().amount_of_set_values_in_feature(parameters)
+        amount_of_predicates = super().amount_of_set_values_in_feature(predicates)
 
 
-        return complexity_of_parameters + complexity_of_predicate
+        ideal_amount_of_parameters = 5
+        complexity_of_parameters = abs(amount_of_parameters - ideal_amount_of_parameters)
+
+        ideal_amount_of_predicates = 1.5
+        complexity_of_predicates = abs(amount_of_predicates - ideal_amount_of_predicates)
+
+
+        return complexity_of_parameters + complexity_of_predicates * 2
 
     def all_constraints_are_satisfied(self, candidate: SearchSpace.Candidate):
         return all(self.satisfies_constraint(candidate, need) for need in self.needs)
@@ -271,6 +273,6 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
     def score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
         original_candidate, predicates = self.split_candidate(candidate)
 
-        malus_for_each_violation = 100
+        malus_for_each_violation = 1000
         amount_of_violations = sum([value for value in predicates.values if value == False])
         return self.unconstrained_problem.score_of_candidate(original_candidate) + amount_of_violations * malus_for_each_violation
