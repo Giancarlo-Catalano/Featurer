@@ -53,7 +53,7 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 
     def print_feature_only(feature):
         featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
-        print(f"{problem.feature_repr(featureC)}\nRaw: {feature}")
+        print(f"{problem.feature_repr(featureC)}")
 
     def print_with_or_without_score(maybe_pair):
         if with_scores:
