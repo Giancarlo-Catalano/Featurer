@@ -249,7 +249,7 @@ class BTProblem(CombinatorialProblem):
         return list(zip(list(minimums), list(maximums)))
 
     def get_amount_of_first_choices(self, candidate: SearchSpace.Candidate) -> int:
-        return len([value for value in candidate.values if value == 0])
+        return len([value for variable, value in enumerate(candidate.values) if variable % 2 == 0 and value == 0])
 
     def get_range_scores_for_each_day(self, candidate: SearchSpace.Candidate) -> list[float]:
         def range_score(min_value, max_value):
@@ -428,6 +428,9 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         if predicates.var_vals:
             return sum(complexity_of_predicate(self.predicates[index], bool(val))
                        for index, val in predicates.var_vals)
+
+    def get_complexity_of_partial_solution(self, partial_solution: SearchSpace.Feature):
+        amount_of_workers_involved = self.get
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         partial_solution_parameters, descriptors_partial_solution = super().split_feature(feature)

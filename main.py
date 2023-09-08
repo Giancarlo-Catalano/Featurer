@@ -120,14 +120,16 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = checkerboard
-    guaranteed_depth = 9
-    explored_depth = 9
+    problem = constrainedBT
+    guaranteed_depth = 2
+    explored_depth = 6
 
-    criteria_and_weights = [#(ScoringCriterion.EXPLAINABILITY, 0),
-                            #(ScoringCriterion.HIGH_FITNESS, 5),
-                            #(ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            (ScoringCriterion.RESILIENCY, 8)]
+    criteria_and_weights = [
+                            (ScoringCriterion.EXPLAINABILITY, 5),
+                            (ScoringCriterion.HIGH_FITNESS, 3),
+                            (ScoringCriterion.FITNESS_CONSISTENCY, 2),
+                            #(ScoringCriterion.RESILIENCY, 8)
+                            ]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
@@ -135,7 +137,8 @@ if __name__ == '__main__':
     print(problem.long_repr())
     features = get_features(problem, training_data, criteria_and_weights,
                             amount_requested=12,
-                            strategy="heuristic where needed")
+                            strategy="heuristic where needed",
+                            search_multiplier=12)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)
