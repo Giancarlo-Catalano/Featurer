@@ -95,7 +95,7 @@ class WorkerRota:
         weeks = [self.pattern[week_start:(week_start + self.week_size)] for week_start in week_starts]
 
         def repr_week(week):
-            return "[" + "".join(["*" if works else "_" for works in week]) + "]"
+            return "【" + "".join(["*" if works else "_" for works in week]) + "】"
 
         return " ".join(repr_week(week) for week in weeks)
 
@@ -199,8 +199,7 @@ class BTProblem(CombinatorialProblem):
         # the items are lists of 2 values rather than tuples, because they will be mutated
         def update_result(var, val):
             worker_index, is_starting_day_var = divmod(var, 2)
-            if is_starting_day_var:
-                result[worker_index][is_starting_day_var] = val
+            result[worker_index][is_starting_day_var] = val
 
         for var, val in feature.var_vals:
             update_result(var, val)
@@ -211,11 +210,19 @@ class BTProblem(CombinatorialProblem):
     def feature_repr(self, feature: SearchSpace.Feature) -> str:
 
         def repr_worker_parameters(worker: Worker, rota_index: Optional[int], starting_day: Optional[int]) -> str:
-            result = f"{worker.name} "
+            result = f"{worker.name}"
             if rota_index is not None:
-                result += f" rota #{rota_index},"
+                result += f" using rota #{rota_index},"
             if starting_day is not None:
                 result += f" starting from day #{starting_day}"
+
+            if rota_index is not None:
+                used_starting_day = 0 if starting_day is None else starting_day
+                rota_to_show = worker.get_effective_rota_from_indices(rota_index, used_starting_day)
+                result += f"(corresponds to {rota_to_show})"
+            elif rota_index is None and starting_day is not None:
+                result += f"(the rotas are {worker.options})"
+
             return result
 
         def is_worth_showing(rota_index, starting_day) -> bool:
@@ -284,17 +291,18 @@ class BTProblem(CombinatorialProblem):
             if (rota_index is None) and (starting_day is None):
                 return 0
             elif (rota_index is not None) and (starting_day is None):
-                return 50
+                return 3
             elif (rota_index is None) and (starting_day is not None):
-                return 100
+                return 5
             elif (rota_index is not None) and (starting_day is not None):
                 return 1
 
         worker_params = self.break_feature_by_worker(feature)
         amount_of_workers = len(
             [1 for rota_index, starting_day in worker_params if rota_index is not None or starting_day is not None])
-        worker_amount_malus = abs(amount_of_workers - 3) * 5
-        return sum(complexity_for_values(*params) for params in worker_params) # + worker_amount_malus
+        ideal_amount_of_workers = 3
+        worker_amount_malus = abs(amount_of_workers - ideal_amount_of_workers) * 100
+        return sum(complexity_for_values(*params) for params in worker_params) + worker_amount_malus
 
 
 class BTPredicate(Enum):
@@ -428,18 +436,30 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         if predicates.var_vals:
             return sum(complexity_of_predicate(self.predicates[index], bool(val))
                        for index, val in predicates.var_vals)
+        else:
+            return 0
 
     def get_complexity_of_partial_solution(self, partial_solution: SearchSpace.Feature):
-        amount_of_workers_involved = self.get
+        def get_amount_of_workers_involved(feature: SearchSpace.Feature):
+            which_workers_are_present: list[bool] = [False]*self.original_problem.total_workers
+            for var, val in partial_solution.var_vals:
+                which_workers_are_present[var // 2] = True
+
+            return len([is_present for is_present in which_workers_are_present if is_present])
+
+        ideal_amount_of_workers = 3
+        return abs(get_amount_of_workers_involved(partial_solution) - ideal_amount_of_workers) * 5
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         partial_solution_parameters, descriptors_partial_solution = super().split_feature(feature)
-
-        amount_of_workers = super().amount_of_set_values_in_feature(partial_solution_parameters)
         predicates_are_present = super().amount_of_set_values_in_feature(descriptors_partial_solution) > 0
 
+        partial_solution_complexity = self.original_problem.get_complexity_of_feature(partial_solution_parameters)
+        predicates_complexity = self.get_complexity_of_predicates(descriptors_partial_solution)
+
+        # print(f"^^^^^\nFor the partial solution {feature}\n{super().feature_repr(feature)}\nThe scores are solution={partial_solution_complexity}, predicates={predicates_complexity}\nvvvvvv\n")
+
         if predicates_are_present:
-            return amount_of_workers + \
-                self.get_complexity_of_predicates(descriptors_partial_solution)
+            return partial_solution_complexity + predicates_complexity
         else:
             return 1000

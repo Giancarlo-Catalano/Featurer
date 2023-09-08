@@ -205,12 +205,11 @@ class FeatureFilter:
 
         amount_of_candidates = self.precomputed_data_for_features.sample_size
 
-
         def is_variable_edge_case_slow(var_index):
             return any(value_count == amount_of_candidates for value_count in count_for_each_value[var_index])
 
         which_vars_are_edge_cases = [is_variable_edge_case_slow(var)
-                                 for var in range(self.precomputed_data_for_features.search_space.dimensions)]
+                                     for var in range(self.precomputed_data_for_features.search_space.dimensions)]
 
         def phi_score_for_feature(feature_index: int):
             """ see the second formula in https://en.wikipedia.org/wiki/Phi_coefficient,
@@ -218,7 +217,6 @@ class FeatureFilter:
 
             used_var_vals = [(var, val) for var, val in self.current_features[feature_index].get_used_variables()
                              if not which_vars_are_edge_cases[var]]
-
 
             product_of_marginals = utils.product(count_for_each_value[var][val]
                                                  for var, val in used_var_vals)
@@ -243,7 +241,8 @@ class FeatureFilter:
         return 1 - self.get_anticorrelation_array()
 
     def get_stability_array(self):
-        return utils.remap_array_in_zero_one(self.precomputed_data_for_features.get_distance_in_fitness_with_one_change())
+        return utils.remap_array_in_zero_one(
+            self.precomputed_data_for_features.get_distance_in_fitness_with_one_change())
 
     def get_instability_array(self):
         return 1.0 - self.get_instability_array()
@@ -316,7 +315,7 @@ class FeatureDeveloper:
     search_multiplier: float
 
     def get_filter(self, intermediates: list[Feature], criteria_and_weights: list[(ScoringCriterion, float)]):
-        assert(len(intermediates) > 0)
+        assert (len(intermediates) > 0)
 
         expected_proportions = None
         if criteria_and_weights_requires_expected_proportions(criteria_and_weights):
@@ -331,8 +330,8 @@ class FeatureDeveloper:
                              expected_proportions=expected_proportions)
 
     def get_early_stages_criteria(self) -> list[(ScoringCriterion, float)]:
-        just_explainability =  [(criterion, score) for criterion, score
-                in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
+        just_explainability = [(criterion, score) for criterion, score
+                               in self.criteria_and_weights if criterion == ScoringCriterion.EXPLAINABILITY]
         if len(just_explainability) == 0:
             return [(ScoringCriterion.EXPLAINABILITY, 1)]
         return just_explainability
@@ -355,7 +354,7 @@ class FeatureDeveloper:
                  complexity_function,
                  criteria_and_weights: [ScoringCriterion],
                  amount_requested,
-                 search_multiplier = 1):
+                 search_multiplier=1):
         self.search_space = search_space
         maximum_depth = self.search_space.dimensions
 

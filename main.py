@@ -122,7 +122,7 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 if __name__ == '__main__':
     problem = constrainedBT
     guaranteed_depth = 2
-    explored_depth = 6
+    explored_depth = 12
 
     criteria_and_weights = [
                             (ScoringCriterion.EXPLAINABILITY, 5),
