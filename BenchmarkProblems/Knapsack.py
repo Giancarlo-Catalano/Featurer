@@ -272,7 +272,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         amount_of_parameters = super().amount_of_set_values_in_feature(parameters)
         amount_of_predicates = super().amount_of_set_values_in_feature(predicates)
 
-        ideal_amount_of_parameters = 5
+        ideal_amount_of_parameters = 3
         complexity_of_parameters = abs(amount_of_parameters - ideal_amount_of_parameters)
 
         complexity_of_predicates = 20 if amount_of_predicates < 1 else 0

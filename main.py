@@ -21,7 +21,7 @@ constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HO
                                                 BT.BTPredicate.BAD_SATURDAY,
                                                 BT.BTPredicate.BAD_SUNDAY])
 
-graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
+graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
 constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
                                                            [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
@@ -122,7 +122,7 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 
 if __name__ == '__main__':
-    problem = constrainedBT
+    problem = graph_colouring
 
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 5),
                             (ScoringCriterion.HIGH_FITNESS, 5),
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     features = get_features(problem, training_data, criteria_and_weights,
                             amount_requested=20,
                             guaranteed_depth=2,
-                            explored_depth=12,
+                            explored_depth=6,
                             strategy="heuristic where needed")
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")

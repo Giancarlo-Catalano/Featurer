@@ -325,7 +325,7 @@ class BTProblem(CombinatorialProblem):
         worker_params = self.break_feature_by_worker(feature)
         amount_of_workers = len(
             [1 for rota_index, starting_day in worker_params if rota_index is not None or starting_day is not None])
-        ideal_amount_of_workers = 3
+        ideal_amount_of_workers = 4
         worker_amount_malus = abs(amount_of_workers - ideal_amount_of_workers) * 5
         return sum(complexity_for_values(*params) for params in worker_params) + worker_amount_malus
 
