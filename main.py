@@ -11,7 +11,7 @@ trap5 = TrapK.TrapK(5, 1)
 checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-almostBT = BT.BTProblem(12, 4, 28)
+almostBT = BT.BTProblem(12, 4, 56)
 constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
                                                 BT.BTPredicate.BAD_MONDAY,
                                                 BT.BTPredicate.BAD_TUESDAY,
@@ -72,8 +72,10 @@ def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
                  criteria_and_weights: [(ScoringCriterion, float)],
                  amount_requested = 12,
+                 guaranteed_depth=1,
+                 explored_depth=6,
                  strategy = "always heuristic",
-                 search_multiplier = 2):
+                 search_multiplier = 6):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
                                      sample_data=sample_data,
@@ -121,24 +123,21 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 
 if __name__ == '__main__':
     problem = constrainedBT
-    guaranteed_depth = 2
-    explored_depth = 12
 
-    criteria_and_weights = [
-                            (ScoringCriterion.EXPLAINABILITY, 5),
-                            (ScoringCriterion.HIGH_FITNESS, 3),
+    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 5),
+                            (ScoringCriterion.HIGH_FITNESS, 5),
                             (ScoringCriterion.FITNESS_CONSISTENCY, 2),
-                            #(ScoringCriterion.RESILIENCY, 8)
-                            ]
+                            (ScoringCriterion.CORRELATION, 3)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
     features = get_features(problem, training_data, criteria_and_weights,
-                            amount_requested=12,
-                            strategy="heuristic where needed",
-                            search_multiplier=12)
+                            amount_requested=20,
+                            guaranteed_depth=2,
+                            explored_depth=12,
+                            strategy="heuristic where needed")
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)

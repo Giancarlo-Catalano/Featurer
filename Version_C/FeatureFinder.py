@@ -184,7 +184,7 @@ class FeatureFilter:
 
     def get_fitness_consistency_array(self) -> np.ndarray:
         t_scores = np.abs(self.precomputed_data_for_features.get_t_scores())
-        return utils.remap_array_in_zero_one(t_scores)
+        return 1.0 - utils.remap_array_in_zero_one(t_scores)
 
     def get_negative_fitness_correlation_array(self) -> np.ndarray:
         return 1.0 - self.get_positive_fitness_correlation_array()

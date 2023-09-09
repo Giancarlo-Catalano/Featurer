@@ -207,7 +207,33 @@ class BTProblem(CombinatorialProblem):
         # now we can convert them into tuples
         return [tuple(params) for params in result]
 
+
+    def get_ranges_for_rotas(self, rotas: list[WorkerRota]) -> list[float]:
+        counts_for_each_day = self.get_counts_for_overlapped_rotas(rotas)
+        counts_for_each_day = counts_for_each_day.reshape((-1, 7))
+        minimums = np.min(counts_for_each_day, axis=0)
+        maximums = np.max(counts_for_each_day, axis=0)
+
+        def range_score(min_value, max_value):
+            if max_value == 0:
+                return 0
+            else:
+                return (max_value - min_value) / max_value
+
+        return [range_score(min_val, max_val) for min_val, max_val in zip(minimums, maximums)]
+
+
+    def get_ranges_for_candidate(self, candidate: SearchSpace.Candidate) -> list[float]:
+        return self.get_ranges_for_rotas(self.get_rotas_in_candidate(candidate))
+
     def feature_repr(self, feature: SearchSpace.Feature) -> str:
+
+        def get_usable_rota_from_worker_parameters(worker, rota_index, starting_day) -> Optional[WorkerRota]:
+            if rota_index is not None:
+                used_starting_day = 0 if starting_day is None else starting_day
+                return worker.get_effective_rota_from_indices(rota_index, used_starting_day)
+            else:
+                return None
 
         def repr_worker_parameters(worker: Worker, rota_index: Optional[int], starting_day: Optional[int]) -> str:
             result = f"{worker.name}"
@@ -217,9 +243,7 @@ class BTProblem(CombinatorialProblem):
                 result += f" starting from day #{starting_day}"
 
             if rota_index is not None:
-                used_starting_day = 0 if starting_day is None else starting_day
-                rota_to_show = worker.get_effective_rota_from_indices(rota_index, used_starting_day)
-                result += f"(corresponds to {rota_to_show})"
+                result += f"(corresponds to {get_usable_rota_from_worker_parameters(worker, rota_index, starting_day)})"
             elif rota_index is None and starting_day is not None:
                 result += f"(the rotas are {worker.options})"
 
@@ -230,9 +254,29 @@ class BTProblem(CombinatorialProblem):
 
         worker_parameters = self.break_feature_by_worker(feature)
 
-        return "\n".join(repr_worker_parameters(worker, rota_index, starting_day)
+
+        def repr_ranges():
+            usable_rotas = [get_usable_rota_from_worker_parameters(worker, rota_index, starting_day)
+                            for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)]
+            usable_rotas = [rota for rota in usable_rotas if rota is not None]
+
+            if len(usable_rotas) == 0:
+                return ""
+
+            ranges = self.get_ranges_for_rotas(usable_rotas)
+            return (f"M:{ranges[0]:.2f}, "
+                    f"Tu:{ranges[1]:.2f}, "
+                    f"W:{ranges[2]:.2f}, "
+                    f"Th:{ranges[3]:.2f}, "
+                    f"F:{ranges[4]:.2f}, "
+                    f"Sa:{ranges[5]:.2f}, "
+                    f"Su:{ranges[6]:.2f}")
+
+        parameters = "\n".join(repr_worker_parameters(worker, rota_index, starting_day)
                          for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)
                          if is_worth_showing(rota_index, starting_day))
+
+        return parameters + "\nThe ranges are " + repr_ranges()
 
     def extend_rota_to_total_roster(self, rota: WorkerRota) -> list[bool]:
         result = []
@@ -246,30 +290,11 @@ class BTProblem(CombinatorialProblem):
         as_int_grid = np.array(extended_rotas, dtype=int)
         return np.sum(as_int_grid, axis=0)
 
-    def get_min_and_max_for_each_work_day(self, candidate: SearchSpace.Candidate) -> list[(int, int)]:
-        rotas = self.get_rotas_in_candidate(candidate)
-        counts_for_each_day = self.get_counts_for_overlapped_rotas(rotas)
-        counts_for_each_day = counts_for_each_day.reshape((-1, 7))
-        minimums = np.min(counts_for_each_day, axis=0)
-        maximums = np.max(counts_for_each_day, axis=0)
-
-        return list(zip(list(minimums), list(maximums)))
-
     def get_amount_of_first_choices(self, candidate: SearchSpace.Candidate) -> int:
         return len([value for variable, value in enumerate(candidate.values) if variable % 2 == 0 and value == 0])
 
-    def get_range_scores_for_each_day(self, candidate: SearchSpace.Candidate) -> list[float]:
-        def range_score(min_value, max_value):
-            if max_value == 0:
-                return 1000
-            else:
-                return (max_value - min_value) / max_value
-
-        mins_and_maxs = self.get_min_and_max_for_each_work_day(candidate)
-        return [range_score(max_val, min_val) for max_val, min_val in mins_and_maxs]
-
     def get_range_score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
-        range_scores = self.get_range_scores_for_each_day(candidate)
+        range_scores = self.get_ranges_for_rotas(self.get_rotas_in_candidate(candidate))
         weights_for_days = [1, 1, 1, 1, 1, 10, 10]
         return sum((range_val ** 2) * weight for range_val, weight in zip(range_scores, weights_for_days))
 
@@ -291,9 +316,9 @@ class BTProblem(CombinatorialProblem):
             if (rota_index is None) and (starting_day is None):
                 return 0
             elif (rota_index is not None) and (starting_day is None):
-                return 3
+                return 6
             elif (rota_index is None) and (starting_day is not None):
-                return 5
+                return 10
             elif (rota_index is not None) and (starting_day is not None):
                 return 1
 
@@ -301,7 +326,7 @@ class BTProblem(CombinatorialProblem):
         amount_of_workers = len(
             [1 for rota_index, starting_day in worker_params if rota_index is not None or starting_day is not None])
         ideal_amount_of_workers = 3
-        worker_amount_malus = abs(amount_of_workers - ideal_amount_of_workers) * 100
+        worker_amount_malus = abs(amount_of_workers - ideal_amount_of_workers) * 5
         return sum(complexity_for_values(*params) for params in worker_params) + worker_amount_malus
 
 
@@ -378,10 +403,10 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
     def get_bad_weekdays(self, candidate: SearchSpace.Candidate) -> list[int]:
         """Note: the week days are 0 indexed!!"""
-        ranges = self.original_problem.get_range_scores_for_each_day(candidate)
+        ranges = self.original_problem.get_ranges_for_candidate(candidate)
         weekdays_and_scores = list(enumerate(ranges))
         weekdays_and_scores.sort(key=utils.second, reverse=True)
-        bad_days = utils.unzip(weekdays_and_scores[:3])[0]
+        bad_days = utils.unzip(weekdays_and_scores[:4])[0]
         return bad_days
 
     def get_predicates(self, candidate: SearchSpace.Candidate):
@@ -404,6 +429,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         def repr_predicate(predicate: BTPredicate, value):
             if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return "Exceeds weekly hours" if value else "Within weekly hours"
+                # todo it would be nice to see the offenders as well!
             elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
                 return "Contains consecutive working weekends" if value \
                     else "Does not have consecutive working weekends"
@@ -420,7 +446,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         if (BTPredicate.EXCEEDS_WEEKLY_HOURS in self.predicates
                 and self.any_rotas_exceed_weekly_working_hours(original_candidate)):
-            return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
+            return normal_score + 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
             return normal_score
 
@@ -430,7 +456,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
                 return 2 if value else 20
             elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
                 return 5 if value else 2
-            else:
+            else:  # weekday range
                 return 5 if value else 1
 
         if predicates.var_vals:
