@@ -66,8 +66,11 @@ class Feature:
 
     def __hash__(self):
         var_hash = self.variable_mask.__hash__()
-        val_hash = int(np.sum(self.values_mask, dtype=int))
-        return var_hash * val_hash
+        # NOTE: using
+        # val_hash = hash(tuple(self.variable_mask))
+        # also works well.
+        val_hash = hash(np.bitwise_xor.reduce(self.variable_mask))
+        return var_hash + val_hash
 
     def __eq__(self, other) -> bool:
         return self.variable_mask == other.variable_mask and np.array_equal(self.values_mask, other.values_mask)
