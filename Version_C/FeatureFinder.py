@@ -429,7 +429,9 @@ class FeatureDeveloper:
                         itertools.combinations(self.search_space.cardinalities, weight_category)])
 
         def get_likely_amount_of_important_features(weight_category: int):
-            return self.search_space.total_cardinality * weight_category * self.search_multiplier
+            total = get_total_amount_of_features(weight_category)
+            likely_amount = self.search_space.total_cardinality * weight_category * self.search_multiplier
+            return min(total, likely_amount)
 
         def amount_to_keep_for_weight(weight_category: int):
             if weight_category <= self.guaranteed_depth:
