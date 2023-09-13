@@ -7,7 +7,7 @@ import SearchSpace
 from Version_C.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 
-trap5 = TrapK.TrapK(5, 2)
+trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
@@ -125,8 +125,7 @@ if __name__ == '__main__':
     problem = trap5
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 2),
                             (ScoringCriterion.HIGH_FITNESS, 5),
-                            (ScoringCriterion.FITNESS_CONSISTENCY, 3),
-                            (ScoringCriterion.RESILIENCY, -5)]
+                            (ScoringCriterion.FITNESS_CONSISTENCY, 3)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
@@ -134,9 +133,9 @@ if __name__ == '__main__':
     print(problem.long_repr())
     features = get_features(problem, training_data, criteria_and_weights,
                             amount_requested=20,
-                            guaranteed_depth=5,
+                            guaranteed_depth=4,
                             explored_depth=5,
-                            strategy="always heuristic")
+                            strategy="heuristic where needed")
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)
