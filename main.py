@@ -124,8 +124,9 @@ def get_good_samples(sampler, problem, attempts, keep, maximise=True):
 if __name__ == '__main__':
     problem = trap5
     criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 2),
-                            (ScoringCriterion.LOW_FITNESS, 5),
-                            (ScoringCriterion.FITNESS_CONSISTENCY, 2)]
+                            (ScoringCriterion.HIGH_FITNESS, 5),
+                            (ScoringCriterion.FITNESS_CONSISTENCY, 3),
+                            (ScoringCriterion.RESILIENCY, -5)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
