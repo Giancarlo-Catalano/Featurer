@@ -18,7 +18,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
     complexity_array: np.ndarray
     amount_of_features: int
 
-
+    precomputed_population_mean: Optional[float]
     precomputed_count_for_each_feature: Optional[np.ndarray]
     precomputed_sd_for_each_feature: Optional[np.ndarray]
     precomputed_mean_fitness_for_each_feature: Optional[np.ndarray]
@@ -31,15 +31,17 @@ class PopulationSampleWithFeaturesPrecomputedData:
     def candidate_matrix(self):
         return self.precomputed_population_information.candidate_matrix
 
-
     @property
     def sample_size(self):
         return self.precomputed_population_information.sample_size
 
+    @property
+    def fitness_array(self) -> np.ndarray:
+        return self.precomputed_population_information.fitness_array
+
     def compute_feature_matrix(self, features: Iterable[Feature]) -> np.ndarray:
         hot_encoded_features = [get_hot_encoded_feature(feature, self.search_space) for feature in features]
         return np.array(hot_encoded_features)
-
 
     def compute_feature_presence_error_matrix(self):
         errors = (1 - self.candidate_matrix) @ self.feature_matrix
@@ -51,6 +53,8 @@ class PopulationSampleWithFeaturesPrecomputedData:
     def compute_feature_presence_matrix(self) -> np.ndarray:
         return np.array(self.feature_presence_error_matrix < 1, dtype=float)
 
+    def compute_population_mean(self) -> float:
+        return np.mean(self.fitness_array)
 
     def compute_count_for_each_feature(self) -> np.ndarray:
         return np.sum(self.feature_presence_matrix, axis=0)
@@ -62,11 +66,7 @@ class PopulationSampleWithFeaturesPrecomputedData:
         return utils.divide_arrays_safely(sum_of_fitnesses, self.count_for_each_feature)
 
     def compute_sd_for_each_feature(self) -> np.ndarray:
-        pass # TODO
-
-    @property
-    def fitness_array(self) -> np.ndarray:
-        return self.precomputed_population_information.fitness_array
+        pass  # TODO
 
     @property
     def count_for_each_feature(self) -> np.ndarray:
@@ -87,7 +87,11 @@ class PopulationSampleWithFeaturesPrecomputedData:
         return self.precomputed_sd_for_each_feature
 
 
-
+    @property
+    def population_mean(self) -> float:
+        if not self.precomputed_population_mean:
+            self.precomputed_population_mean = self.compute_population_mean()
+        return self.precomputed_population_mean
 
     def __init__(self, population_precomputed: PPI,
                  features: Iterable[Feature]):
@@ -95,18 +99,12 @@ class PopulationSampleWithFeaturesPrecomputedData:
         self.feature_matrix = self.compute_feature_matrix(features)
         self.feature_presence_error_matrix = self.compute_feature_presence_error_matrix()
         self.feature_presence_matrix = self.compute_feature_presence_matrix()
+
+
         self.precomputed_count_for_each_feature = None
+        self.precomputed_population_mean = None
         self.precomputed_mean_fitness_for_each_feature = None
         self.precomputed_sd_for_each_feature = None
-
-
-    def get_overall_average_fitness(self):
-        """returns the average fitness over the entire population"""
-        return np.mean(self.fitness_array)
-
-    def get_observed_proportions(self):
-        """returns the observed proportion for every feature, from 0 to 1"""
-        return self.count_for_each_feature / self.sample_size
 
     def get_t_scores(self) -> np.ndarray:
         """ calculates the t-scores"""
