@@ -79,33 +79,23 @@ class FitnessConsistencyCriterion(MeasurableCriterion):
         return compute_t_scores(pfi)
 
 
-def compute_observed_distribution_marginal_probabilities(pfi: PrecomputedFeatureInformation) -> tuple[tuple[float]]:
-    sum_in_hot_encoding_order: np.ndarray[float] = np.sum(pfi.candidate_matrix, axis=0)
-    search_space = pfi.search_space
-
-    def observed_proportions_for_variable(var_index) -> tuple[float]:
-        start, end = search_space.precomputed_offsets[var_index: var_index + 2]
-        return tuple(sum_in_hot_encoding_order[start:end] / search_space.cardinalities[var_index])
-
-    return tuple(observed_proportions_for_variable(var_index) for var_index in range(search_space.dimensions))
+def compute_uniform_distribution_marginal_probabilities(search_space: SearchSpace) -> np.ndarray:
+    return np.ndarray([cardinality] * cardinality for cardinality in search_space.cardinalities)
 
 
-def compute_uniform_distribution_marginal_probabilities(search_space: SearchSpace) -> tuple[tuple[float]]:
-    def compute_uniform_distribution_of_variable(cardinality) -> tuple[float]:
-        probability = 1 / cardinality
-        return tuple([probability] * cardinality)
-
-    return tuple(compute_uniform_distribution_of_variable(cardinality)
-                 for cardinality in search_space.cardinalities)
-
-
-def compute_expected_probabilities(pfi: PrecomputedFeatureInformation, marginals: tuple[tuple[float]]) -> np.ndarray:
+def compute_expected_probabilities(pfi: PrecomputedFeatureInformation, marginal_array: np.ndarray) -> np.ndarray:
     # TODO this needs to be tested
-    marginal_array = np.array(utils.concat_tuples(marginals))  # I'm aware that this is silly
     exponents_of_marginals = np.log2(marginal_array)
     sum_of_exponents = utils.weighted_sum_of_columns(exponents_of_marginals, pfi.feature_matrix.T)
     expected_probabilities = np.power(2, sum_of_exponents)
     return expected_probabilities
+
+
+def signed_chi_squared(observed, expected):
+    def signed_squared(x):
+        return x * np.abs(x)
+
+    return (signed_squared(observed - expected)) / expected
 
 
 class PopularityCriterion(MeasurableCriterion):
@@ -121,15 +111,53 @@ class PopularityCriterion(MeasurableCriterion):
             return "Popularity (relative to marginal distribution)"
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
-        marginal_probabilities: tuple[tuple[float]] = tuple()  # dummy value
         if self.relative_to_uniform:
             marginal_probabilities = compute_uniform_distribution_marginal_probabilities(pfi.search_space)
         else:
-            marginal_probabilities = compute_observed_distribution_marginal_probabilities(pfi)
+            marginal_probabilities = pfi.precomputed_marginal_probabilities
 
         expected_probabilities = compute_expected_probabilities(pfi, marginal_probabilities)
         expected_counts = expected_probabilities * pfi.sample_size
         observed_counts = pfi.count_for_each_feature
 
-        signed_chi_squareds = utils.signed_chi_squared(observed_counts, expected_counts)
+        signed_chi_squareds = signed_chi_squared(observed_counts, expected_counts)
         return signed_chi_squareds
+
+
+class ProportionCriterion(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "Proportion"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return pfi.count_for_each_feature
+
+
+def compute_phi_scores(pfi: PrecomputedFeatureInformation):
+    count_for_each_value = np.sum(pfi.candidate_matrix, axis=0)
+    absence_count_for_each_value = pfi.sample_size - count_for_each_value
+
+    products_of_counts = np.power(2, utils.weighted_sum_of_columns(np.log2(count_for_each_value),
+                                                                   pfi.feature_matrix.T))
+    products_of_absences = np.power(2, utils.weighted_sum_of_columns(np.log2(absence_count_for_each_value),
+                                                                   pfi.feature_matrix.T))
+
+    n = pfi.sample_size
+    n_all = pfi.count_for_each_feature
+
+    numerators = (n * n_all - products_of_counts)
+    denominators = np.sqrt(products_of_counts * products_of_absences)
+
+    return utils.divide_arrays_safely(numerators, denominators, 0)
+
+class CorrelationCriterion(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr(self):
+        return "Correlation"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return compute_phi_scores(pfi)

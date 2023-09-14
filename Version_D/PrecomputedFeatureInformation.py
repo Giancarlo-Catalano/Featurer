@@ -19,6 +19,7 @@ class PrecomputedFeatureInformation:
     precomputed_count_for_each_feature: Optional[np.ndarray]
     precomputed_sd_for_each_feature: Optional[np.ndarray]
     precomputed_mean_fitness_for_each_feature: Optional[np.ndarray]
+    precomputed_marginal_probabilities: Optional[np.ndarray]
 
     @property
     def search_space(self):
@@ -68,6 +69,11 @@ class PrecomputedFeatureInformation:
 
         return np.sqrt(utils.divide_arrays_safely(numerators, (self.count_for_each_feature - 1)))
 
+
+    def compute_marginal_probabilities(self) -> np.ndarray:
+        sum_in_hot_encoding_order: np.ndarray[float] = np.sum(self.candidate_matrix, axis=0)
+        return sum_in_hot_encoding_order / self.sample_size
+
     @property
     def count_for_each_feature(self) -> np.ndarray:
         if not self.precomputed_count_for_each_feature:
@@ -92,6 +98,13 @@ class PrecomputedFeatureInformation:
             self.precomputed_population_mean = self.compute_population_mean()
         return self.precomputed_population_mean
 
+
+    @property
+    def marginal_probabilities(self) -> np.ndarray:
+        if not self.precomputed_marginal_probabilities:
+            self.precomputed_marginal_probabilities = self.compute_marginal_probabilities()
+        return self.precomputed_marginal_probabilities
+
     def __init__(self, population_precomputed: PPI,
                  features: Iterable[Feature]):
         self.precomputed_population_information = population_precomputed
@@ -104,6 +117,7 @@ class PrecomputedFeatureInformation:
         self.precomputed_population_mean = None
         self.precomputed_mean_fitness_for_each_feature = None
         self.precomputed_sd_for_each_feature = None
+        self.precomputed_marginal_probabilities = None
 
     """
     def get_t_scores(self) -> np.ndarray:

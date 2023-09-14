@@ -252,11 +252,7 @@ def chi_squared(observed, expected):
     return ((observed - expected) ** 2) / expected
 
 
-def signed_chi_squared(observed, expected):
-    def signed_squared(x):
-        return x * np.abs(x)
 
-    return (signed_squared(observed - expected)) / expected
 
 
 def sample_from_grid_of_weights(probabilities):
@@ -405,9 +401,10 @@ def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
     return np.einsum('ij,i->j', matrix, weights)
 
 
-def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray):
+def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray, else_value=0):
+    else_array = np.ones_like(numerator) * else_value
     """returns the element wise division between 2 arrays, and 0 where there was a zero denominator"""
-    return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0.0)
+    return np.divide(numerator, denominator, out=else_array, where=denominator != 0.0)
 
 
 def weighted_average_of_columns(matrix: np.ndarray, weights: np.ndarray) -> np.ndarray:
