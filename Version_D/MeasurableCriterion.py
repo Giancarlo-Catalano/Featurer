@@ -3,6 +3,7 @@ import numpy as np
 from typing import Iterable, Any
 
 import utils
+from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 
 
 def remap_array_in_zero_one(input: np.ndarray):
@@ -43,6 +44,9 @@ class ExplainabilityCriterion(MeasurableCriterion):
 
     def __repr__(self):
         return "Explainability"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return np.array([self.complexity_function(feature) for feature in pfi.features])
 
 
 

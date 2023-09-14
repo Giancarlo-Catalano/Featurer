@@ -1,21 +1,18 @@
 import numpy as np
 import PrecomputedPopulationInformation as PPI
-import SearchSpace
 import Feature
 from typing import Iterable, Optional
 from HotEncoding import get_hot_encoded_feature
 import utils
 
 
-class PopulationSampleWithFeaturesPrecomputedData:
+class PrecomputedFeatureInformation:
     """this data structures stores matrices that are used around the other classes"""
     precomputed_population_information: PPI
+    features: list[Feature]
     feature_matrix: np.ndarray
     feature_presence_error_matrix: np.ndarray
     feature_presence_matrix: np.ndarray
-
-    count_for_each_feature: np.ndarray
-    complexity_array: np.ndarray
     amount_of_features: int
 
     precomputed_population_mean: Optional[float]
@@ -86,7 +83,6 @@ class PopulationSampleWithFeaturesPrecomputedData:
             self.precomputed_sd_for_each_feature = self.compute_sd_for_each_feature()
         return self.precomputed_sd_for_each_feature
 
-
     @property
     def population_mean(self) -> float:
         if not self.precomputed_population_mean:
@@ -96,18 +92,18 @@ class PopulationSampleWithFeaturesPrecomputedData:
     def __init__(self, population_precomputed: PPI,
                  features: Iterable[Feature]):
         self.precomputed_population_information = population_precomputed
+        self.features = list(features)
         self.feature_matrix = self.compute_feature_matrix(features)
         self.feature_presence_error_matrix = self.compute_feature_presence_error_matrix()
         self.feature_presence_matrix = self.compute_feature_presence_matrix()
-
 
         self.precomputed_count_for_each_feature = None
         self.precomputed_population_mean = None
         self.precomputed_mean_fitness_for_each_feature = None
         self.precomputed_sd_for_each_feature = None
 
+    """
     def get_t_scores(self) -> np.ndarray:
-        """ calculates the t-scores"""
         means = self.get_average_fitness_vector()
         overall_average = self.get_overall_average_fitness()
 
@@ -122,12 +118,10 @@ class PopulationSampleWithFeaturesPrecomputedData:
 
         return t_scores
 
-    def get_off_by_one_feature_presence_matrix(self) -> np.ndarray:
-        return VariateModels.get_off_by_one_feature_presence_matrix(self.candidate_matrix, self.feature_matrix)
-
     def get_distance_in_fitness_with_one_change(self) -> np.ndarray:
         normal_means = self.get_average_fitness_vector()
         off_by_one_means = VariateModels.get_means_from_fpm(self.get_off_by_one_feature_presence_matrix(),
                                                             self.fitness_array)
 
         return (normal_means - off_by_one_means) / (1 + np.abs(normal_means) + np.abs(off_by_one_means))
+"""
