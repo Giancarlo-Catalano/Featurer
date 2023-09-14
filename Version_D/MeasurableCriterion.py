@@ -58,3 +58,19 @@ class MeanFitnessCriterion(MeasurableCriterion):
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         return pfi.mean_fitness_for_each_feature
+
+
+class FitnessConsistencyCriterion(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "Fitness Consistency"
+
+    def compute_t_scores(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        sd_over_root_n = utils.divide_arrays_safely(pfi.sd_for_each_feature, np.sqrt(pfi.count_for_each_feature))
+        t_scores = utils.divide_arrays_safely(pfi.mean_fitness_for_each_feature - pfi.population_mean, sd_over_root_n)
+        return t_scores
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return self.compute_t_scores(pfi)

@@ -63,7 +63,10 @@ class PrecomputedFeatureInformation:
         return utils.divide_arrays_safely(sum_of_fitnesses, self.count_for_each_feature)
 
     def compute_sd_for_each_feature(self) -> np.ndarray:
-        pass  # TODO
+        numerators = utils.weighted_sum_of_rows(self.feature_presence_matrix,
+                                                np.square(self.fitness_array - self.population_mean))
+
+        return np.sqrt(utils.divide_arrays_safely(numerators, (self.count_for_each_feature - 1)))
 
     @property
     def count_for_each_feature(self) -> np.ndarray:
