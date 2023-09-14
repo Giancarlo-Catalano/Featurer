@@ -252,6 +252,13 @@ def chi_squared(observed, expected):
     return ((observed - expected) ** 2) / expected
 
 
+def signed_chi_squared(observed, expected):
+    def signed_squared(x):
+        return x * np.abs(x)
+
+    return (signed_squared(observed - expected)) / expected
+
+
 def sample_from_grid_of_weights(probabilities):
     rows = len(probabilities)
     flattened_probabilities = concat_lists(probabilities)
