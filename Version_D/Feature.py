@@ -1,6 +1,11 @@
+import itertools
+
 import SearchSpace
 import numpy as np
 from bitarray import bitarray, frozenbitarray
+
+import utils
+
 
 class Feature:
     variable_mask: frozenbitarray
@@ -89,3 +94,4 @@ class Feature:
                 result += "_"
 
         return result
+

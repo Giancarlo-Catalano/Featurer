@@ -10,6 +10,13 @@ class ParentPairIterator:
     mother_layer: MinerLayer
     father_layer: MinerLayer
 
+
+    def __repr__(self):
+        raise Exception("An implementation of ParentPairIterator does not implement __repr__")
+
+    def setup(self):
+        raise Exception("An implementation of ParentPairIterator does not implement setup")
+
     def reset(self) -> bool:
         raise Exception("An implementation of ParentPairIterator does not implement reset")
 
@@ -17,7 +24,7 @@ class ParentPairIterator:
         # this acts as a delayed init function
         self.mother_layer = mother_layer
         self.father_layer = father_layer
-        self.reset()
+        self.setup()
 
     def get_next_parent_pair(self) -> (Feature, Feature):
         raise Exception("An implementation of ParentPairIterator does not implement get_next_parent_pair")
@@ -60,12 +67,15 @@ def get_layer_offspring(mother_layer: MinerLayer,
 
 
 class TotalSearchIterator(ParentPairIterator):
-    """ Will systematically search produce all of the offspring"""
+    """ Will systematically search produce all the offspring"""
     mother_index: int
     father_index: int
 
     amount_of_mothers: int
     amount_of_fathers: int
+
+    def __repr__(self):
+        return "Total Search"
 
     def __init__(self):
         self.mother_index = 0  # it increases after iterator access
@@ -90,10 +100,19 @@ class TotalSearchIterator(ParentPairIterator):
         self.mother_index = 0
         self.father_index = 0
 
+    def setup(self):
+        self.reset()
+        self.amount_of_mothers = len(self.mother_layer.features)
+        self.amount_of_fathers = len(self.father_layer.features)
+
 
 class GreedyHeuristicIterator(ParentPairIterator):
     pairs_to_visit: list[(int, int)]
     visit_index = 0
+
+
+    def __repr__(self):
+        return "Greedy Heuristic"
 
     def compute_pairs_to_visit(self, mother_layer: MinerLayer, father_layer: MinerLayer) -> list[(int, int)]:
         pairs_with_scores = [((mother_index, father_index), mother_score + father_score)
@@ -102,9 +121,8 @@ class GreedyHeuristicIterator(ParentPairIterator):
         pairs_with_scores.sort(key=utils.second, reverse=True)  # sort by which pair has the highest sum of scores
         return utils.unzip(pairs_with_scores)[0]
 
-    def __init__(self, mother_layer: MinerLayer, father_layer: MinerLayer):
-        super().__init__(mother_layer, father_layer)
-        self.pairs_to_visit = self.compute_pairs_to_visit(mother_layer, father_layer)
+    def __init__(self):
+        pass
 
     def get_next_parent_pair(self) -> (Feature, Feature):
         mother_index, father_index = self.pairs_to_visit[self.visit_index]
@@ -118,6 +136,9 @@ class GreedyHeuristicIterator(ParentPairIterator):
     def reset(self):
         self.visit_index = 0
 
+    def setup(self):
+        self.pairs_to_visit = self.compute_pairs_to_visit(self.mother_layer, self.father_layer)
+
 
 class StochasticIterator(ParentPairIterator):
     mother_cumulative_weights: np.array
@@ -127,21 +148,25 @@ class StochasticIterator(ParentPairIterator):
     current_batch: list[(Feature, Feature)]
     index_within_batch: int
 
+
+    def __repr__(self):
+        return "Stochastic"
+
     def generate_batch(self) -> list[(Feature, Feature)]:
         mothers = random.choices(self.mother_layer.features, self.mother_cumulative_weights, k=self.batch_size)
         fathers = random.choices(self.father_layer.features, self.father_cumulative_weights, k=self.batch_size)
         return list(zip(mothers, fathers))
 
-    def __init__(self, mother_layer: MinerLayer, father_layer: MinerLayer):
-        super().__init__(mother_layer, father_layer)
-        self.mother_cumulative_weights = np.cumsum(mother_layer.scores)
-        self.father_cumulative_weights = np.cumsum(father_layer.scores)
+    def __init__(self):
+        pass
 
+    def setup(self):
+        self.mother_cumulative_weights = np.cumsum(self.mother_layer.scores)
+        self.father_cumulative_weights = np.cumsum(self.father_layer.scores)
         self.current_batch = self.generate_batch()
-        self.index_within_batch = 0
+        self.reset()
 
     def reset(self):
-        self.current_batch = self.generate_batch()
         self.index_within_batch = 0
 
     def is_finished(self) -> bool:

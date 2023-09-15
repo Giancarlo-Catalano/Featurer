@@ -417,3 +417,12 @@ def weighted_average_of_rows(matrix: np.ndarray, weights: np.ndarray) -> np.ndar
     sum_for_each_row = weighted_sum_of_rows(matrix, weights)
     denominator = np.sum(weights)
     return sum_for_each_row / denominator
+
+
+
+def find_first(input_iterable, predicate):
+    found = [item for item in input_iterable if predicate(input)]
+    if found:
+        return found[0]
+    else:
+        return None
