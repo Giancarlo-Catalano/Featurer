@@ -184,7 +184,7 @@ class RobustnessCriterion(MeasurableCriterion):
     min_amount_of_differences: int
     max_amount_of_differences: int
 
-    def __init__(self, min_amount_of_differences = 1, max_amount_of_differences = 1):
+    def __init__(self, min_amount_of_differences=1, max_amount_of_differences=1):
         self.min_amount_of_differences = min_amount_of_differences
         self.max_amount_of_differences = max_amount_of_differences
 
@@ -197,3 +197,16 @@ class RobustnessCriterion(MeasurableCriterion):
         fuzzy_mean = get_mean_of_fuzzy_match_matrix(fuzzy_match_matrix, pfi)
 
         return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
+
+
+LayerScoringCriteria = list[(MeasurableCriterion, float)]
+
+
+def compute_scores_for_features(pfi: PrecomputedFeatureInformation, criteria_and_weights: LayerScoringCriteria):
+    if len(criteria_and_weights) == 0:
+        raise Exception("You requested a compound score composed of no criteria!")
+
+    criteria, weights = utils.unzip(criteria_and_weights)
+    atomic_scores = np.array([criterion.get_score_array(pfi) if weight >= 0 else criterion.get_inverted_score_array
+                              for criterion, weight in criteria_and_weights])
+    return utils.weighted_average_of_rows(atomic_scores, np.abs(np.array(weights)))

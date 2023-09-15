@@ -146,11 +146,9 @@ class StochasticIterator(ParentPairIterator):
         self.current_batch = self.generate_batch()
         self.index_within_batch = 0
 
-
     def reset(self):
         self.current_batch = self.generate_batch()
         self.index_within_batch = 0
-
 
     def is_finished(self) -> bool:
         return False
@@ -162,6 +160,3 @@ class StochasticIterator(ParentPairIterator):
             self.reset()
 
         return result
-
-
-
