@@ -30,9 +30,15 @@ class Feature:
         return SearchSpace.Candidate(values)
 
     @classmethod
-    def are_disjoint(cls, first, second) -> bool:
+    def overlap(cls, first, second) -> bool:
         overlap: frozenbitarray = first.variable_mask & second.variable_mask
-        return not (overlap.any())
+        return overlap.any()
+
+    @classmethod
+    def are_disjoint(cls, first, second) -> bool:
+        return not cls.overlap(first, second)
+
+
     @classmethod
     def merge(cls, first, second):
         new_values = np.maximum(first.values_mask, second.values_mask)
