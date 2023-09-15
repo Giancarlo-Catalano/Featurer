@@ -142,7 +142,7 @@ def compute_phi_scores(pfi: PrecomputedFeatureInformation):
     products_of_counts = np.power(2, utils.weighted_sum_of_columns(np.log2(count_for_each_value),
                                                                    pfi.feature_matrix.T))
     products_of_absences = np.power(2, utils.weighted_sum_of_columns(np.log2(absence_count_for_each_value),
-                                                                   pfi.feature_matrix.T))
+                                                                     pfi.feature_matrix.T))
 
     n = pfi.sample_size
     n_all = pfi.count_for_each_feature
@@ -151,6 +151,7 @@ def compute_phi_scores(pfi: PrecomputedFeatureInformation):
     denominators = np.sqrt(products_of_counts * products_of_absences)
 
     return utils.divide_arrays_safely(numerators, denominators, 0)
+
 
 class CorrelationCriterion(MeasurableCriterion):
     def __init__(self):
@@ -161,3 +162,38 @@ class CorrelationCriterion(MeasurableCriterion):
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         return compute_phi_scores(pfi)
+
+
+def get_fuzzy_match_matrix(pfi: PrecomputedFeatureInformation, min_errors: int, max_errors: int):
+    at_least_min_errors = pfi.feature_presence_error_matrix >= min_errors
+    at_most_min_errors = pfi.feature_presence_error_matrix <= max_errors
+    match_matrix = np.array(np.logical_and(at_most_min_errors, at_most_min_errors), dtype=float)
+    return match_matrix
+
+
+def get_mean_of_fuzzy_match_matrix(fuzzy_matrix: np.ndarray, pfi: PrecomputedFeatureInformation):
+    sum_of_fitnesses = utils.weighted_sum_of_rows(fuzzy_matrix,
+                                                  pfi.fitness_array)
+
+    count_for_each_feature = np.sum(fuzzy_matrix, axis=0)
+
+    return utils.divide_arrays_safely(sum_of_fitnesses, count_for_each_feature)
+
+
+class RobustnessCriterion(MeasurableCriterion):
+    min_amount_of_differences: int
+    max_amount_of_differences: int
+
+    def __init__(self, min_amount_of_differences = 1, max_amount_of_differences = 1):
+        self.min_amount_of_differences = min_amount_of_differences
+        self.max_amount_of_differences = max_amount_of_differences
+
+    def __repr__(self):
+        return f"Robustness (errors in [{self.min_amount_of_differences}, {self.max_amount_of_differences}])"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        normal_means = pfi.mean_fitness_for_each_feature
+        fuzzy_match_matrix = get_fuzzy_match_matrix(pfi, self.min_amount_of_differences, self.max_amount_of_differences)
+        fuzzy_mean = get_mean_of_fuzzy_match_matrix(fuzzy_match_matrix, pfi)
+
+        return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
