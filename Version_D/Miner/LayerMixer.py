@@ -10,9 +10,14 @@ class ParentPairIterator:
     mother_layer: MinerLayer
     father_layer: MinerLayer
 
-    def __init__(self, mother_layer: MinerLayer, father_layer: MinerLayer):
+    def reset(self) -> bool:
+        raise Exception("An implementation of ParentPairIterator does not implement reset")
+
+    def set_parents(self, mother_layer: MinerLayer, father_layer: MinerLayer):
+        # this acts as a delayed init function
         self.mother_layer = mother_layer
         self.father_layer = father_layer
+        self.reset()
 
     def get_next_parent_pair(self) -> (Feature, Feature):
         raise Exception("An implementation of ParentPairIterator does not implement get_next_parent_pair")
@@ -20,46 +25,38 @@ class ParentPairIterator:
     def is_finished(self) -> bool:
         raise Exception("An implementation of ParentPairIterator does not implement is_finished")
 
-    def reset(self) -> bool:
-        raise Exception("An implementation of ParentPairIterator does not implement reset")
 
+def get_layer_offspring(mother_layer: MinerLayer,
+                        father_layer: MinerLayer,
+                        parent_pair_iterator: ParentPairIterator,
+                        requested_amount: int) -> list[Feature]:
+    avoid_overlap = True
 
-class LayerMixer:
-    """ This is an interface class which does the following:
-        Given 2 MinerLayer instances, it uses them as parent sets and creates a child MinerLayer"""
+    if len(mother_layer.features) == 0 or len(father_layer.features) == 0:
+        raise Exception("Attempting to construct a layer mixer from empty parents!")
 
-    parent_pair_iterator: ParentPairIterator
-    avoid_overlap: bool
+    parent_pair_iterator.set_parents(mother_layer, father_layer)
 
-    def __init__(self, mother_layer: MinerLayer,
-                 father_layer: MinerLayer,
-                 parent_pair_iterator_class):
-        if len(mother_layer.features) == 0 or len(father_layer.features) == 0:
-            raise Exception("Attempting to construct a layer mixer from empty parents!")
-        self.parent_pair_iterator = parent_pair_iterator_class(mother_layer, father_layer)
-        self.avoid_overlap = True
+    accumulator = set()
 
-    def get_offspring_features(self, requested_amount: int) -> list[Feature]:
-        accumulator = set()
+    def add_child_if_allowed(parents: (Feature, Feature)):
+        mother, father = parents
+        if avoid_overlap and Feature.overlap(mother, father):
+            return
+        accumulator.add(Feature.merge(mother, father))
 
-        def add_child_if_allowed(parents: (Feature, Feature)):
-            mother, father = parents
-            if self.avoid_overlap and Feature.overlap(mother, father):
-                return
-            accumulator.add(Feature.merge(mother, father))
+    def fill_accumulator():
+        while len(accumulator) < requested_amount:
+            if parent_pair_iterator.is_finished():
+                break
+            add_child_if_allowed(parent_pair_iterator.get_next_parent_pair())
 
-        def fill_accumulator():
-            while len(accumulator) < requested_amount:
-                if self.parent_pair_iterator.is_finished():
-                    break
-                add_child_if_allowed(self.parent_pair_iterator.get_next_parent_pair())
-
+    fill_accumulator()
+    if len(accumulator) < requested_amount:
+        avoid_overlap = False
         fill_accumulator()
-        if len(accumulator) < requested_amount:
-            self.avoid_overlap = False
-            fill_accumulator()
 
-        return list(accumulator)
+    return list(accumulator)
 
 
 class TotalSearchIterator(ParentPairIterator):
@@ -70,12 +67,9 @@ class TotalSearchIterator(ParentPairIterator):
     amount_of_mothers: int
     amount_of_fathers: int
 
-    def __init__(self, mother_layer: MinerLayer, father_layer: MinerLayer):
-        super().__init__(mother_layer, father_layer)
+    def __init__(self):
         self.mother_index = 0  # it increases after iterator access
         self.father_index = 0
-        self.amount_of_mothers = len(mother_layer.features)
-        self.amount_of_fathers = len(father_layer.features)
 
     def increase_indices(self):
         self.mother_index += 1

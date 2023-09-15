@@ -1,7 +1,13 @@
 import numpy as np
+
+import utils
 from SearchSpace import SearchSpace
+from Version_D import MeasurableCriterion
 from Version_D.Feature import Feature
-import random
+
+from Version_D.Miner import LayerMixer
+from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
+from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 
 class MinerLayer:
@@ -20,5 +26,27 @@ class MinerLayer:
         self.scores = scores
         self.precomputed_cumulative_list = np.cumsum(scores)
 
-    def select_n_parents_randomly(self, amount: int):
-        return random.choices(population=self.features, cum_weights=self.precomputed_cumulative_list, k=amount)
+    @classmethod
+    def make_0_parameter_layer(cls, search_space: SearchSpace):
+        empty_feature = Feature.empty_feature(search_space)
+        scores = np.array(1)  # dummy value
+        return cls([empty_feature], scores)
+
+    @classmethod
+    def make_by_mixing(cls, mother_layer, father_layer,
+                       ppi: PrecomputedPopulationInformation,
+                       criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                       parent_pair_iterator: LayerMixer.ParentPairIterator,
+                       how_many_to_generate: int,
+                       how_many_to_keep: int):
+        # breed
+        offspring = LayerMixer.get_layer_offspring(mother_layer, father_layer,
+                                                   parent_pair_iterator, requested_amount=how_many_to_generate)
+        # assess
+        pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, offspring)
+        scores = MeasurableCriterion.compute_scores_for_features(pfi, criteria_and_weights)
+
+        # select
+        sorted_by_with_score = sorted(zip(offspring, scores), key=utils.second, reverse=True)
+        features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
+        return cls(features, np.array(scores_list))

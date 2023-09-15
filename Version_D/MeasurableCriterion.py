@@ -199,6 +199,16 @@ class RobustnessCriterion(MeasurableCriterion):
         return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
 
 
+
+class ArbitraryCriterion(MeasurableCriterion):
+    quality_function: Any  # a function which takes a Feature (var_vals) and returns a float
+
+    def __init__(self, quality_function):
+        self.quality_function = quality_function
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return np.array([self.quality_function(feature.to_var_val_pairs()) for feature in pfi.features])
+
 LayerScoringCriteria = list[(MeasurableCriterion, float)]
 
 
@@ -210,3 +220,7 @@ def compute_scores_for_features(pfi: PrecomputedFeatureInformation, criteria_and
     atomic_scores = np.array([criterion.get_score_array(pfi) if weight >= 0 else criterion.get_inverted_score_array
                               for criterion, weight in criteria_and_weights])
     return utils.weighted_average_of_rows(atomic_scores, np.abs(np.array(weights)))
+
+
+
+#TODO what if the user could just make an arbitrary score?

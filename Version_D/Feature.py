@@ -45,6 +45,15 @@ class Feature:
         new_mask = first.variable_mask | second.variable_mask
         return cls(new_mask, new_values)
 
+
+    @classmethod
+    def empty_feature(cls, search_space: SearchSpace.SearchSpace):
+        var_mask = bitarray(search_space.dimensions)
+        var_mask.setall(0)
+        val_mask = np.zeros(search_space.dimensions, dtype=int)
+
+        return cls(frozenbitarray(var_mask), val_mask)
+
     @classmethod
     def from_trivial_feature(cls, var, val, search_space: SearchSpace.SearchSpace):
         var_mask = bitarray(search_space.dimensions)
