@@ -14,6 +14,9 @@ class ParentPairIterator:
     def __repr__(self):
         raise Exception("An implementation of ParentPairIterator does not implement __repr__")
 
+    def to_code(self):
+        raise Exception("An implementation of ParentPairIterator does not implement to_code")
+
     def setup(self):
         raise Exception("An implementation of ParentPairIterator does not implement setup")
 
@@ -74,6 +77,9 @@ class TotalSearchIterator(ParentPairIterator):
     amount_of_mothers: int
     amount_of_fathers: int
 
+    def to_code(self):
+        return "T"
+
     def __repr__(self):
         return "Total Search"
 
@@ -111,6 +117,9 @@ class GreedyHeuristicIterator(ParentPairIterator):
     visit_index = 0
 
 
+    def to_code(self):
+        return "H"
+
     def __repr__(self):
         return "Greedy Heuristic"
 
@@ -147,6 +156,10 @@ class StochasticIterator(ParentPairIterator):
     batch_size = 256
     current_batch: list[(Feature, Feature)]
     index_within_batch: int
+
+
+    def to_code(self):
+        "S"
 
 
     def __repr__(self):
