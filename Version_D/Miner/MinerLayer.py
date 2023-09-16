@@ -33,6 +33,23 @@ class MinerLayer:
         return cls([empty_feature], scores)
 
     @classmethod
+    def make_1_parameter_layer(cls,
+                       ppi: PrecomputedPopulationInformation,
+                       criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                       parent_pair_iterator: LayerMixer.ParentPairIterator):
+
+        #create
+        features = Feature.get_all_trivial_features(ppi.search_space)
+
+        # assess
+        pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, features)
+        scores = MeasurableCriterion.compute_scores_for_features(pfi, criteria_and_weights)
+
+        # don't select!
+        return cls(features, np.array(scores))
+
+
+    @classmethod
     def make_by_mixing(cls, mother_layer, father_layer,
                        ppi: PrecomputedPopulationInformation,
                        criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,

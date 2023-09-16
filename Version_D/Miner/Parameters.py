@@ -183,3 +183,6 @@ def get_iteration_parameters(search_space: SearchSpace,
                                kept_feature_amount,
                                mixing_iterator,
                                criteria_and_weights)
+
+
+Schedule = list[IterationParameters]
