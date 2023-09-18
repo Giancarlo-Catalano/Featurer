@@ -61,16 +61,23 @@ def get_layer_offspring(mother_layer: MinerLayer,
             return
         accumulator.add(Feature.merge(mother, father))
 
+
+
+
     def fill_accumulator():
         while len(accumulator) < requested_amount:
             if parent_pair_iterator.is_finished():
                 break
             add_child_if_allowed(parent_pair_iterator.get_next_parent_pair())
 
-    fill_accumulator()
-    if len(accumulator) < requested_amount:
-        avoid_overlap = False
-        fill_accumulator()
+
+    for _ in range(requested_amount):
+        add_child_if_allowed(parent_pair_iterator.get_next_parent_pair())
+
+    # fill_accumulator()
+    # if len(accumulator) < requested_amount:
+    #    avoid_overlap = False
+    #    fill_accumulator()
 
     return list(accumulator)
 
@@ -83,6 +90,8 @@ class TotalSearchIterator(ParentPairIterator):
     amount_of_mothers: int
     amount_of_fathers: int
 
+    identical_parents: bool
+
     def to_code(self):
         return "T"
 
@@ -93,11 +102,23 @@ class TotalSearchIterator(ParentPairIterator):
         self.mother_index = 0  # it increases after iterator access
         self.father_index = 0
 
-    def increase_indices(self):
+    def increase_indices_when_parents_are_different(self):
         self.mother_index += 1
         if self.mother_index >= self.amount_of_mothers:
             self.mother_index = 0
             self.father_index += 1
+
+    def increase_indices_when_parents_are_same(self):
+        self.mother_index += 1
+        if self.mother_index >= self.amount_of_mothers:
+            self.father_index += 1
+            self.mother_index = self.father_index
+
+    def increase_indices(self):
+        if self.identical_parents:
+            self.increase_indices_when_parents_are_same()
+        else:
+            self.increase_indices_when_parents_are_different()
 
     def get_next_parent_pair(self) -> (Feature, Feature):
         result = (self.mother_layer.features[self.mother_index],
@@ -116,6 +137,7 @@ class TotalSearchIterator(ParentPairIterator):
         self.reset()
         self.amount_of_mothers = len(self.mother_layer.features)
         self.amount_of_fathers = len(self.father_layer.features)
+        self.identical_parents = (self.mother_layer is self.father_layer)
 
 
 class GreedyHeuristicIterator(ParentPairIterator):

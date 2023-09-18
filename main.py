@@ -99,16 +99,16 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
     schedule = Parameters.get_parameter_schedule(search_space=sample_data.search_space,
                                                  guaranteed_depth=guaranteed_depth,
                                                  explored_depth=explored_depth,
-                                                 search_method=Parameters.SearchMethod.HEURISTIC_SEARCH,
+                                                 search_method=Parameters.SearchMethod.STOCHASTIC_SEARCH,
                                                  criteria_and_weights=criteria_and_weights,
                                                  proportionality=Parameters.Proportionality.PROBLEM_PARAMETERS,
-                                                 thoroughness=Parameters.Thoroughness.AVERAGE,
+                                                 thoroughness=Parameters.Thoroughness.MOST,
                                                  criteria_start=Parameters.CriteriaStart.FROM_MIDPOINT)
 
     found_features, scores = Miner.mine_meaningful_features(sample_data, schedule)
 
     found_features = [feature.to_legacy_feature() for feature in found_features]
-    return found_features
+    return found_features[:12]
 
 
 if __name__ == '__main__':
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     print("More specifically, it is")
     print(problem.long_repr())
     features = get_features_version_D(training_data, criteria_and_weights,
-                                      guaranteed_depth=1,
+                                      guaranteed_depth=5,
                                       explored_depth=5)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
