@@ -1,16 +1,17 @@
-import Feature
+import Version_D.Feature
 import numpy as np
 from typing import Iterable, Any
 
 import SearchSpace
 import utils
+from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from SearchSpace import SearchSpace
 
 
-def remap_array_in_zero_one(input: np.ndarray):
+def remap_array_in_zero_one(input_array: np.ndarray):
     # TODO: get rid of the original function once it's not used elsewhere
-    return utils.remap_array_in_zero_one(input)
+    return utils.remap_array_in_zero_one(input_array)
 
 
 class MeasurableCriterion:
@@ -48,8 +49,11 @@ class ExplainabilityCriterion(MeasurableCriterion):
         return "Explainability"
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
-        return np.array([self.complexity_function(feature) for feature in pfi.features])
+        return np.array([-self.complexity_function(feature.to_legacy_feature()) for feature in pfi.features])
 
+
+def explainability_of(problem: CombinatorialProblem):
+    return ExplainabilityCriterion(problem.get_complexity_of_feature)
 
 class MeanFitnessCriterion(MeasurableCriterion):
     def __init__(self):
@@ -157,7 +161,7 @@ class CorrelationCriterion(MeasurableCriterion):
     def __init__(self):
         pass
 
-    def __repr(self):
+    def __repr__(self):
         return "Correlation"
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
@@ -167,7 +171,7 @@ class CorrelationCriterion(MeasurableCriterion):
 def get_fuzzy_match_matrix(pfi: PrecomputedFeatureInformation, min_errors: int, max_errors: int):
     at_least_min_errors = pfi.feature_presence_error_matrix >= min_errors
     at_most_min_errors = pfi.feature_presence_error_matrix <= max_errors
-    match_matrix = np.array(np.logical_and(at_most_min_errors, at_most_min_errors), dtype=float)
+    match_matrix = np.array(np.logical_and(at_least_min_errors, at_most_min_errors), dtype=float)
     return match_matrix
 
 
@@ -199,7 +203,6 @@ class RobustnessCriterion(MeasurableCriterion):
         return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
 
 
-
 class ArbitraryCriterion(MeasurableCriterion):
     quality_function: Any  # a function which takes a Feature (var_vals) and returns a float
 
@@ -208,6 +211,7 @@ class ArbitraryCriterion(MeasurableCriterion):
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         return np.array([self.quality_function(feature.to_var_val_pairs()) for feature in pfi.features])
+
 
 LayerScoringCriteria = list[(MeasurableCriterion, float)]
 
@@ -221,5 +225,3 @@ def compute_scores_for_features(pfi: PrecomputedFeatureInformation, criteria_and
     atomic_scores = np.array([criterion.get_score_array(pfi) if weight >= 0 else criterion.get_inverted_score_array
                               for criterion, weight in criteria_and_weights])
     return utils.weighted_average_of_rows(atomic_scores, np.abs(np.array(weights)))
-
-

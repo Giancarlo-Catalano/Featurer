@@ -1,8 +1,8 @@
 import numpy as np
-import PrecomputedPopulationInformation as PPI
-import Feature
+import Version_D.PrecomputedPopulationInformation as PPI
+from Version_D.Feature import Feature
 from typing import Iterable, Optional
-from HotEncoding import get_hot_encoded_feature
+from Version_D.HotEncoding import get_hot_encoded_feature
 import utils
 
 

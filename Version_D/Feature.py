@@ -4,8 +4,6 @@ import SearchSpace
 import numpy as np
 from bitarray import bitarray, frozenbitarray
 
-import utils
-
 
 class Feature:
     variable_mask: frozenbitarray
@@ -43,13 +41,11 @@ class Feature:
     def are_disjoint(cls, first, second) -> bool:
         return not cls.overlap(first, second)
 
-
     @classmethod
     def merge(cls, first, second):
         new_values = np.maximum(first.values_mask, second.values_mask)
         new_mask = first.variable_mask | second.variable_mask
         return cls(new_mask, new_values)
-
 
     @classmethod
     def empty_feature(cls, search_space: SearchSpace.SearchSpace):
@@ -95,3 +91,5 @@ class Feature:
 
         return result
 
+    def to_legacy_feature(self) -> SearchSpace.Feature:
+        return SearchSpace.Feature(self.to_var_val_pairs())

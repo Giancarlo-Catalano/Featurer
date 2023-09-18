@@ -114,6 +114,7 @@ def only_explainability_criterion(criteria_and_weights):
 
 def get_generated_and_kept_for_iteration(search_space: SearchSpace,
                                          weight: int,
+                                         guaranteed_depth: int,
                                          explored_depth: int,
                                          proportionality: Proportionality,
                                          thoroughness: Thoroughness,
@@ -121,7 +122,8 @@ def get_generated_and_kept_for_iteration(search_space: SearchSpace,
     total = get_total_amount_of_features_in_iteration(search_space, weight)
     problem_coefficient = search_space.total_cardinality * weight * utils.binomial_coeff(explored_depth, weight)
 
-    if search_method == SearchMethod.TOTAL_SEARCH:
+    if search_method == SearchMethod.TOTAL_SEARCH\
+            or weight <= guaranteed_depth:
         return total, total
 
     generated_and_kept_map = {
@@ -152,7 +154,10 @@ def get_generated_and_kept_for_iteration(search_space: SearchSpace,
     return int(generated_feature_amount), int(kept_feature_amount)
 
 
-def get_mixing_iterator(search_method: SearchMethod) -> ParentPairIterator:
+def get_mixing_iterator(weight: int, guaranteed_depth: int, search_method: SearchMethod) -> ParentPairIterator:
+    if weight <= guaranteed_depth:
+        return IterationParameters.TOTAL_SEARCH
+
     if search_method == SearchMethod.TOTAL_SEARCH:
         return IterationParameters.TOTAL_SEARCH
     elif search_method == SearchMethod.HEURISTIC_SEARCH:
@@ -164,10 +169,14 @@ def get_mixing_iterator(search_method: SearchMethod) -> ParentPairIterator:
 
 
 def get_effective_criteria_and_weights(criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                                       guaranteed_depth: int,
                                        explored_depth: int,
                                        criteria_start: CriteriaStart,
                                        weight: int) -> MeasurableCriterion.LayerScoringCriteria:
     only_explainability = only_explainability_criterion(criteria_and_weights)
+    if weight == guaranteed_depth:
+        return criteria_and_weights
+
     if criteria_start == CriteriaStart.ALWAYS:
         return criteria_and_weights
     elif criteria_start == CriteriaStart.FROM_MIDPOINT:
@@ -184,6 +193,7 @@ def get_effective_criteria_and_weights(criteria_and_weights: MeasurableCriterion
 
 def get_iteration_parameters(search_space: SearchSpace,
                              weight: int,
+                             guaranteed_depth: int,
                              explored_depth: int,
                              search_method: SearchMethod,
                              criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
@@ -192,13 +202,15 @@ def get_iteration_parameters(search_space: SearchSpace,
                              criteria_start: CriteriaStart):
     (generated, kept) = get_generated_and_kept_for_iteration(search_space=search_space,
                                                              weight=weight,
+                                                             guaranteed_depth=guaranteed_depth,
                                                              explored_depth=explored_depth,
                                                              proportionality=proportionality,
                                                              thoroughness=thoroughness,
                                                              search_method=search_method)
 
-    mixing_iterator = get_mixing_iterator(search_method=search_method)
+    mixing_iterator = get_mixing_iterator(weight=weight, guaranteed_depth=guaranteed_depth, search_method=search_method)
     effective_criteria = get_effective_criteria_and_weights(criteria_and_weights=criteria_and_weights,
+                                                            guaranteed_depth=guaranteed_depth,
                                                             explored_depth=explored_depth,
                                                             criteria_start=criteria_start,
                                                             weight=weight)
@@ -213,6 +225,7 @@ Schedule = list[IterationParameters]
 
 
 def get_parameter_schedule(search_space: SearchSpace,
+                           guaranteed_depth: int,
                            explored_depth: int,
                            search_method: SearchMethod,
                            criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
@@ -222,6 +235,7 @@ def get_parameter_schedule(search_space: SearchSpace,
     def single_iteration(weight: int):
         return get_iteration_parameters(weight=weight,
                                         search_space=search_space,
+                                        guaranteed_depth=guaranteed_depth,
                                         explored_depth=explored_depth,
                                         search_method=search_method,
                                         criteria_and_weights=criteria_and_weights,

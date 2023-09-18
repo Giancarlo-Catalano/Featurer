@@ -1,3 +1,4 @@
+import Version_D.MeasurableCriterion
 import utils
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
 from Version_C.Sampler import Sampler
@@ -6,6 +7,9 @@ import HotEncoding
 import SearchSpace
 from Version_C.FeatureFinder import find_features
 from BenchmarkProblems.Knapsack import KnapsackConstraint
+from Version_D.Miner import Parameters, Miner
+from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_D import MeasurableCriterion
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
@@ -38,12 +42,12 @@ def get_random_candidates_and_fitnesses(problem: CombinatorialProblem.Combinator
 
 
 def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
-                      sample_size) -> PopulationSamplePrecomputedData:
+                      sample_size) -> PrecomputedPopulationInformation:
     training_samples, fitness_list = get_random_candidates_and_fitnesses(problem, sample_size)
     # print("The generated samples are:")
     # for sample, fitness in zip(training_samples, fitness_list):
     #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness:.2f})")
-    return PopulationSamplePrecomputedData(problem.search_space, training_samples, fitness_list)
+    return PrecomputedPopulationInformation(problem.search_space, training_samples, fitness_list)
 
 
 def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
@@ -71,11 +75,11 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
 def get_features(problem: CombinatorialProblem,
                  sample_data: PopulationSamplePrecomputedData,
                  criteria_and_weights: [(ScoringCriterion, float)],
-                 amount_requested = 12,
+                 amount_requested=12,
                  guaranteed_depth=1,
                  explored_depth=6,
-                 strategy = "always heuristic",
-                 search_multiplier = 6):
+                 strategy="always heuristic",
+                 search_multiplier=6):
     print("Finding the features...")
     features, scores = find_features(problem=problem,
                                      sample_data=sample_data,
@@ -88,61 +92,38 @@ def get_features(problem: CombinatorialProblem,
     return features
 
 
-def get_sampler(problem: CombinatorialProblem,
-                training_data: PopulationSamplePrecomputedData,
-                amount_of_features_per_sampler,
-                is_maximisation_task=True) -> Sampler:
-    print("Constructing the sampler, involves finding:")
-    print("\t -fit features")
-    fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS, amount_of_features_per_sampler)
-    print("\t -unfit features")
-    unfit_features = get_features(problem, training_data, ScoringCriterion.LOW_FITNESS, amount_of_features_per_sampler)
-    print("\t -novel features")
-    novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
+def get_features_version_D(sample_data: PrecomputedPopulationInformation,
+                           criteria_and_weights: [(ScoringCriterion, float)],
+                           guaranteed_depth=1,
+                           explored_depth=6):
+    schedule = Parameters.get_parameter_schedule(search_space=sample_data.search_space,
+                                                 guaranteed_depth=guaranteed_depth,
+                                                 explored_depth=explored_depth,
+                                                 search_method=Parameters.SearchMethod.STOCHASTIC_SEARCH,
+                                                 criteria_and_weights=criteria_and_weights,
+                                                 proportionality=Parameters.Proportionality.PROBLEM_PARAMETERS,
+                                                 thoroughness=Parameters.Thoroughness.AVERAGE,
+                                                 criteria_start=Parameters.CriteriaStart.FROM_MIDPOINT)
 
-    wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (
-        unfit_features, fit_features)
+    found_features, scores = Miner.mine_meaningful_features(sample_data, schedule)
 
-    sampler = Sampler(search_space=problem.search_space,
-                      wanted_features=wanted_features,
-                      unwanted_features=unwanted_features,
-                      unpopular_features=novel_features,
-                      importance_of_novelty=0.1)
-
-    print("Then we train the sampler")
-    sampler.train(training_data)
-    return sampler
-
-
-def get_good_samples(sampler, problem, attempts, keep, maximise=True):
-    samples = [sampler.sample() for _ in range(attempts)]
-    samples_with_scores = [(sample, problem.score_of_candidate(sample)) for sample in samples]
-    samples_with_scores.sort(key=utils.second, reverse=maximise)
-    return utils.unzip(samples_with_scores[:keep])
+    found_features = [feature.to_legacy_feature() for feature in found_features]
+    return found_features
 
 
 if __name__ == '__main__':
     problem = trap5
-    criteria_and_weights = [(ScoringCriterion.EXPLAINABILITY, 2),
-                            (ScoringCriterion.HIGH_FITNESS, 5),
-                            (ScoringCriterion.FITNESS_CONSISTENCY, 3)]
+    criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
+                            (MeasurableCriterion.MeanFitnessCriterion(), 3),
+                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    features = get_features(problem, training_data, criteria_and_weights,
-                            amount_requested=20,
-                            guaranteed_depth=4,
-                            explored_depth=5,
-                            strategy="heuristic where needed")
+    features = get_features_version_D(training_data, criteria_and_weights,
+                                      guaranteed_depth=1,
+                                      explored_depth=5)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)
-
-    # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
-
-    # print("We can sample some individuals")
-    # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
-    # for good_sample, good_score in zip(good_samples, good_sample_scores):
-    #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
