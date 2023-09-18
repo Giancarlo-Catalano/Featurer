@@ -26,44 +26,4 @@ class MinerLayer:
         self.scores = scores
         self.precomputed_cumulative_list = np.cumsum(scores)
 
-    @classmethod
-    def make_0_parameter_layer(cls, search_space: SearchSpace):
-        empty_feature = Feature.empty_feature(search_space)
-        scores = np.array(1)  # dummy value
-        return cls([empty_feature], scores)
 
-    @classmethod
-    def make_1_parameter_layer(cls,
-                       ppi: PrecomputedPopulationInformation,
-                       criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
-                       parent_pair_iterator: LayerMixer.ParentPairIterator):
-
-        #create
-        features = Feature.get_all_trivial_features(ppi.search_space)
-
-        # assess
-        pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, features)
-        scores = MeasurableCriterion.compute_scores_for_features(pfi, criteria_and_weights)
-
-        # don't select!
-        return cls(features, np.array(scores))
-
-
-    @classmethod
-    def make_by_mixing(cls, mother_layer, father_layer,
-                       ppi: PrecomputedPopulationInformation,
-                       criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
-                       parent_pair_iterator: LayerMixer.ParentPairIterator,
-                       how_many_to_generate: int,
-                       how_many_to_keep: int):
-        # breed
-        offspring = LayerMixer.get_layer_offspring(mother_layer, father_layer,
-                                                   parent_pair_iterator, requested_amount=how_many_to_generate)
-        # assess
-        pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, offspring)
-        scores = MeasurableCriterion.compute_scores_for_features(pfi, criteria_and_weights)
-
-        # select
-        sorted_by_with_score = sorted(zip(offspring, scores), key=utils.second, reverse=True)
-        features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
-        return cls(features, np.array(scores_list))

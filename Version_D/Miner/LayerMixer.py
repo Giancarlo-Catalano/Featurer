@@ -1,15 +1,19 @@
 import utils
+from SearchSpace import SearchSpace
 from Version_D.Feature import Feature
+from Version_D.MeasurableCriterion import MeasurableCriterion, compute_scores_for_features, LayerScoringCriteria
 from Version_D.Miner.MinerLayer import MinerLayer
 
 import numpy as np
 import random
 
+from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
+from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+
 
 class ParentPairIterator:
     mother_layer: MinerLayer
     father_layer: MinerLayer
-
 
     def __repr__(self):
         raise Exception("An implementation of ParentPairIterator does not implement __repr__")
@@ -116,7 +120,6 @@ class GreedyHeuristicIterator(ParentPairIterator):
     pairs_to_visit: list[(int, int)]
     visit_index = 0
 
-
     def to_code(self):
         return "H"
 
@@ -157,10 +160,8 @@ class StochasticIterator(ParentPairIterator):
     current_batch: list[(Feature, Feature)]
     index_within_batch: int
 
-
     def to_code(self):
         "S"
-
 
     def __repr__(self):
         return "Stochastic"
@@ -192,3 +193,41 @@ class StochasticIterator(ParentPairIterator):
             self.reset()
 
         return result
+
+
+def make_0_parameter_layer(search_space: SearchSpace) -> MinerLayer:
+    empty_feature = Feature.empty_feature(search_space)
+    scores = np.array(1)  # dummy value
+    return MinerLayer([empty_feature], scores)
+
+
+def make_1_parameter_layer(ppi: PrecomputedPopulationInformation,
+                           criteria_and_weights: LayerScoringCriteria) -> MinerLayer:
+    # create
+    features = Feature.get_all_trivial_features(ppi.search_space)
+
+    # assess
+    pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, features)
+    scores = compute_scores_for_features(pfi, criteria_and_weights)
+
+    # don't select!
+    return MinerLayer(features, np.array(scores))
+
+
+def make_layer_by_mixing(mother_layer, father_layer,
+                         ppi: PrecomputedPopulationInformation,
+                         criteria_and_weights: LayerScoringCriteria,
+                         parent_pair_iterator: ParentPairIterator,
+                         how_many_to_generate: int,
+                         how_many_to_keep: int) -> MinerLayer:
+    # breed
+    offspring = get_layer_offspring(mother_layer, father_layer,
+                                    parent_pair_iterator, requested_amount=how_many_to_generate)
+    # assess
+    pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, offspring)
+    scores = compute_scores_for_features(pfi, criteria_and_weights)
+
+    # select
+    sorted_by_with_score = sorted(zip(offspring, scores), key=utils.second, reverse=True)
+    features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
+    return MinerLayer(features, np.array(scores_list))
