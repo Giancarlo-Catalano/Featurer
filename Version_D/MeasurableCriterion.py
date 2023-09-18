@@ -222,6 +222,6 @@ def compute_scores_for_features(pfi: PrecomputedFeatureInformation, criteria_and
         return np.ones(pfi.amount_of_features, dtype=float)
 
     criteria, weights = utils.unzip(criteria_and_weights)
-    atomic_scores = np.array([criterion.get_score_array(pfi) if weight >= 0 else criterion.get_inverted_score_array
+    atomic_scores = np.array([criterion.get_score_array(pfi) if weight >= 0 else criterion.get_inverse_score_array(pfi)
                               for criterion, weight in criteria_and_weights])
     return utils.weighted_average_of_rows(atomic_scores, np.abs(np.array(weights)))
