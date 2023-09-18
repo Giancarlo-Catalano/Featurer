@@ -39,7 +39,7 @@ class PrecomputedFeatureInformation:
 
     def compute_feature_matrix(self, features: Iterable[Feature]) -> np.ndarray:
         hot_encoded_features = [get_hot_encoded_feature(feature, self.search_space) for feature in features]
-        return np.array(hot_encoded_features)
+        return np.array(hot_encoded_features).T
 
     def compute_feature_presence_error_matrix(self):
         errors = (1 - self.candidate_matrix) @ self.feature_matrix
