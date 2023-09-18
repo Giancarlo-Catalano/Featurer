@@ -38,4 +38,8 @@ def mine_meaningful_features(ppi: PrecomputedPopulationInformation,
     final_criteria = parameter_schedule[-1].criteria_and_weights
     scores = MeasurableCriterion.compute_scores_for_features(final_pfi, final_criteria)
 
+    features_and_scores = list(zip(all_features, scores))
+    features_and_scores.sort(key=utils.second, reverse=True)
+    all_features, scores = utils.unzip(features_and_scores)  # here you would truncate
+
     return all_features, scores
