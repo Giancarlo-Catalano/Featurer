@@ -53,16 +53,13 @@ def get_layer_offspring(mother_layer: MinerLayer,
 
     parent_pair_iterator.set_parents(mother_layer, father_layer)
 
-    accumulator = set()
+    accumulator = list()
 
     def add_child_if_allowed(parents: (Feature, Feature)):
         mother, father = parents
         if avoid_overlap and Feature.overlap(mother, father):
             return
-        accumulator.add(Feature.merge(mother, father))
-
-
-
+        accumulator.append(Feature.merge(mother, father))
 
     def fill_accumulator():
         while len(accumulator) < requested_amount:
@@ -70,16 +67,12 @@ def get_layer_offspring(mother_layer: MinerLayer,
                 break
             add_child_if_allowed(parent_pair_iterator.get_next_parent_pair())
 
-
-    for _ in range(requested_amount):
-        add_child_if_allowed(parent_pair_iterator.get_next_parent_pair())
-
-    # fill_accumulator()
+    fill_accumulator()
     # if len(accumulator) < requested_amount:
     #    avoid_overlap = False
     #    fill_accumulator()
 
-    return list(accumulator)
+    return list(set(accumulator))
 
 
 class TotalSearchIterator(ParentPairIterator):
@@ -99,8 +92,7 @@ class TotalSearchIterator(ParentPairIterator):
         return "Total Search"
 
     def __init__(self):
-        self.mother_index = 0  # it increases after iterator access
-        self.father_index = 0
+        pass
 
     def increase_indices_when_parents_are_different(self):
         self.mother_index += 1
@@ -112,7 +104,7 @@ class TotalSearchIterator(ParentPairIterator):
         self.mother_index += 1
         if self.mother_index >= self.amount_of_mothers:
             self.father_index += 1
-            self.mother_index = self.father_index
+            self.mother_index = self.father_index + 1
 
     def increase_indices(self):
         if self.identical_parents:
@@ -120,24 +112,28 @@ class TotalSearchIterator(ParentPairIterator):
         else:
             self.increase_indices_when_parents_are_different()
 
+        # print(f"The next indices are {self.mother_index}, {self.father_index}")
+
     def get_next_parent_pair(self) -> (Feature, Feature):
+        # print(f"Accessing indexes {self.mother_index}, {self.father_index}")
         result = (self.mother_layer.features[self.mother_index],
                   self.father_layer.features[self.father_index])
         self.increase_indices()
         return result
 
     def is_finished(self) -> bool:
-        return self.father_index >= self.amount_of_fathers
+        return (self.father_index >= self.amount_of_fathers) or (self.mother_index >= self.amount_of_mothers)
 
     def reset(self):
-        self.mother_index = 0
+        # if the parents are identical, start from 0,1, else start from 0, 0
+        self.mother_index = 1 if self.identical_parents else 0
         self.father_index = 0
 
     def setup(self):
-        self.reset()
         self.amount_of_mothers = len(self.mother_layer.features)
         self.amount_of_fathers = len(self.father_layer.features)
         self.identical_parents = (self.mother_layer is self.father_layer)
+        self.reset()
 
 
 class GreedyHeuristicIterator(ParentPairIterator):
@@ -159,7 +155,7 @@ class GreedyHeuristicIterator(ParentPairIterator):
                                           range(father_layer.amount_of_features))
 
         all_pairs_with_scores = [((mother_index, father_index),
-                                  mother_layer.scores[mother_index]+father_layer.scores[father_index])
+                                  mother_layer.scores[mother_index] + father_layer.scores[father_index])
                                  for mother_index, father_index in all_pairs]
         all_pairs_with_scores.sort(key=utils.second, reverse=True)  # sort by which pair has the highest sum of scores
         return utils.unzip(all_pairs_with_scores)[0]

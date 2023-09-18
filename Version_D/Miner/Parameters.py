@@ -123,7 +123,7 @@ def get_generated_and_kept_for_iteration(search_space: SearchSpace,
 
     if search_method == SearchMethod.TOTAL_SEARCH\
             or weight <= guaranteed_depth:
-        return total, total
+        return 1000000, 1000000
 
     generated_and_kept_map = {
         (Proportionality.FIXED, Thoroughness.LEAST): (20, 10),

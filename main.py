@@ -11,7 +11,7 @@ from Version_D.Miner import Parameters, Miner
 from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_D import MeasurableCriterion
 
-trap5 = TrapK.TrapK(5, 3)
+trap5 = TrapK.TrapK(5, 6)
 checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
@@ -122,8 +122,8 @@ if __name__ == '__main__':
     print("More specifically, it is")
     print(problem.long_repr())
     features = get_features_version_D(training_data, criteria_and_weights,
-                                      guaranteed_depth=5,
-                                      explored_depth=5)
+                                      guaranteed_depth=2,
+                                      explored_depth=6)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)
