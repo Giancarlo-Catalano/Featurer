@@ -2,12 +2,10 @@ import itertools
 from enum import Enum, auto
 
 import utils
-from MinerLayer import MinerLayer
+from SearchSpace import SearchSpace
 from Version_D import MeasurableCriterion
 from Version_D.Miner.LayerMixer import ParentPairIterator, TotalSearchIterator, GreedyHeuristicIterator, \
     StochasticIterator
-from SearchSpace import SearchSpace
-from Version_D import Feature
 
 
 class IterationParameters:
@@ -90,7 +88,7 @@ class CriteriaStart(Enum):
         return ["Always", "From Midpoint", "Only Last"][self.value - 1]
 
     def to_code(self):
-        return ["Alws", "MidP", "Last"][self.value - 1]
+        return ["Always", "Midpoint", "Last"][self.value - 1]
 
 
 def get_total_amount_of_features_in_iteration(search_space: SearchSpace, weight: int):
@@ -114,19 +112,17 @@ def only_explainability_criterion(criteria_and_weights):
             f"(They are {criteria_and_weights})")
 
 
-def get_iteration_parameters(search_space: SearchSpace,
-                             weight: int,
-                             explored_depth: int,
-                             search_method: SearchMethod,
-                             criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
-                             proportionality: Proportionality,
-                             thoroughness: Thoroughness,
-                             criteria_start: CriteriaStart):
+def get_generated_and_kept_for_iteration(search_space: SearchSpace,
+                                         weight: int,
+                                         explored_depth: int,
+                                         proportionality: Proportionality,
+                                         thoroughness: Thoroughness,
+                                         search_method: SearchMethod) -> (int, int):
     total = get_total_amount_of_features_in_iteration(search_space, weight)
     problem_coefficient = search_space.total_cardinality * weight * utils.binomial_coeff(explored_depth, weight)
 
-    generated_feature_amount = None
-    kept_feature_amount = None
+    if search_method == SearchMethod.TOTAL_SEARCH:
+        return total, total
 
     generated_and_kept_map = {
         (Proportionality.FIXED, Thoroughness.LEAST): (20, 10),
@@ -147,42 +143,90 @@ def get_iteration_parameters(search_space: SearchSpace,
         (Proportionality.ENTIRE_SEARCH_SPACE, Thoroughness.MOST): (total * 0.200, total * 0.1)
     }
 
-    if search_method == SearchMethod.TOTAL_SEARCH:
-        generated_feature_amount, kept_feature_amount = total, total
-    else:
-        generated_feature_amount, kept_feature_amount = generated_and_kept_map[(proportionality, thoroughness)]
+    generated_feature_amount, kept_feature_amount = generated_and_kept_map[(proportionality, thoroughness)]
 
     # to prevent oversearching
     generated_feature_amount = min(generated_feature_amount, total)
     kept_feature_amount = min(generated_feature_amount, total)
 
-    mixing_iterator = None
-    if search_method == SearchMethod.TOTAL_SEARCH:
-        mixing_iterator = IterationParameters.TOTAL_SEARCH
-    elif search_method == SearchMethod.HEURISTIC_SEARCH:
-        mixing_iterator = IterationParameters.HEURISTIC_SEARCH
-    elif search_method == SearchMethod.STOCHASTIC_SEARCH:
-        mixing_iterator = IterationParameters.STOCHASTIC_SEARCH
+    return int(generated_feature_amount), int(kept_feature_amount)
 
+
+def get_mixing_iterator(search_method: SearchMethod) -> ParentPairIterator:
+    if search_method == SearchMethod.TOTAL_SEARCH:
+        return IterationParameters.TOTAL_SEARCH
+    elif search_method == SearchMethod.HEURISTIC_SEARCH:
+        return IterationParameters.HEURISTIC_SEARCH
+    elif search_method == SearchMethod.STOCHASTIC_SEARCH:
+        return IterationParameters.STOCHASTIC_SEARCH
+    else:
+        raise Exception("The search method was not recognised")
+
+
+def get_effective_criteria_and_weights(criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                                       explored_depth: int,
+                                       criteria_start: CriteriaStart,
+                                       weight: int) -> MeasurableCriterion.LayerScoringCriteria:
     only_explainability = only_explainability_criterion(criteria_and_weights)
-    effective_criteria_and_weights = None
     if criteria_start == CriteriaStart.ALWAYS:
-        effective_criteria_and_weights = criteria_and_weights
+        return criteria_and_weights
     elif criteria_start == CriteriaStart.FROM_MIDPOINT:
         if weight <= explored_depth // 2:
-            effective_criteria_and_weights = only_explainability
+            return only_explainability
         else:
-            effective_criteria_and_weights = criteria_and_weights
+            return criteria_and_weights
     elif criteria_start == CriteriaStart.ONLY_LAST:
         if weight < explored_depth:
-            effective_criteria_and_weights = only_explainability
+            return only_explainability
         else:
-            effective_criteria_and_weights = criteria_and_weights
+            return criteria_and_weights
 
-    return IterationParameters(generated_feature_amount,
-                               kept_feature_amount,
+
+def get_iteration_parameters(search_space: SearchSpace,
+                             weight: int,
+                             explored_depth: int,
+                             search_method: SearchMethod,
+                             criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                             proportionality: Proportionality,
+                             thoroughness: Thoroughness,
+                             criteria_start: CriteriaStart):
+    (generated, kept) = get_generated_and_kept_for_iteration(search_space=search_space,
+                                                             weight=weight,
+                                                             explored_depth=explored_depth,
+                                                             proportionality=proportionality,
+                                                             thoroughness=thoroughness,
+                                                             search_method=search_method)
+
+    mixing_iterator = get_mixing_iterator(search_method=search_method)
+    effective_criteria = get_effective_criteria_and_weights(criteria_and_weights=criteria_and_weights,
+                                                            explored_depth=explored_depth,
+                                                            criteria_start=criteria_start,
+                                                            weight=weight)
+
+    return IterationParameters(generated,
+                               kept,
                                mixing_iterator,
-                               criteria_and_weights)
+                               effective_criteria)
 
 
 Schedule = list[IterationParameters]
+
+
+def get_parameter_schedule(search_space: SearchSpace,
+                           explored_depth: int,
+                           search_method: SearchMethod,
+                           criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                           proportionality: Proportionality,
+                           thoroughness: Thoroughness,
+                           criteria_start: CriteriaStart) -> Schedule:
+    def single_iteration(weight: int):
+        return get_iteration_parameters(weight=weight,
+                                        search_space=search_space,
+                                        explored_depth=explored_depth,
+                                        search_method=search_method,
+                                        criteria_and_weights=criteria_and_weights,
+                                        proportionality=proportionality,
+                                        thoroughness=thoroughness,
+                                        criteria_start=criteria_start)
+
+    return [single_iteration(weight) for weight in range(explored_depth + 1)]
