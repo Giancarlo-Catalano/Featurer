@@ -1,3 +1,5 @@
+import itertools
+
 import utils
 from SearchSpace import SearchSpace
 from Version_D.Feature import Feature
@@ -127,11 +129,16 @@ class GreedyHeuristicIterator(ParentPairIterator):
         return "Greedy Heuristic"
 
     def compute_pairs_to_visit(self, mother_layer: MinerLayer, father_layer: MinerLayer) -> list[(int, int)]:
-        pairs_with_scores = [((mother_index, father_index), mother_score + father_score)
-                             for ((mother_index, mother_score), (father_index, father_score))
-                             in zip(enumerate(mother_layer.features), enumerate(father_layer.features))]
-        pairs_with_scores.sort(key=utils.second, reverse=True)  # sort by which pair has the highest sum of scores
-        return utils.unzip(pairs_with_scores)[0]
+        all_pairs = itertools.product(range(len(mother_layer.features)), range(len(father_layer.features)))
+
+        if mother_layer is father_layer:
+            all_pairs = [pair for pair in all_pairs if pair[0] != pair[1]]
+
+        all_pairs_with_scores = [((mother_index, father_index),
+                                  mother_layer.scores[mother_index]+father_layer.scores[father_index])
+                                 for mother_index, father_index in all_pairs]
+        all_pairs_with_scores.sort(key=utils.second, reverse=True)  # sort by which pair has the highest sum of scores
+        return utils.unzip(all_pairs_with_scores)[0]
 
     def __init__(self):
         pass

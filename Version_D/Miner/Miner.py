@@ -29,7 +29,8 @@ def mine_meaningful_features(ppi: PrecomputedPopulationInformation,
 
         layers.append(new_layer)
 
-    for weight, parameters in enumerate(parameter_schedule, start=2):
+    for weight, parameters in enumerate(parameter_schedule[2:], start=2):
+        print(f"For weight = {weight} and parameters = {parameters}, we generate the layer.")
         get_next_layer(weight, parameters)
 
     all_features = utils.concat_lists([layer.features for layer in layers])
