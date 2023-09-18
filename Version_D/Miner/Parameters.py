@@ -97,15 +97,14 @@ def get_total_amount_of_features_in_iteration(search_space: SearchSpace, weight:
 
 
 def only_explainability_criterion(criteria_and_weights):
-    def is_explainability(criterion_and_weight: (MeasurableCriterion, float)):
-        criterion, weight = criterion_and_weight
+    def is_explainability(criterion: MeasurableCriterion, weight: float):
         return isinstance(criterion, MeasurableCriterion.ExplainabilityCriterion) and weight != 0
 
-    explainabilities = [criterion for criterion, weight in criteria_and_weights
-                        if is_explainability(criterion)]
+    explainabilities = [(criterion, weight) for criterion, weight in criteria_and_weights
+                        if is_explainability(criterion, weight)]
 
     if explainabilities:
-        return explainabilities[0]
+        return explainabilities
     else:
         raise Exception(
             "Error in Miner.py: attempting to extract the explainability MeasurableCriterion, but none were found"

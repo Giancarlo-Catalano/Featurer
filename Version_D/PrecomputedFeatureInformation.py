@@ -69,39 +69,37 @@ class PrecomputedFeatureInformation:
 
         return np.sqrt(utils.divide_arrays_safely(numerators, (self.count_for_each_feature - 1)))
 
-
     def compute_marginal_probabilities(self) -> np.ndarray:
         sum_in_hot_encoding_order: np.ndarray[float] = np.sum(self.candidate_matrix, axis=0)
         return sum_in_hot_encoding_order / self.sample_size
 
     @property
     def count_for_each_feature(self) -> np.ndarray:
-        if not self.precomputed_count_for_each_feature:
+        if self.precomputed_count_for_each_feature is None:
             self.precomputed_count_for_each_feature = self.compute_count_for_each_feature()
         return self.precomputed_count_for_each_feature
 
     @property
     def mean_fitness_for_each_feature(self) -> np.ndarray:
-        if not self.precomputed_mean_fitness_for_each_feature:
+        if self.precomputed_mean_fitness_for_each_feature is None:
             self.precomputed_mean_fitness_for_each_feature = self.compute_mean_fitness_for_each_feature()
         return self.precomputed_mean_fitness_for_each_feature
 
     @property
     def sd_for_each_feature(self) -> np.ndarray:
-        if not self.precomputed_sd_for_each_feature:
+        if self.precomputed_sd_for_each_feature is None:
             self.precomputed_sd_for_each_feature = self.compute_sd_for_each_feature()
         return self.precomputed_sd_for_each_feature
 
     @property
     def population_mean(self) -> float:
-        if not self.precomputed_population_mean:
+        if self.precomputed_population_mean is None:
             self.precomputed_population_mean = self.compute_population_mean()
         return self.precomputed_population_mean
 
-
     @property
     def marginal_probabilities(self) -> np.ndarray:
-        if not self.precomputed_marginal_probabilities:
+        if self.precomputed_marginal_probabilities is None:
             self.precomputed_marginal_probabilities = self.compute_marginal_probabilities()
         return self.precomputed_marginal_probabilities
 

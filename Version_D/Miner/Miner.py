@@ -1,9 +1,7 @@
 import utils
-from MinerLayer import MinerLayer
-from Version_D import MeasurableCriterion
-from Version_D import Feature
-import Parameters
-from Version_D.Miner import LayerMixer
+from Version_D import MeasurableCriterion, Feature
+from Version_D.Miner.MinerLayer import MinerLayer
+from Version_D.Miner import LayerMixer, Parameters
 from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 import numpy as np
