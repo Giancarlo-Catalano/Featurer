@@ -27,3 +27,7 @@ class MinerLayer:
         self.precomputed_cumulative_list = np.cumsum(scores)
 
 
+    @property
+    def amount_of_features(self):
+        return len(self.features)
+
