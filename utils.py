@@ -402,7 +402,7 @@ def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
 
 
 def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray, else_value=0):
-    else_array = np.ones_like(numerator) * else_value
+    else_array = np.ones_like(numerator, dtype = numerator.dtype) * else_value
     """returns the element wise division between 2 arrays, and 0 where there was a zero denominator"""
     return np.divide(numerator, denominator, out=else_array, where=denominator != 0.0)
 

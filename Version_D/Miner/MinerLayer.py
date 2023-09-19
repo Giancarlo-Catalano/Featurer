@@ -18,11 +18,13 @@ class MinerLayer:
     """
     features: list[Feature]
     scores: np.array
+    ppi: PrecomputedPopulationInformation
 
     precomputed_cumulative_list: np.array
 
-    def __init__(self, features, scores):
+    def __init__(self, features, ppi, scores):
         self.features = features
+        self.ppi = ppi
         self.scores = scores
         self.precomputed_cumulative_list = np.cumsum(scores)
 

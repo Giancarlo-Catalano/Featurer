@@ -13,9 +13,9 @@ def mine_meaningful_features(ppi: PrecomputedPopulationInformation,
     layers.append(LayerMixer.make_0_parameter_layer(ppi.search_space))
     layers.append(LayerMixer.make_1_parameter_layer(ppi, parameter_schedule[1].criteria_and_weights))
 
-    def get_parent_layers(weight: int):
-        mother_weight = weight // 2
-        father_weight = weight - mother_weight
+    def get_parent_layers(child_weight: int):
+        mother_weight = child_weight // 2
+        father_weight = child_weight - mother_weight
 
         return layers[mother_weight], layers[father_weight]
 

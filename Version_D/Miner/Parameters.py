@@ -5,7 +5,7 @@ import utils
 from SearchSpace import SearchSpace
 from Version_D import MeasurableCriterion
 from Version_D.Miner.LayerMixer import ParentPairIterator, TotalSearchIterator, GreedyHeuristicIterator, \
-    StochasticIterator
+    StochasticIterator, MatrixIterator
 
 
 class IterationParameters:
@@ -17,6 +17,7 @@ class IterationParameters:
     TOTAL_SEARCH = TotalSearchIterator()
     HEURISTIC_SEARCH = GreedyHeuristicIterator()
     STOCHASTIC_SEARCH = StochasticIterator()
+    BIVARIATE_SEARCH = MatrixIterator()
 
     def __init__(self, generated_feature_amount: int,
                  kept_feature_amount: int,
@@ -45,12 +46,13 @@ class SearchMethod(Enum):
     TOTAL_SEARCH = auto()
     HEURISTIC_SEARCH = auto()
     STOCHASTIC_SEARCH = auto()
+    BIVARIATE_SEARCH = auto()
 
     def __str__(self):
-        return ["Total Search", "Heuristic", "Stochastic"][self.value - 1]
+        return ["Total Search", "Heuristic", "Stochastic", "Bivariate"][self.value - 1]
 
     def to_code(self):
-        return ["Tot", "Heu", "Sto"][self.value - 1]
+        return ["Tot", "Heu", "Sto", "Biv"][self.value - 1]
 
 
 class Proportionality(Enum):
@@ -163,6 +165,8 @@ def get_mixing_iterator(weight: int, guaranteed_depth: int, search_method: Searc
         return IterationParameters.HEURISTIC_SEARCH
     elif search_method == SearchMethod.STOCHASTIC_SEARCH:
         return IterationParameters.STOCHASTIC_SEARCH
+    elif search_method == SearchMethod.BIVARIATE_SEARCH:
+        return IterationParameters.BIVARIATE_SEARCH
     else:
         raise Exception("The search method was not recognised")
 

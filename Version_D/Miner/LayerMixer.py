@@ -17,6 +17,8 @@ class ParentPairIterator:
     mother_layer: MinerLayer
     father_layer: MinerLayer
 
+    ppi: PrecomputedPopulationInformation
+
     def __repr__(self):
         raise Exception("An implementation of ParentPairIterator does not implement __repr__")
 
@@ -33,7 +35,9 @@ class ParentPairIterator:
         # this acts as a delayed init function
         self.mother_layer = mother_layer
         self.father_layer = father_layer
-        self.setup()
+
+    def set_ppi(self, ppi: PrecomputedPopulationInformation):
+        self.ppi = ppi
 
     def get_next_parent_pair(self) -> (Feature, Feature):
         raise Exception("An implementation of ParentPairIterator does not implement get_next_parent_pair")
@@ -44,6 +48,7 @@ class ParentPairIterator:
 
 def get_layer_offspring(mother_layer: MinerLayer,
                         father_layer: MinerLayer,
+                        ppi: PrecomputedPopulationInformation,
                         parent_pair_iterator: ParentPairIterator,
                         requested_amount: int) -> list[Feature]:
     avoid_overlap = True
@@ -52,6 +57,8 @@ def get_layer_offspring(mother_layer: MinerLayer,
         raise Exception("Attempting to construct a layer mixer from empty parents!")
 
     parent_pair_iterator.set_parents(mother_layer, father_layer)
+    parent_pair_iterator.set_ppi(ppi)
+    parent_pair_iterator.setup()
 
     accumulator = list()
 
@@ -222,10 +229,73 @@ class StochasticIterator(ParentPairIterator):
         return result
 
 
+class MatrixIterator(ParentPairIterator):
+    pairs_to_visit: list[(int, int)]
+    visit_index: int
+
+    def to_code(self):
+        return "M"
+
+    def __repr__(self):
+        return "Matrix Iterator"
+
+    def __init__(self):
+        pass
+
+    def get_correlation_matrix(self):
+        mother_pfi = PrecomputedFeatureInformation(self.ppi, self.mother_layer.features)
+        father_pfi = PrecomputedFeatureInformation(self.ppi, self.father_layer.features)
+
+        def scale_each_row(matrix, scalings):
+            return (matrix.T * scalings).T
+
+        mother_matrix = mother_pfi.feature_presence_matrix
+        father_matrix = father_pfi.feature_presence_matrix
+
+        scaled_mother = scale_each_row(mother_matrix, mother_pfi.fitness_array)
+        scaled_father = scale_each_row(father_matrix, father_pfi.fitness_array)
+
+        numerator = (scaled_mother.T @ scaled_father)
+        denominator = (mother_matrix.T @ father_matrix)
+        return utils.divide_arrays_safely(numerator, denominator, else_value=0)
+
+    def get_order_of_cells(self, matrix: np.ndarray):
+        amount_of_rows, amount_of_cols = matrix.shape
+        cell_coords = np.array([(row, col) for row in range(amount_of_rows) for col in range(amount_of_cols)])
+        parents_are_identical = (self.mother_layer is self.father_layer)
+
+        cell_coord_and_score = None
+        if parents_are_identical:
+            cell_coord_and_score = [(coords, score) for coords, score in zip(cell_coords, np.nditer(matrix))
+                                    if coords[1] > coords[0]]
+        else:
+            cell_coord_and_score = [(coords, score) for coords, score in zip(cell_coords, np.nditer(matrix))]
+
+        cell_coord_and_score.sort(key=utils.second, reverse=True)
+        cell_order = utils.unzip(cell_coord_and_score)[0]
+        return cell_order
+
+    def setup(self):
+        correlation_matrix = self.get_correlation_matrix()
+        self.pairs_to_visit = self.get_order_of_cells(correlation_matrix)
+        self.reset()
+
+    def reset(self):
+        self.visit_index = 0
+
+    def get_next_parent_pair(self) -> (Feature, Feature):
+        next_mom_index, next_dad_index = self.pairs_to_visit[self.visit_index]
+        self.visit_index += 1
+        return self.mother_layer.features[next_mom_index], self.father_layer.features[next_dad_index]
+
+    def is_finished(self) -> bool:
+        return self.visit_index >= len(self.pairs_to_visit)
+
+
 def make_0_parameter_layer(search_space: SearchSpace) -> MinerLayer:
     empty_feature = Feature.empty_feature(search_space)
     scores = np.array(1)  # dummy value
-    return MinerLayer([empty_feature], scores)
+    return MinerLayer([empty_feature], ppi=None, scores=scores)
 
 
 def make_1_parameter_layer(ppi: PrecomputedPopulationInformation,
@@ -238,7 +308,7 @@ def make_1_parameter_layer(ppi: PrecomputedPopulationInformation,
     scores = compute_scores_for_features(pfi, criteria_and_weights)
 
     # don't select!
-    return MinerLayer(features, np.array(scores))
+    return MinerLayer(features, ppi, np.array(scores))
 
 
 def make_layer_by_mixing(mother_layer, father_layer,
@@ -248,7 +318,7 @@ def make_layer_by_mixing(mother_layer, father_layer,
                          how_many_to_generate: int,
                          how_many_to_keep: int) -> MinerLayer:
     # breed
-    offspring = get_layer_offspring(mother_layer, father_layer,
+    offspring = get_layer_offspring(mother_layer, father_layer, ppi,
                                     parent_pair_iterator, requested_amount=how_many_to_generate)
     # assess
     pfi: PrecomputedFeatureInformation = PrecomputedFeatureInformation(ppi, offspring)
@@ -257,4 +327,4 @@ def make_layer_by_mixing(mother_layer, father_layer,
     # select
     sorted_by_with_score = sorted(zip(offspring, scores), key=utils.second, reverse=True)
     features, scores_list = utils.unzip(sorted_by_with_score[:how_many_to_keep])
-    return MinerLayer(features, np.array(scores_list))
+    return MinerLayer(features, ppi, np.array(scores_list))

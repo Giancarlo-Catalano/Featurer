@@ -11,7 +11,7 @@ from Version_D.Miner import Parameters, Miner
 from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_D import MeasurableCriterion
 
-trap5 = TrapK.TrapK(5, 6)
+trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
@@ -99,10 +99,10 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
     schedule = Parameters.get_parameter_schedule(search_space=sample_data.search_space,
                                                  guaranteed_depth=guaranteed_depth,
                                                  explored_depth=explored_depth,
-                                                 search_method=Parameters.SearchMethod.STOCHASTIC_SEARCH,
+                                                 search_method=Parameters.SearchMethod.BIVARIATE_SEARCH,
                                                  criteria_and_weights=criteria_and_weights,
                                                  proportionality=Parameters.Proportionality.PROBLEM_PARAMETERS,
-                                                 thoroughness=Parameters.Thoroughness.MOST,
+                                                 thoroughness=Parameters.Thoroughness.LEAST,
                                                  criteria_start=Parameters.CriteriaStart.FROM_MIDPOINT)
 
     found_features, scores = Miner.mine_meaningful_features(sample_data, schedule)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     problem = trap5
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
                             (MeasurableCriterion.MeanFitnessCriterion(), 3),
-                            (MeasurableCriterion.RobustnessCriterion(), -4)]
+                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     print(problem.long_repr())
     features = get_features_version_D(training_data, criteria_and_weights,
                                       guaranteed_depth=2,
-                                      explored_depth=6)
+                                      explored_depth=5)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)
