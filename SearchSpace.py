@@ -58,6 +58,11 @@ class Candidate:
     def as_feature(self):
         return Feature([(i, v) for i, v in enumerate(self.values) if v is not None])
 
+    def contains_feature(self, feature: Feature):
+        def contains_var_val(var, val):
+            return self.values[var] == val
+
+        return all(contains_var_val(var, val) for var, val in feature.var_vals)
 
 class SearchSpace:
     cardinalities: tuple[int]

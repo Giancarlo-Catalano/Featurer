@@ -2,7 +2,7 @@ import random
 
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
-from typing import List
+from typing import List, Optional
 
 
 class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
@@ -13,60 +13,94 @@ class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProb
 
     amount_of_bits: int
 
-    amount_of_partials: int
-    size_of_partials: int
+    amount_of_features: int
+    size_of_features: int
+    allow_overlaps: bool
 
-    important_partials: map[SearchSpace.Feature, int]
-    def generate_non_overlapping_partials(self):
+    important_features: list[SearchSpace.Feature]
+    score_for_each_feature: list[int]
 
-        def get_random_feature():
-            value = random.randrange(2)
-            which_vars = random.sample(range(self.amount_of_bits), k=self.size_of_partials)
-            feature = SearchSpace.Feature([(var, value) for var in which_vars])
-            return feature
 
-        def are_disjoint(feature_a: SearchSpace.Feature, feature_b: SearchSpace.Feature):
+    def get_random_feature(self):
+        value = random.randrange(2)
+        start = random.randrange(self.amount_of_bits-self.size_of_features)
+        which_vars = [start+offset for offset in range(self.size_of_features)]
+        feature = SearchSpace.Feature([(var, value) for var in which_vars])
+        return feature
+
+    def features_are_disjoint(self, feature_a: SearchSpace.Feature, feature_b: SearchSpace.Feature):
             var_vals_a = set(feature_a.var_vals)
             var_vals_b = set(feature_b.var_vals)
             overlap = var_vals_a.intersection(var_vals_b)
             return len(overlap) == 0
 
+
+    def generate_features(self) -> list[SearchSpace.Feature]:
         accumulator = []
         def is_eligible(new_feature: SearchSpace.Feature):
-            return all([are_disjoint(old_feature, new_feature) for old_feature in accumulator])
+            return all([self.features_are_disjoint(old_feature, new_feature) for old_feature in accumulator])
 
-        while len(accumulator) <= self.amount_of_partials:
-            new_feature = get_random_feature()
-            if is_eligible(new_feature):
+        attempts_until_next_reset = 1000
+        while len(accumulator) <= self.amount_of_features:
+            new_feature = self.get_random_feature()
+            if self.allow_overlaps or (not self.allow_overlaps and is_eligible(new_feature)):
                 accumulator.append(new_feature)
+            attempts_until_next_reset -= 1
+            if attempts_until_next_reset < 1:
+                accumulator = []
+                attempts_until_next_reset = 1000
 
         return accumulator
 
-    def __init__(self, amount_of_bits, cardinality, amount_of_partials, size_of_partials):
+
+    def generate_scores_for_features(self):
+        amount_needed = len(self.important_features)
+        scores = list(range(1, amount_needed+1))
+        random.shuffle(scores)
+        return scores
+
+    def __init__(self, amount_of_bits, amount_of_features, size_of_partials, allow_overlaps):
         self.amount_of_bits = amount_of_bits
-        self.amount_of_partials = amount_of_partials
-        self.size_of_partials = size_of_partials
+        self.amount_of_features = amount_of_features
+        self.size_of_features = size_of_partials
         super().__init__(SearchSpace.SearchSpace([2] * self.amount_of_bits))
-        self.important_partials = self.generate_non_overlapping_partials()
+        self.allow_overlaps = allow_overlaps
+        self.important_features = self.generate_features()
+        self.score_for_each_feature = self.generate_scores_for_features()
 
     def __repr__(self):
         return (f"ArtificialProblem(bits={self.amount_of_bits}, "
-                f"amount_of_partials = {self.amount_of_partials},"
-                f"size_of_partials = {self.size_of_partials}")
+                f"amount_of_features = {self.amount_of_features},"
+                f"size_of_features = {self.size_of_features},"
+                f"allow_overlap = {self.allow_overlaps}")
 
 
 
     def long_repr(self):
-        return self.__repr__()
+        def repr_for_each_feature(feature: SearchSpace.Feature, value: int):
+            return f"\t{self.feature_repr(feature)}, value = {value}"
+
+
+        return ("Contains the following features:\n"+
+                "\n".join([repr_for_each_feature(f, v)
+                 for f, v in zip(self.important_features, self.score_for_each_feature)]))
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
         return super().get_area_of_smallest_bounding_box(feature)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
-        pass
+        return sum(score for feature, score in zip(self.important_features, self.score_for_each_feature)
+                   if candidate.contains_feature(feature))
 
-    def feature_repr(self, feature):
-        def cell_repr(cell):
-            return "-" if cell is None else str(cell)
+    def feature_repr(self, feature: SearchSpace.Feature):
+        result_values = [None] * self.amount_of_bits
+        for var, val in feature.var_vals:
+            result_values[var] = val
 
-        return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
+        def repr_cell(value: Optional[int]):
+            if value is None:
+                return "_"
+            else:
+                return f"{value}"
+
+        return " ".join(repr_cell(cell) for cell in result_values)
