@@ -38,6 +38,11 @@ class Feature:
         return overlap.any()
 
     @classmethod
+    def merge_is_good(cls, first, second) -> bool:
+        merged = first.variable_mask | second.variable_mask
+        return (merged != first.variable_mask) and (merged != second.variable_mask)
+
+    @classmethod
     def are_disjoint(cls, first, second) -> bool:
         return not cls.overlap(first, second)
 

@@ -74,6 +74,9 @@ class PrecomputedFeatureInformation:
         return sum_in_hot_encoding_order / self.sample_size
 
     @property
+    def amount_of_features(self):
+        return len(self.features)
+    @property
     def count_for_each_feature(self) -> np.ndarray:
         if self.precomputed_count_for_each_feature is None:
             self.precomputed_count_for_each_feature = self.compute_count_for_each_feature()

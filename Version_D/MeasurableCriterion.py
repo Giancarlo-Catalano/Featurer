@@ -143,10 +143,14 @@ def compute_phi_scores(pfi: PrecomputedFeatureInformation):
     count_for_each_value = np.sum(pfi.candidate_matrix, axis=0)
     absence_count_for_each_value = pfi.sample_size - count_for_each_value
 
-    products_of_counts = np.power(2, utils.weighted_sum_of_columns(np.log2(count_for_each_value),
-                                                                   pfi.feature_matrix.T))
-    products_of_absences = np.power(2, utils.weighted_sum_of_columns(np.log2(absence_count_for_each_value),
-                                                                     pfi.feature_matrix.T))
+
+    counts_everywhere = np.tile(count_for_each_value, (pfi.amount_of_features, 1))
+    absences_everywhere = np.tile(absence_count_for_each_value, (pfi.amount_of_features, 1))
+    value_is_used_in_feature = np.array(pfi.feature_matrix.T, dtype=bool)
+
+    products_of_counts = np.product(counts_everywhere, where = value_is_used_in_feature, axis=1)
+
+    products_of_absences = np.product(absences_everywhere, where = value_is_used_in_feature, axis=1)
 
     n = pfi.sample_size
     n_all = pfi.count_for_each_feature

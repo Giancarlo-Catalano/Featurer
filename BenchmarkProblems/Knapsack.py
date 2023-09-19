@@ -225,7 +225,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
 
     def can_go_on_plane(self, candidate: SearchSpace.Candidate) -> bool:
         liquids = [water_bottle, energy_drink]
-        not_allowed_on_plane = [deodorant, razors, batteries, thermos]
+        not_allowed_on_plane = [deodorant, razors, batteries, thermos, cutlery]
         necessary = [passport]
 
         return (self.candidate_contains_all(candidate, necessary) and

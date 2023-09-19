@@ -29,8 +29,7 @@ graph_colouring = GraphColouring.GraphColouringProblem(3, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
 constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
                                                            [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
-                                                            KnapsackConstraint.WITHIN_WEIGHT,
-                                                            KnapsackConstraint.WITHIN_VOLUME])
+                                                            KnapsackConstraint.WITHIN_WEIGHT])
 
 
 def get_random_candidates_and_fitnesses(problem: CombinatorialProblem.CombinatorialProblem,
@@ -99,10 +98,10 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
     schedule = Parameters.get_parameter_schedule(search_space=sample_data.search_space,
                                                  guaranteed_depth=guaranteed_depth,
                                                  explored_depth=explored_depth,
-                                                 search_method=Parameters.SearchMethod.BIVARIATE_SEARCH,
+                                                 search_method=Parameters.SearchMethod.STOCHASTIC_SEARCH,
                                                  criteria_and_weights=criteria_and_weights,
                                                  proportionality=Parameters.Proportionality.PROBLEM_PARAMETERS,
-                                                 thoroughness=Parameters.Thoroughness.LEAST,
+                                                 thoroughness=Parameters.Thoroughness.AVERAGE,
                                                  criteria_start=Parameters.CriteriaStart.FROM_MIDPOINT)
 
     found_features, scores = Miner.mine_meaningful_features(sample_data, schedule)
@@ -112,17 +111,18 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
 
 
 if __name__ == '__main__':
-    problem = trap5
+    problem = constrained_knapsack
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
-                            (MeasurableCriterion.MeanFitnessCriterion(), 3),
-                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
+                            (MeasurableCriterion.MeanFitnessCriterion(), -3),
+                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2),
+                            (MeasurableCriterion.CorrelationCriterion(), 5)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
     features = get_features_version_D(training_data, criteria_and_weights,
-                                      guaranteed_depth=2,
+                                      guaranteed_depth=1,
                                       explored_depth=5)
 
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")

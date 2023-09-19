@@ -426,3 +426,7 @@ def find_first(input_iterable, predicate):
         return found[0]
     else:
         return None
+
+
+def scale_columns(matrix, scalings):
+    return matrix * scalings

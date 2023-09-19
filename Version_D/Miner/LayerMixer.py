@@ -64,7 +64,7 @@ def get_layer_offspring(mother_layer: MinerLayer,
 
     def add_child_if_allowed(parents: (Feature, Feature)):
         mother, father = parents
-        if avoid_overlap and Feature.overlap(mother, father):
+        if avoid_overlap and not Feature.merge_is_good(mother, father):
             return
         accumulator.append(Feature.merge(mother, father))
 
@@ -209,8 +209,8 @@ class StochasticIterator(ParentPairIterator):
         pass
 
     def setup(self):
-        self.mother_cumulative_weights = np.cumsum(self.mother_layer.scores)
-        self.father_cumulative_weights = np.cumsum(self.father_layer.scores)
+        self.mother_cumulative_weights = self.mother_layer.precomputed_cumulative_list
+        self.father_cumulative_weights = self.father_layer.precomputed_cumulative_list
         self.current_batch = self.generate_batch()
         self.reset()
 
@@ -266,11 +266,14 @@ class MatrixIterator(ParentPairIterator):
 
         cell_coord_and_score = None
         if parents_are_identical:
+
             cell_coord_and_score = [(coords, score) for coords, score in zip(cell_coords, np.nditer(matrix))
                                     if coords[1] > coords[0]]
         else:
             cell_coord_and_score = [(coords, score) for coords, score in zip(cell_coords, np.nditer(matrix))]
 
+        print(f"In the matrix, the shape is {matrix.shape}, which amounts to {len(cell_coord_and_score)} elements")
+        cell_coord_and_score = [(coords, score) for coords, score in cell_coord_and_score if score > 0]
         cell_coord_and_score.sort(key=utils.second, reverse=True)
         cell_order = utils.unzip(cell_coord_and_score)[0]
         return cell_order
