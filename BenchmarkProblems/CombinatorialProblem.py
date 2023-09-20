@@ -80,17 +80,16 @@ class TestableCombinatorialProblem(CombinatorialProblem):
 
 
 
-def test_problem(problem: TestableCombinatorialProblem,
-                 function_which_obtains_features,
-                 truncate_at: int) -> list[SearchSpace.Feature]:
+def which_ideals_are_present(problem: TestableCombinatorialProblem,
+                             function_which_obtains_features,
+                             truncate_at: int) -> dict[SearchSpace.Feature, bool]:
     """returns the amount of ideal features that were found by the algorithm"""
     found_features, scores = function_which_obtains_features(problem)
     # assumes that the features are ordered
     found_features = found_features[:truncate_at]
     ideal_features = problem.get_ideal_features()
 
-    return [wanted_feature for wanted_feature in ideal_features
-                if wanted_feature in found_features]
+    return {wanted_feature: (wanted_feature in found_features) for wanted_feature in ideal_features}
 
 
 

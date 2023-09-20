@@ -125,11 +125,10 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
-    problem = constrained_BT
+    problem = checkerboard
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
-                            (MeasurableCriterion.MeanFitnessCriterion(), -5),
-                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2),
-                            (MeasurableCriterion.CorrelationCriterion(), 5)]
+                            (MeasurableCriterion.MeanFitnessCriterion(), 5),
+                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
