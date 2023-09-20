@@ -1,8 +1,9 @@
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class OneMaxProblem(TestableCombinatorialProblem):
     amount_of_bits: int
 
     def __init__(self, amount_of_bits):
@@ -31,3 +32,9 @@ class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
                 return str(cell)
 
         return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
+
+    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+        def feature_with_a_single_one(var_index):
+            return SearchSpace.Feature([(var_index, 1)])
+
+        return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]

@@ -1,9 +1,9 @@
 import SearchSpace
 import utils
-import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class TrapK(TestableCombinatorialProblem):
     k: int
     amount_of_groups: int
     amount_of_bits: int
@@ -58,3 +58,23 @@ class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
 
         groups = self.divide_candidate_in_groups(SearchSpace.Candidate(super().get_positional_values(feature)))
         return "\n".join([group_repr(group) for group in groups])
+
+
+    def get_all_ones_ideals(self) -> list[SearchSpace.Feature]:
+        def all_ones_in_group(group_index) -> SearchSpace.Feature:
+            start = group_index*self.k
+            end = start+self.k
+            return SearchSpace.Feature([(var, 1) for var in range(start, end)])
+
+        return [all_ones_in_group(group_index) for group_index in range(self.amount_of_groups)]
+
+    def get_all_zero_ideals(self):
+        def feature_with_a_single_zero(var_index):
+            return SearchSpace.Feature([(var_index, 0)])
+
+        return [feature_with_a_single_zero(var_index) for var_index in range(self.amount_of_bits)]
+
+    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+        deceptive_groups = self.get_all_ones_ideals()
+        zeros = self.get_all_ones_ideals()
+        return deceptive_groups + zeros
