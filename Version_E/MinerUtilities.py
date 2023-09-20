@@ -1,10 +1,10 @@
 import random
 
 import utils
-from Version_D.Feature import Feature
-from Version_D.MeasurableCriterion import LayerScoringCriteria, compute_scores_for_features
-from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
-from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Feature import Feature
+from Version_E.MeasurableCriterion import LayerScoringCriteria, compute_scores_for_features
+from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
+from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 Score = float
 Layer = dict[Feature, Score]

@@ -1,11 +1,11 @@
-import Version_D.Feature
+import Version_E.Feature
 import numpy as np
 from typing import Iterable, Any
 
 import SearchSpace
 import utils
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
-from Version_D.PrecomputedFeatureInformation import PrecomputedFeatureInformation
+from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from SearchSpace import SearchSpace
 
 

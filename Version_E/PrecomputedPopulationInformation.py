@@ -1,6 +1,6 @@
 import SearchSpace
 import numpy as np
-import HotEncoding
+from Version_E import HotEncoding
 from BenchmarkProblems import CombinatorialProblem
 
 class PrecomputedPopulationInformation:

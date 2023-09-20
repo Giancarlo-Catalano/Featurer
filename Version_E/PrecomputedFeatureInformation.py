@@ -1,8 +1,8 @@
 import numpy as np
-import Version_D.PrecomputedPopulationInformation as PPI
-from Version_D.Feature import Feature
+import Version_E.PrecomputedPopulationInformation as PPI
+from Version_E.Feature import Feature
 from typing import Iterable, Optional
-from Version_D.HotEncoding import get_hot_encoded_feature
+from Version_E.HotEncoding import get_hot_encoded_feature
 import utils
 
 
@@ -120,26 +120,3 @@ class PrecomputedFeatureInformation:
         self.precomputed_sd_for_each_feature = None
         self.precomputed_marginal_probabilities = None
 
-    """
-    def get_t_scores(self) -> np.ndarray:
-        means = self.get_average_fitness_vector()
-        overall_average = self.get_overall_average_fitness()
-
-        #  this is the sum of (mean (of each feature) minus the overall mean)**2
-        numerators = utils.weighted_sum_of_rows(self.feature_presence_matrix,
-                                                np.square(self.fitness_array - overall_average))
-
-        standard_deviations = np.sqrt(utils.divide_arrays_safely(numerators, (self.count_for_each_feature - 1)))
-
-        sd_over_root_n = utils.divide_arrays_safely(standard_deviations, np.sqrt(self.count_for_each_feature))
-        t_scores = utils.divide_arrays_safely(means - overall_average, sd_over_root_n)
-
-        return t_scores
-
-    def get_distance_in_fitness_with_one_change(self) -> np.ndarray:
-        normal_means = self.get_average_fitness_vector()
-        off_by_one_means = VariateModels.get_means_from_fpm(self.get_off_by_one_feature_presence_matrix(),
-                                                            self.fitness_array)
-
-        return (normal_means - off_by_one_means) / (1 + np.abs(normal_means) + np.abs(off_by_one_means))
-"""
