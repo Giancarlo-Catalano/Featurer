@@ -51,6 +51,12 @@ def concat_lists(lists):
 def concat_tuples(tuples):
     return sum(tuples, ())
 
+def concat_sets(sets):
+    result = set()
+    for single_set in sets:
+        result.update(single_set)
+    return result
+
 
 def group(iterable, key_function=lambda x: x):
     """returns a dictionary, where the key is the key computed here"""

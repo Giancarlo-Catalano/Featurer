@@ -114,13 +114,17 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
 if __name__ == '__main__':
     problem = artificial_problem
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
-                            (MeasurableCriterion.MeanFitnessCriterion(), 6),
+                            (MeasurableCriterion.MeanFitnessCriterion(), 3),
                             (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
+
+    Miner.create_through_destruction(training_data, criteria_and_weights)
+
+
     features = get_features_version_D(training_data, criteria_and_weights,
                                       guaranteed_depth=1,
                                       explored_depth=5)

@@ -4,6 +4,8 @@ import SearchSpace
 import numpy as np
 from bitarray import bitarray, frozenbitarray
 
+import utils
+
 
 class Feature:
     variable_mask: frozenbitarray
@@ -84,7 +86,15 @@ class Feature:
         return var_hash + val_hash
 
     def __eq__(self, other) -> bool:
-        return self.variable_mask == other.variable_mask and np.array_equal(self.values_mask, other.values_mask)
+        if self.variable_mask != other.variable_mask:
+            return False
+
+        for value_here, value_there, is_set in zip(self.values_mask, other.values_mask, self.variable_mask):
+             if is_set and value_here != value_there:
+                return False
+        return True
+
+        #return self.variable_mask == other.variable_mask and np.array_equal(self.values_mask, other.values_mask)
 
     def __repr__(self):
         result = ""
@@ -98,3 +108,50 @@ class Feature:
 
     def to_legacy_feature(self) -> SearchSpace.Feature:
         return SearchSpace.Feature(self.to_var_val_pairs())
+
+    @classmethod
+    def from_candidate(cls, candidate: SearchSpace.Candidate):
+        variable_mask = bitarray(len(candidate.values))
+        variable_mask.setall(1)
+        value_mask = np.array(candidate.values)
+        return cls(frozenbitarray(variable_mask), value_mask)
+
+
+    @classmethod
+    def candidate_matrix_to_features(cls, candidate_matrix: np.ndarray, search_space: SearchSpace.SearchSpace):
+        values_in_hot_encoding = np.array(utils.concat_lists([list(range(cardinality))
+                                              for cardinality in search_space.cardinalities]))
+
+        value_matrix = np.array(candidate_matrix, dtype=int) * values_in_hot_encoding
+
+        def get_values_for_variable(var_index: int):
+            start, end = search_space.precomputed_offsets[var_index:(var_index+2)]
+            return np.max(value_matrix[:, start:end], axis=1)
+
+        values_for_each_candidate = np.column_stack(tuple([get_values_for_variable(var)
+                                                          for var in range(search_space.dimensions)]))
+
+        variable_mask = variable_mask = bitarray(search_space.dimensions)
+        variable_mask.setall(1)
+        variable_mask = frozenbitarray(variable_mask)
+
+        return [cls(variable_mask, row) for row in values_for_each_candidate]
+
+
+    def get_decays(self) -> set:
+        def get_decayed_masks(bitmask: frozenbitarray):
+            result = []
+            for index, is_set in enumerate(bitmask):
+                if is_set:
+                    new_decay = bitarray(self.variable_mask)
+                    new_decay[index] ^= 1
+                    result.append(frozenbitarray(new_decay))
+            return result
+
+        return {Feature(decayed_mask, self.values_mask) for decayed_mask in get_decayed_masks(self.variable_mask)}
+
+
+
+
+
+
