@@ -111,7 +111,20 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
     return found_features[:12]
 
 
+def show_all_ideals():
+    problems_with_ideals = [onemax, binval, trap5, artificial_problem, checkerboard]
+
+    for problem in problems_with_ideals:
+        print(f"The problem is {problem}, more specifically \n{problem.long_repr()}")
+        print("\n The ideals are ")
+        for feature in problem.get_ideal_features():
+            print(f"\n{problem.feature_repr(feature)}")
+
+        print("_"*40)
+
+
 if __name__ == '__main__':
+
     problem = constrained_BT
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
                             (MeasurableCriterion.MeanFitnessCriterion(), -5),

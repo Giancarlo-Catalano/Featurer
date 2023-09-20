@@ -76,5 +76,5 @@ class TrapK(TestableCombinatorialProblem):
 
     def get_ideal_features(self) -> list[SearchSpace.Feature]:
         deceptive_groups = self.get_all_ones_ideals()
-        zeros = self.get_all_ones_ideals()
+        zeros = self.get_all_zero_ideals()
         return deceptive_groups + zeros
