@@ -138,7 +138,7 @@ class Feature:
         return [cls(variable_mask, row) for row in values_for_each_candidate]
 
 
-    def get_decays(self) -> set:
+    def get_generalisations(self) -> set:
         def get_decayed_masks(bitmask: frozenbitarray):
             result = []
             for index, is_set in enumerate(bitmask):
@@ -150,6 +150,25 @@ class Feature:
 
         return {Feature(decayed_mask, self.values_mask) for decayed_mask in get_decayed_masks(self.variable_mask)}
 
+
+    def get_specialisations(self, search_space: SearchSpace) -> set:
+        def get_specialisation_pairs():
+            result = []
+            for var_index, is_used, cardinality in zip(range(search_space.dimensions), self.variable_mask, search_space.cardinalities):
+                if not is_used:
+                    result.extend([(var_index, value) for value in range(cardinality)])
+
+            return result
+
+        def get_specialisation(var, val):
+            new_mask = bitarray(self.variable_mask)
+            new_mask[var] ^= 1
+            new_mask = frozenbitarray(new_mask)
+            new_vals = self.values_mask.copy()
+            new_vals[var] = val
+            return Feature(new_mask, new_vals)
+
+        return set(get_specialisation(var, val) for var, val in get_specialisation_pairs())
 
 
 

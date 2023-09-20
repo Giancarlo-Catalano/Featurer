@@ -11,9 +11,10 @@ from BenchmarkProblems.Knapsack import KnapsackConstraint
 from Version_D.Miner import Parameters, Miner
 from Version_D.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_D import MeasurableCriterion
+from Version_D.Miners.MinerUtilities import FeatureSelector, ConstructiveMiner, DestructiveMiner
 
 trap5 = TrapK.TrapK(5, 3)
-checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
+checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 almostBT = BT.BTProblem(12, 4, 56)
@@ -135,13 +136,34 @@ if __name__ == '__main__':
     print("More specifically, it is")
     print(problem.long_repr())
 
-    features = Miner.create_through_destruction(training_data, criteria_and_weights, 120)
-    features = [feature.to_legacy_feature() for feature in features]
+    selector = FeatureSelector(training_data, criteria_and_weights)
+    amount_to_keep_in_each_layer = 12
+
+    def get_miner(kind: str, stochastic:bool):
+        if kind == "Constructive":
+            return ConstructiveMiner(selector, amount_to_keep_in_each_layer,
+                                     stochastic=stochastic,
+                                     at_most_parameters=5)
+        elif kind == "Destructive":
+            return DestructiveMiner(selector, amount_to_keep_in_each_layer,
+                                    stochastic,
+                                    at_least_parameters=3)
+
+    cs_miner = get_miner("Constructive", stochastic=True)
+    ch_miner = get_miner("Constructive", stochastic=False)
+    ds_miner = get_miner("Destructive", stochastic=True)
+    dh_miner = get_miner("Destructive", stochastic=False)
+
+    miners = [cs_miner, ch_miner, ds_miner, dh_miner]
+    for miner in miners:
+        features = miner.mine_features()
+        features = [feature.to_legacy_feature() for feature in features]
+        print("features_found:")
+        pretty_print_features(problem, features)
 
 
     """features = get_features_version_D(training_data, criteria_and_weights,
                                       guaranteed_depth=1,
                                       explored_depth=5)
     """
-    print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
-    pretty_print_features(problem, features)
+
