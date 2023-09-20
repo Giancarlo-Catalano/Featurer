@@ -1,9 +1,10 @@
 import SearchSpace
 import utils
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class CheckerBoardProblem(TestableCombinatorialProblem):
     rows: int
     cols: int
 
@@ -81,3 +82,23 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
             return " ".join([cell_repr(cell) for cell in row])
 
         return "\n".join([row_repr(row) for row in as_grid])
+
+
+    def get_ideal_feature(self, ul_most_coords:int, ul_most_value:int, horizontal: bool):
+        def coords_to_index(row, col):
+            return row*self.rows + col
+
+        input_row, input_col = ul_most_coords
+
+        main_cell = (coords_to_index(input_row, input_col), ul_most_value)
+        other_cell_position = coords_to_index(input_row, input_col+1) if horizontal else coords_to_index(input_row+1, input_col)
+        other_cell = (other_cell_position, 1-ul_most_value)
+
+        return SearchSpace.Feature([main_cell, other_cell])
+
+    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+        horizontals = [self.get_ideal_feature(row, col) for row in range(self.rows)
+                       for col in range(self.cols-1)]
+        verticals = [self.get_ideal_feature(row, col) for row in range(self.rows-1)
+                     for col in range(self.cols)]
+        return horizontals + verticals
