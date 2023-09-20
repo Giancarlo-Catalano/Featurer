@@ -2,10 +2,11 @@ import random
 
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 from typing import List, Optional
 
 
-class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class ArtificialProblem(TestableCombinatorialProblem):
     """In this problem, the fitness function is given by the presence of some features"""
     """ To avoid issues, these features are guaranteed to be non-overlapping, meaning that all features are disjoint"""
     """ In other terms, no particular var-val combination is present in more than one feature. """
@@ -41,7 +42,7 @@ class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProb
             return all([self.features_are_disjoint(old_feature, new_feature) for old_feature in accumulator])
 
         attempts_until_next_reset = 1000
-        while len(accumulator) <= self.amount_of_features:
+        while len(accumulator) < self.amount_of_features:
             new_feature = self.get_random_feature()
             if self.allow_overlaps or (not self.allow_overlaps and is_eligible(new_feature)):
                 accumulator.append(new_feature)
@@ -74,7 +75,8 @@ class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProb
                 f"size_of_features = {self.size_of_features},"
                 f"allow_overlap = {self.allow_overlaps}")
 
-
+    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+        return self.important_features
 
     def long_repr(self):
         def repr_for_each_feature(feature: SearchSpace.Feature, value: int):
@@ -86,7 +88,7 @@ class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProb
                  for f, v in zip(self.important_features, self.score_for_each_feature)]))
 
     def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        return super().get_area_of_smallest_bounding_box(feature)
+        return super().get_area_of_smallest_bounding_box(feature) ** 2
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         return sum(score for feature, score in zip(self.important_features, self.score_for_each_feature)
@@ -104,3 +106,6 @@ class ArtificialProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProb
                 return f"{value}"
 
         return " ".join(repr_cell(cell) for cell in result_values)
+
+
+

@@ -1,8 +1,9 @@
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class BinValProblem(TestableCombinatorialProblem):
     amount_of_bits: int
     base: float
 
@@ -13,7 +14,6 @@ class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
 
     def __repr__(self):
         return f"BinValProblem(bits={self.amount_of_bits}, base = {self.base})"
-
 
     def long_repr(self):
         return self.__repr__()
@@ -34,3 +34,9 @@ class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
             return "-" if cell is None else str(cell)
 
         return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
+
+    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+        def feature_with_a_single_one(var_index):
+            return SearchSpace.Feature([(var_index, 1)])
+
+        return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]

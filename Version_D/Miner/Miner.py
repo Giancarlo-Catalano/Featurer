@@ -49,14 +49,14 @@ def mine_meaningful_features(ppi: PrecomputedPopulationInformation,
 
 
 def create_through_destruction(ppi: PrecomputedPopulationInformation,
-                               criteria_and_weights: MeasurableCriterion.LayerScoringCriteria):
+                               criteria_and_weights: MeasurableCriterion.LayerScoringCriteria,
+                               to_keep_in_each_layer):
     def make_layer_from_features(features: list[Feature], amount_to_keep: int) -> dict[Feature, float]:
         pfi = PrecomputedFeatureInformation(ppi, features)
         scores = MeasurableCriterion.compute_scores_for_features(pfi, criteria_and_weights)
         sorted_paired = sorted(zip(features, scores), key=utils.second, reverse=True)
         return dict(sorted_paired[:amount_to_keep])
 
-    to_keep_in_each_layer = 120
 
     initial_features = Feature.candidate_matrix_to_features(ppi.candidate_matrix, ppi.search_space)
     # initial_features = list(set(initial_features))
@@ -67,13 +67,11 @@ def create_through_destruction(ppi: PrecomputedPopulationInformation,
         new_features = utils.concat_sets(feature.get_decays() for feature in previous_features)
         return make_layer_from_features(new_features, to_keep_in_each_layer)
 
-    for _ in range(ppi.search_space.dimensions):
+    for iteration in range(ppi.search_space.dimensions):
+        print(f"We're at iteration {iteration}")
         layers.append(get_next_layer())
 
     final_features = utils.concat_lists(list(layer.keys()) for layer in layers)
     overall_layer = make_layer_from_features(final_features, to_keep_in_each_layer)
-    print(f"The final layer is")
-    for feature, score in overall_layer.items():
-        print(f"{feature}, with score {score:.2f}")
 
-    return overall_layer
+    return list(overall_layer.keys())

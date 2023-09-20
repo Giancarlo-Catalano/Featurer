@@ -17,14 +17,14 @@ checkerboard = CheckerBoard.CheckerBoardProblem(3, 3)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
 almostBT = BT.BTProblem(12, 4, 56)
-constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
-                                                BT.BTPredicate.BAD_MONDAY,
-                                                BT.BTPredicate.BAD_TUESDAY,
-                                                BT.BTPredicate.BAD_WEDNESDAY,
-                                                BT.BTPredicate.BAD_THURSDAY,
-                                                BT.BTPredicate.BAD_FRIDAY,
-                                                BT.BTPredicate.BAD_SATURDAY,
-                                                BT.BTPredicate.BAD_SUNDAY])
+constrained_BT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
+                                                 BT.BTPredicate.BAD_MONDAY,
+                                                 BT.BTPredicate.BAD_TUESDAY,
+                                                 BT.BTPredicate.BAD_WEDNESDAY,
+                                                 BT.BTPredicate.BAD_THURSDAY,
+                                                 BT.BTPredicate.BAD_FRIDAY,
+                                                 BT.BTPredicate.BAD_SATURDAY,
+                                                 BT.BTPredicate.BAD_SUNDAY])
 
 graph_colouring = GraphColouring.GraphColouringProblem(3, 10, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
@@ -112,22 +112,24 @@ def get_features_version_D(sample_data: PrecomputedPopulationInformation,
 
 
 if __name__ == '__main__':
-    problem = artificial_problem
+    problem = constrained_BT
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
-                            (MeasurableCriterion.MeanFitnessCriterion(), 3),
-                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
+                            (MeasurableCriterion.MeanFitnessCriterion(), -5),
+                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2),
+                            (MeasurableCriterion.CorrelationCriterion(), 5)]
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
 
-    Miner.create_through_destruction(training_data, criteria_and_weights)
+    features = Miner.create_through_destruction(training_data, criteria_and_weights, 120)
+    features = [feature.to_legacy_feature() for feature in features]
 
 
-    features = get_features_version_D(training_data, criteria_and_weights,
+    """features = get_features_version_D(training_data, criteria_and_weights,
                                       guaranteed_depth=1,
                                       explored_depth=5)
-
+    """
     print(f"For the problem {problem}, the found features with {criteria_and_weights = } are:")
     pretty_print_features(problem, features)
