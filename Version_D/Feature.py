@@ -1,5 +1,3 @@
-import itertools
-
 import SearchSpace
 import numpy as np
 from bitarray import bitarray, frozenbitarray
@@ -30,7 +28,7 @@ class Feature:
 
     def to_candidate(self) -> SearchSpace.Candidate:
         values = [0] * self.dimensions
-        for var, val in self.get_used_variables():
+        for var, val in self.to_var_val_pairs():
             values[var] = val
         return SearchSpace.Candidate(values)
 
@@ -90,11 +88,11 @@ class Feature:
             return False
 
         for value_here, value_there, is_set in zip(self.values_mask, other.values_mask, self.variable_mask):
-             if is_set and value_here != value_there:
+            if is_set and value_here != value_there:
                 return False
         return True
 
-        #return self.variable_mask == other.variable_mask and np.array_equal(self.values_mask, other.values_mask)
+        # return self.variable_mask == other.variable_mask and np.array_equal(self.values_mask, other.values_mask)
 
     def __repr__(self):
         result = ""
@@ -116,29 +114,27 @@ class Feature:
         value_mask = np.array(candidate.values)
         return cls(frozenbitarray(variable_mask), value_mask)
 
-
     @classmethod
     def candidate_matrix_to_features(cls, candidate_matrix: np.ndarray, search_space: SearchSpace.SearchSpace):
         values_in_hot_encoding = np.array(utils.concat_lists([list(range(cardinality))
-                                              for cardinality in search_space.cardinalities]))
+                                                              for cardinality in search_space.cardinalities]))
 
         value_matrix = np.array(candidate_matrix, dtype=int) * values_in_hot_encoding
 
         def get_values_for_variable(var_index: int):
-            start, end = search_space.precomputed_offsets[var_index:(var_index+2)]
+            start, end = search_space.precomputed_offsets[var_index:(var_index + 2)]
             return np.max(value_matrix[:, start:end], axis=1)
 
         values_for_each_candidate = np.column_stack(tuple([get_values_for_variable(var)
-                                                          for var in range(search_space.dimensions)]))
+                                                           for var in range(search_space.dimensions)]))
 
-        variable_mask = variable_mask = bitarray(search_space.dimensions)
+        variable_mask = bitarray(search_space.dimensions)
         variable_mask.setall(1)
         variable_mask = frozenbitarray(variable_mask)
 
         return [cls(variable_mask, row) for row in values_for_each_candidate]
 
-
-    def get_generalisations(self) -> set:
+    def get_generalisations(self) -> list:
         def get_decayed_masks(bitmask: frozenbitarray):
             result = []
             for index, is_set in enumerate(bitmask):
@@ -148,13 +144,13 @@ class Feature:
                     result.append(frozenbitarray(new_decay))
             return result
 
-        return {Feature(decayed_mask, self.values_mask) for decayed_mask in get_decayed_masks(self.variable_mask)}
+        return [Feature(decayed_mask, self.values_mask) for decayed_mask in get_decayed_masks(self.variable_mask)]
 
-
-    def get_specialisations(self, search_space: SearchSpace) -> set:
+    def get_specialisations(self, search_space: SearchSpace) -> list:
         def get_specialisation_pairs():
             result = []
-            for var_index, is_used, cardinality in zip(range(search_space.dimensions), self.variable_mask, search_space.cardinalities):
+            for var_index, is_used, cardinality in zip(range(search_space.dimensions), self.variable_mask,
+                                                       search_space.cardinalities):
                 if not is_used:
                     result.extend([(var_index, value) for value in range(cardinality)])
 
@@ -168,9 +164,4 @@ class Feature:
             new_vals[var] = val
             return Feature(new_mask, new_vals)
 
-        return set(get_specialisation(var, val) for var, val in get_specialisation_pairs())
-
-
-
-
-
+        return [get_specialisation(var, val) for var, val in get_specialisation_pairs()]

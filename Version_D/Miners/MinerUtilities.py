@@ -1,5 +1,4 @@
 import random
-from typing import Iterable
 
 import utils
 from Version_D.Feature import Feature
@@ -44,7 +43,7 @@ class FeatureMiner:
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement get_initial_layer")
 
-    def branch_from_feature(self, feature: Feature) -> set[Feature]:
+    def branch_from_feature(self, feature: Feature) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement branch_from_feature")
 
     def should_terminate(self, next_iteration: int):
@@ -84,7 +83,7 @@ class FeatureMiner:
     def get_next_layer(self, prev_layer: Layer) -> Layer:
         selected_features = self.select_features(prev_layer)
 
-        modified_features = utils.concat_sets(self.branch_from_feature(feature) for feature in selected_features)
+        modified_features = utils.concat_lists(self.branch_from_feature(feature) for feature in selected_features)
         return self.make_layer_by_truncation(modified_features)
 
     def mine_features(self) -> list[Feature]:
@@ -118,12 +117,12 @@ class ConstructiveMiner(FeatureMiner):
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         return [Feature.empty_feature(self.search_space)]
 
-    def branch_from_feature(self, feature: Feature) -> set[Feature]:
+    def branch_from_feature(self, feature: Feature) -> list[Feature]:
         return feature.get_specialisations(self.search_space)
 
     def should_terminate(self, next_iteration: int):
         next_amount_of_parameters = next_iteration
-        return next_iteration > self.at_most_parameters
+        return next_amount_of_parameters > self.at_most_parameters
 
 
 class DestructiveMiner(FeatureMiner):
@@ -137,7 +136,7 @@ class DestructiveMiner(FeatureMiner):
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         return Feature.candidate_matrix_to_features(ppi.candidate_matrix, self.search_space)
 
-    def branch_from_feature(self, feature: Feature) -> set[Feature]:
+    def branch_from_feature(self, feature: Feature) -> list[Feature]:
         return feature.get_generalisations()
 
     def should_terminate(self, next_iteration: int):

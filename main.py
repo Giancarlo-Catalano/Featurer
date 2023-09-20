@@ -126,7 +126,7 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
-    problem = checkerboard
+    problem = trap5
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
                             (MeasurableCriterion.MeanFitnessCriterion(), 5),
                             (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     print(problem.long_repr())
 
     selector = FeatureSelector(training_data, criteria_and_weights)
-    amount_to_keep_in_each_layer = 12
+    amount_to_keep_in_each_layer = 120
 
     def get_miner(kind: str, stochastic:bool):
         if kind == "Constructive":
@@ -147,7 +147,7 @@ if __name__ == '__main__':
         elif kind == "Destructive":
             return DestructiveMiner(selector, amount_to_keep_in_each_layer,
                                     stochastic,
-                                    at_least_parameters=3)
+                                    at_least_parameters=1)
 
     cs_miner = get_miner("Constructive", stochastic=True)
     ch_miner = get_miner("Constructive", stochastic=False)
