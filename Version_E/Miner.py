@@ -7,6 +7,8 @@ from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformatio
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 import numpy as np
 
+from SearchSpace import UserFeature
+
 Score = float
 Layer = dict[Feature, Score]
 
@@ -41,9 +43,10 @@ class FeatureMiner:
 
     def mine_features(self) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement mine_features")
-    def get_meaningful_features(self, amount_to_return: int) -> list[Feature]:
+    def get_meaningful_features(self, amount_to_return: int) -> list[UserFeature]:
         mined_features = self.mine_features()
-        return self.feature_selector.keep_best_features(mined_features, amount_to_return)
+        kept_features = self.feature_selector.keep_best_features(mined_features, amount_to_return)
+        return [feature.to_legacy_feature() for feature in kept_features]
 
 
 
