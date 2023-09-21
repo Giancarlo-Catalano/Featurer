@@ -1,3 +1,5 @@
+from typing import Optional
+
 import SearchSpace
 import numpy as np
 from bitarray import bitarray, frozenbitarray
@@ -133,6 +135,19 @@ class Feature:
         variable_mask = frozenbitarray(variable_mask)
 
         return [cls(variable_mask, row) for row in values_for_each_candidate]
+
+
+    def with_value(self, var_index: int, val: Optional[int]):
+        """returns a copy of itself, but the variable is changed to the supplied value"""
+        """if the value is None, the cell becomes unset"""
+        new_mask = bitarray(self.variable_mask)
+        new_mask[var_index] = (val is not None)
+        new_mask = frozenbitarray(new_mask)
+
+        new_values = self.values_mask.copy()
+        new_values[val] = 0 if val is None else val
+        return Feature(new_mask, new_values)
+
 
     def get_generalisations(self) -> list:
         def get_decayed_masks(bitmask: frozenbitarray):
