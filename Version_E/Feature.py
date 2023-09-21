@@ -104,8 +104,8 @@ class Feature:
 
         return result
 
-    def to_legacy_feature(self) -> SearchSpace.Feature:
-        return SearchSpace.Feature(self.to_var_val_pairs())
+    def to_legacy_feature(self) -> SearchSpace.UserFeature:
+        return SearchSpace.UserFeature(self.to_var_val_pairs())
 
     @classmethod
     def from_candidate(cls, candidate: SearchSpace.Candidate):

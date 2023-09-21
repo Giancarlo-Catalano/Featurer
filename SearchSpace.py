@@ -14,7 +14,7 @@ def value_to_string(val):
         return str(val)
 
 
-class Feature:
+class UserFeature:
     # a list of pairs (var, val)
     var_vals: list[(int, int)]
 
@@ -56,9 +56,9 @@ class Candidate:
         return self.values.__hash__()
 
     def as_feature(self):
-        return Feature([(i, v) for i, v in enumerate(self.values) if v is not None])
+        return UserFeature([(i, v) for i, v in enumerate(self.values) if v is not None])
 
-    def contains_feature(self, feature: Feature):
+    def contains_feature(self, feature: UserFeature):
         def contains_var_val(var, val):
             return self.values[var] == val
 
@@ -96,10 +96,10 @@ class SearchSpace:
     def get_all_trivial_features(self):
         all_var_val_pairs = self.get_all_var_val_pairs()
 
-        return [Feature.trivial_feature(var, val)
+        return [UserFeature.trivial_feature(var, val)
                 for (var, val) in all_var_val_pairs]
 
-    def probability_of_feature_in_uniform(self, combinatorial_feature: Feature):
+    def probability_of_feature_in_uniform(self, combinatorial_feature: UserFeature):
         result = 1
         for var, _ in combinatorial_feature.var_vals:
             result /= self.cardinalities[var]
@@ -108,14 +108,14 @@ class SearchSpace:
     def __repr__(self):
         return f"SearchSpace{self.cardinalities}"
 
-    def feature_is_complete(self, feature: Feature):
+    def feature_is_complete(self, feature: UserFeature):
         """returns true when the feature has all the variables set"""
         used_vars = [False] * self.dimensions
         for (var, _) in feature.var_vals:
             used_vars[var] = True
         return all(used_vars)
 
-    def feature_is_valid(self, feature: Feature):
+    def feature_is_valid(self, feature: UserFeature):
         value_for_each_var = [None] * self.dimensions
         for (var, val) in feature.var_vals:
             if value_for_each_var[var] is None:
@@ -124,18 +124,18 @@ class SearchSpace:
                 return False
         return True
 
-    def feature_to_candidate(self, feature: Feature) -> Candidate:
+    def feature_to_candidate(self, feature: UserFeature) -> Candidate:
         result_list = [None] * self.dimensions
         for var, val in feature.var_vals:
             result_list[var] = val
         return Candidate(tuple(result_list))
 
 
-def merge_two_features(feature_a, feature_b) -> Feature:
+def merge_two_features(feature_a, feature_b) -> UserFeature:
     def remove_duplicates(input_list: list):
         return list(set(input_list))
 
-    return Feature(remove_duplicates(feature_a.var_vals + feature_b.var_vals))
+    return UserFeature(remove_duplicates(feature_a.var_vals + feature_b.var_vals))
 
 
 def merge_two_candidates(candidate_a: Candidate, candidate_b: Candidate) -> Candidate:

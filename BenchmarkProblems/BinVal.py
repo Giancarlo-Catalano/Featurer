@@ -18,7 +18,7 @@ class BinValProblem(TestableCombinatorialProblem):
     def long_repr(self):
         return self.__repr__()
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         return super().get_area_of_smallest_bounding_box(feature)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
@@ -35,8 +35,8 @@ class BinValProblem(TestableCombinatorialProblem):
 
         return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
 
-    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
         def feature_with_a_single_one(var_index):
-            return SearchSpace.Feature([(var_index, 1)])
+            return SearchSpace.UserFeature([(var_index, 1)])
 
         return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]

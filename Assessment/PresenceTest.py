@@ -1,7 +1,7 @@
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, which_ideals_are_present
-from SearchSpace import Feature
+from SearchSpace import UserFeature
 
-PresenceDict = dict[Feature, bool]
+PresenceDict = dict[UserFeature, bool]
 
 
 def count_how_many_were_present(problem: TestableCombinatorialProblem, presence_dict: PresenceDict):

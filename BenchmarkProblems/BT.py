@@ -181,7 +181,7 @@ class BTProblem(CombinatorialProblem):
     def long_repr(self):
         return f"The workers and their options are:\n\t" + "\n\t".join([f"{worker}" for worker in self.workers])
 
-    def get_rotas_in_feature(self, feature: SearchSpace.Feature) -> list[WorkerRota]:
+    def get_rotas_in_feature(self, feature: SearchSpace.UserFeature) -> list[WorkerRota]:
         return [self.workers[worker_index].options[which_rota]
                 for worker_index, which_rota in feature.var_vals]
 
@@ -193,7 +193,7 @@ class BTProblem(CombinatorialProblem):
         return [worker.get_effective_rota_from_indices(which_rota, starting_day)
                 for (worker, (which_rota, starting_day)) in zip(self.workers, rota_choices_and_starts)]
 
-    def break_feature_by_worker(self, feature: SearchSpace.Feature) -> list[(Optional[int], Optional[int])]:
+    def break_feature_by_worker(self, feature: SearchSpace.UserFeature) -> list[(Optional[int], Optional[int])]:
         result: list[[Optional[int], Optional[int]]] = [[None, None] for _ in self.workers]
 
         # the items are lists of 2 values rather than tuples, because they will be mutated
@@ -226,7 +226,7 @@ class BTProblem(CombinatorialProblem):
     def get_ranges_for_candidate(self, candidate: SearchSpace.Candidate) -> list[float]:
         return self.get_ranges_for_rotas(self.get_rotas_in_candidate(candidate))
 
-    def feature_repr(self, feature: SearchSpace.Feature) -> str:
+    def feature_repr(self, feature: SearchSpace.UserFeature) -> str:
 
         def get_usable_rota_from_worker_parameters(worker, rota_index, starting_day) -> Optional[WorkerRota]:
             if rota_index is not None:
@@ -305,7 +305,7 @@ class BTProblem(CombinatorialProblem):
 
         return range_score - weight_of_preference * preference_score
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature) -> float:
         # order of preference:
         # nothing at all: bestest
         # worker with a rota and starting day: best
@@ -424,7 +424,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         return SearchSpace.Candidate([int(result_of_predicate(predicate)) for predicate in self.predicates])
 
-    def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
+    def predicate_feature_repr(self, predicates: SearchSpace.UserFeature) -> str:
 
         def repr_predicate(predicate: BTPredicate, value):
             if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
@@ -450,7 +450,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         else:
             return normal_score
 
-    def get_complexity_of_predicates(self, predicates: SearchSpace.Feature):
+    def get_complexity_of_predicates(self, predicates: SearchSpace.UserFeature):
         def complexity_of_predicate(predicate, value):
             if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return 2 if value else 20
@@ -465,8 +465,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         else:
             return 0
 
-    def get_complexity_of_partial_solution(self, partial_solution: SearchSpace.Feature):
-        def get_amount_of_workers_involved(feature: SearchSpace.Feature):
+    def get_complexity_of_partial_solution(self, partial_solution: SearchSpace.UserFeature):
+        def get_amount_of_workers_involved(feature: SearchSpace.UserFeature):
             which_workers_are_present: list[bool] = [False]*self.original_problem.total_workers
             for var, val in partial_solution.var_vals:
                 which_workers_are_present[var // 2] = True
@@ -476,7 +476,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         ideal_amount_of_workers = 3
         return abs(get_amount_of_workers_involved(partial_solution) - ideal_amount_of_workers) * 5
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         partial_solution_parameters, descriptors_partial_solution = super().split_feature(feature)
         predicates_are_present = super().amount_of_set_values_in_feature(descriptors_partial_solution) > 0
 

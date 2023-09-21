@@ -25,7 +25,7 @@ class CombinatorialProblem:
     def feature_repr(self, feature) -> str:
         raise Exception("A class extending CombinatorialProblem does not implement .feature_repr(f)!")
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """Returns a value which increases as the complexity increases"""
         raise Exception("A class extending CombinatorialProblem does not implement .get_complexity_of_feature(f)!")
 
@@ -49,7 +49,7 @@ class CombinatorialProblem:
     def get_amount_of_bits_when_hot_encoded(self):
         return self.search_space.total_cardinality
 
-    def amount_of_set_values_in_feature(self, feature: SearchSpace.Feature):
+    def amount_of_set_values_in_feature(self, feature: SearchSpace.UserFeature):
         return len(feature.var_vals)
 
     def get_leftmost_and_rightmost_set_variable(self, feature):
@@ -63,7 +63,7 @@ class CombinatorialProblem:
         leftmost, rightmost = self.get_leftmost_and_rightmost_set_variable(feature)
         return rightmost - leftmost + 1
 
-    def get_positional_values(self, feature: SearchSpace.Feature):
+    def get_positional_values(self, feature: SearchSpace.UserFeature):
         positional_values = [None] * self.search_space.dimensions
         for var, val in feature.var_vals:
             positional_values[var] = val
@@ -75,14 +75,14 @@ class CombinatorialProblem:
 
 
 class TestableCombinatorialProblem(CombinatorialProblem):
-    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
         raise Exception("An implementation of TestableCombinatorialProblem does not implement get_ideal_features")
 
 
 
 def which_ideals_are_present(problem: TestableCombinatorialProblem,
                              function_which_obtains_features,
-                             truncate_at: int) -> dict[SearchSpace.Feature, bool]:
+                             truncate_at: int) -> dict[SearchSpace.UserFeature, bool]:
     """returns the amount of ideal features that were found by the algorithm"""
     found_features, scores = function_which_obtains_features(problem)
     # assumes that the features are ordered

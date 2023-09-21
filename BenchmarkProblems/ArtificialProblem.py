@@ -18,7 +18,7 @@ class ArtificialProblem(TestableCombinatorialProblem):
     size_of_features: int
     allow_overlaps: bool
 
-    important_features: list[SearchSpace.Feature]
+    important_features: list[SearchSpace.UserFeature]
     score_for_each_feature: list[int]
 
 
@@ -26,19 +26,19 @@ class ArtificialProblem(TestableCombinatorialProblem):
         value = random.randrange(2)
         start = random.randrange(self.amount_of_bits-self.size_of_features)
         which_vars = [start+offset for offset in range(self.size_of_features)]
-        feature = SearchSpace.Feature([(var, value) for var in which_vars])
+        feature = SearchSpace.UserFeature([(var, value) for var in which_vars])
         return feature
 
-    def features_are_disjoint(self, feature_a: SearchSpace.Feature, feature_b: SearchSpace.Feature):
+    def features_are_disjoint(self, feature_a: SearchSpace.UserFeature, feature_b: SearchSpace.UserFeature):
             var_vals_a = set(feature_a.var_vals)
             var_vals_b = set(feature_b.var_vals)
             overlap = var_vals_a.intersection(var_vals_b)
             return len(overlap) == 0
 
 
-    def generate_features(self) -> list[SearchSpace.Feature]:
+    def generate_features(self) -> list[SearchSpace.UserFeature]:
         accumulator = []
-        def is_eligible(new_feature: SearchSpace.Feature):
+        def is_eligible(new_feature: SearchSpace.UserFeature):
             return all([self.features_are_disjoint(old_feature, new_feature) for old_feature in accumulator])
 
         attempts_until_next_reset = 1000
@@ -75,11 +75,11 @@ class ArtificialProblem(TestableCombinatorialProblem):
                 f"size_of_features = {self.size_of_features},"
                 f"allow_overlap = {self.allow_overlaps}")
 
-    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
         return self.important_features
 
     def long_repr(self):
-        def repr_for_each_feature(feature: SearchSpace.Feature, value: int):
+        def repr_for_each_feature(feature: SearchSpace.UserFeature, value: int):
             return f"\t{self.feature_repr(feature)}, value = {value}"
 
 
@@ -87,14 +87,14 @@ class ArtificialProblem(TestableCombinatorialProblem):
                 "\n".join([repr_for_each_feature(f, v)
                  for f, v in zip(self.important_features, self.score_for_each_feature)]))
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         return super().get_area_of_smallest_bounding_box(feature) ** 2
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         return sum(score for feature, score in zip(self.important_features, self.score_for_each_feature)
                    if candidate.contains_feature(feature))
 
-    def feature_repr(self, feature: SearchSpace.Feature):
+    def feature_repr(self, feature: SearchSpace.UserFeature):
         result_values = [None] * self.amount_of_bits
         for var, val in feature.var_vals:
             result_values[var] = val

@@ -33,7 +33,7 @@ class CheckerBoardProblem(TestableCombinatorialProblem):
         return min(rows_used), max(rows_used) + 1, \
             min(cols_used), max(cols_used) + 1
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """returns area of bounding box / area of board"""
 
         if len(feature.var_vals) == 0:
@@ -93,9 +93,9 @@ class CheckerBoardProblem(TestableCombinatorialProblem):
         other_cell_position = coords_to_index(input_row, input_col+1) if horizontal else coords_to_index(input_row+1, input_col)
         other_cell = (other_cell_position, 1-ul_most_value)
 
-        return SearchSpace.Feature([main_cell, other_cell])
+        return SearchSpace.UserFeature([main_cell, other_cell])
 
-    def get_ideal_features(self) -> list[SearchSpace.Feature]:
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
         horizontals = [self.get_ideal_feature(row, col, value, horizontal=True) for row in range(self.rows)
                        for col in range(self.cols-1)
                        for value in range(2)]

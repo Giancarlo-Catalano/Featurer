@@ -56,7 +56,7 @@ class GraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combinatorial
 
         return "Connected pairs:" + ", ".join([repr_pair(*pair) for pair in self.connected_pairs])
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """returns area of bounding box / area of board"""
         amount_of_set_vars = super().amount_of_set_values_in_feature(feature)
         amount_of_distinct_colours = len(set([val for var, val in feature.var_vals]))

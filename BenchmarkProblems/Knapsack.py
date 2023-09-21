@@ -87,10 +87,10 @@ class KnapsackProblem(CombinatorialProblem):
     def __repr__(self):
         return f"Knapsack({self.expected_price}, {self.expected_weight}, {self.expected_volume})"
 
-    def feature_as_bools(self, feature: SearchSpace.Feature) -> list[Optional[bool]]:
+    def feature_as_bools(self, feature: SearchSpace.UserFeature) -> list[Optional[bool]]:
         return [None if value is None else bool(value) for value in super().get_positional_values(feature)]
 
-    def feature_repr(self, feature: SearchSpace.Feature):
+    def feature_repr(self, feature: SearchSpace.UserFeature):
         present_items, absent_items = self.divide_feature_items_by_presence(feature)
         result = ""
         if len(present_items) > 0:
@@ -118,7 +118,7 @@ class KnapsackProblem(CombinatorialProblem):
 
         return present, absent
 
-    def divide_feature_items_by_presence(self, feature: SearchSpace.Feature) -> (list[Item], list[Item]):
+    def divide_feature_items_by_presence(self, feature: SearchSpace.UserFeature) -> (list[Item], list[Item]):
         present = []
         absent = []
 
@@ -156,7 +156,7 @@ class KnapsackProblem(CombinatorialProblem):
                                                        [self.expected_price, self.expected_weight,
                                                         self.expected_volume]))
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         return (super().amount_of_set_values_in_feature(feature) + 1) // 2
 
 
@@ -259,7 +259,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
 
         return SearchSpace.Candidate(tuple(value_for_need(need) for need in self.needs))
 
-    def predicate_feature_repr(self, constraint: SearchSpace.Feature) -> str:
+    def predicate_feature_repr(self, constraint: SearchSpace.UserFeature) -> str:
 
         yes = "✓"
         no = "⤬"
@@ -267,7 +267,7 @@ class ConstrainedKnapsackProblem(CombinatorialConstrainedProblem):
         return ", ".join(f"{self.needs[need_index]}({yes if satisfied else no})"
                          for (need_index, satisfied) in constraint.var_vals)
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature) -> float:
         parameters, predicates = super().split_feature(feature)
         amount_of_parameters = super().amount_of_set_values_in_feature(parameters)
         amount_of_predicates = super().amount_of_set_values_in_feature(predicates)
