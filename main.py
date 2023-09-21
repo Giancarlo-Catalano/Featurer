@@ -1,6 +1,5 @@
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
-import HotEncoding
 import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 from Version_E import MeasurableCriterion
@@ -46,14 +45,10 @@ def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
     return PrecomputedPopulationInformation(problem.search_space, training_samples, fitness_list)
 
 
-def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
-                          combinatorial=True):
+def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False):
     """prints the passed features, following the structure specified by the problem"""
-    hot_encoder = HotEncoding.HotEncoder(problem.search_space)
-
     def print_feature_only(feature):
-        featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
-        print(f"{problem.feature_repr(featureC)}")
+        print(f"{problem.feature_repr(feature)}")
 
     def print_with_or_without_score(maybe_pair):
         if with_scores:
@@ -82,7 +77,9 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
-    problem = trap5
+    show_all_ideals()
+
+    problem = artificial_problem
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
                             (MeasurableCriterion.MeanFitnessCriterion(), 5),
                             (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
@@ -93,27 +90,23 @@ if __name__ == '__main__':
     print(problem.long_repr())
 
     selector = FeatureSelector(training_data, criteria_and_weights)
-    amount_to_keep_in_each_layer = 120
 
-
-    def get_miner(kind: str, stochastic: bool):
+    def get_miner(kind: str, stochastic: bool, population_size: int):
         if kind == "Constructive":
-            return ConstructiveMiner(selector, amount_to_keep_in_each_layer,
+            return ConstructiveMiner(selector, population_size,
                                      stochastic=stochastic,
                                      at_most_parameters=5)
         elif kind == "Destructive":
-            return DestructiveMiner(selector, amount_to_keep_in_each_layer,
+            return DestructiveMiner(selector, population_size,
                                     stochastic,
                                     at_least_parameters=1)
 
+    miners = [get_miner(kind, stochastic, population_size)
+              for kind in ["Constructive", "Destructive"]
+              for stochastic in [True, False]
+              for population_size in [30, 50, 100, 300]]
 
-    cs_miner = get_miner("Constructive", stochastic=True)
-    ch_miner = get_miner("Constructive", stochastic=False)
-    ds_miner = get_miner("Destructive", stochastic=True)
-    dh_miner = get_miner("Destructive", stochastic=False)
-
-    miners = [cs_miner, ch_miner, ds_miner, dh_miner]
-    for miner in miners:
+    for miner in miners[0:1]:
         features = miner.mine_features()
         features = [feature.to_legacy_feature() for feature in features]
         print("features_found:")
