@@ -165,3 +165,17 @@ class Feature:
             return Feature(new_mask, new_vals)
 
         return [get_specialisation(var, val) for var, val in get_specialisation_pairs()]
+
+    def get_variations(self, search_space: SearchSpace):
+        """returns copies of itself, but one of the values has been changed"""
+
+        def self_but_with_variation(var_index, val):
+            result_mask = self.variable_mask
+            value_mask = self.values_mask.copy()
+            value_mask[var_index] = val
+            return Feature(result_mask, value_mask)
+
+        return [self_but_with_variation(var_index, alternative)
+                for var_index in range(search_space.dimensions)
+                for alternative in range(search_space.cardinalities[var_index])
+                if alternative != self.values_mask[var_index]]
