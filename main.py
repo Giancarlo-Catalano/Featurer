@@ -4,7 +4,7 @@ import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 from Version_E import MeasurableCriterion
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.MinerUtilities import FeatureSelector, ConstructiveMiner, DestructiveMiner
+from Version_E.Miner import FeatureSelector, ConstructiveMiner, DestructiveMiner
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
