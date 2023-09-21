@@ -1,11 +1,12 @@
 import random
 
-from SearchSpace import SearchSpace, Candidate, UserFeature
-from Version_E.Miner import FeatureSelector, FeatureMiner
-from Version_E.Feature import Feature
-from bitarray import bitarray, frozenbitarray
-from bitarray.util import urandom
 import numpy as np
+from bitarray import frozenbitarray
+from bitarray.util import urandom
+
+from SearchSpace import SearchSpace
+from Version_E.Feature import Feature
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector, FeatureMiner
 
 
 def random_feature_in_search_space(search_space: SearchSpace) -> Feature:

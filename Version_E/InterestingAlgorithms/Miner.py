@@ -43,12 +43,12 @@ class FeatureMiner:
 
     def mine_features(self) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement mine_features")
+
     def get_meaningful_features(self, amount_to_return: int) -> list[UserFeature]:
         mined_features = self.mine_features()
-        kept_features = self.feature_selector.keep_best_features(mined_features, amount_to_return)
+        kept_features_with_scores = self.feature_selector.keep_best_features(mined_features, amount_to_return)
+        kept_features, scores = utils.unzip(kept_features_with_scores)
         return [feature.to_legacy_feature() for feature in kept_features]
-
-
 
 
 class LayeredFeatureMiner(FeatureMiner):
@@ -121,43 +121,4 @@ class LayeredFeatureMiner(FeatureMiner):
             layers.append(self.get_next_layer(layers[-1]))
 
         final_features = utils.concat_lists(list(layer.keys()) for layer in layers)
-        kept_features, _ = utils.unzip(self.feature_selector.keep_best_features(final_features, amount_to_return))
-        return kept_features
-
-
-class ConstructiveMiner(LayeredFeatureMiner):
-    at_most_parameters: int
-
-    def __init__(self, selector: FeatureSelector, amount_to_keep_in_each_layer: int, stochastic: bool,
-                 at_most_parameters: int):
-        super().__init__(selector, amount_to_keep_in_each_layer, stochastic)
-        self.at_most_parameters = at_most_parameters
-
-    def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
-        return [Feature.empty_feature(self.search_space)]
-
-    def branch_from_feature(self, feature: Feature) -> list[Feature]:
-        return feature.get_specialisations(self.search_space)
-
-    def should_terminate(self, next_iteration: int):
-        next_amount_of_parameters = next_iteration
-        return next_amount_of_parameters > self.at_most_parameters
-
-
-class DestructiveMiner(LayeredFeatureMiner):
-    at_least_parameters: int
-
-    def __init__(self, selector: FeatureSelector, amount_to_keep_in_each_layer: int, stochastic: bool,
-                 at_least_parameters: int):
-        super().__init__(selector, amount_to_keep_in_each_layer, stochastic)
-        self.at_least_parameters = at_least_parameters
-
-    def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
-        return Feature.candidate_matrix_to_features(ppi.candidate_matrix, self.search_space)
-
-    def branch_from_feature(self, feature: Feature) -> list[Feature]:
-        return feature.get_generalisations()
-
-    def should_terminate(self, next_iteration: int):
-        next_amount_of_parameters = self.search_space.dimensions - next_iteration
-        return next_amount_of_parameters < self.at_least_parameters
+        return final_features

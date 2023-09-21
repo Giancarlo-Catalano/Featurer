@@ -4,7 +4,9 @@ import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
 from Version_E import MeasurableCriterion
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.Miner import FeatureSelector, ConstructiveMiner, DestructiveMiner
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector
+from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
+from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
@@ -39,9 +41,6 @@ def get_random_candidates_and_fitnesses(problem: CombinatorialProblem.Combinator
 def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
                       sample_size) -> PrecomputedPopulationInformation:
     training_samples, fitness_list = get_random_candidates_and_fitnesses(problem, sample_size)
-    # print("The generated samples are:")
-    # for sample, fitness in zip(training_samples, fitness_list):
-    #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness:.2f})")
     return PrecomputedPopulationInformation(problem.search_space, training_samples, fitness_list)
 
 
@@ -77,8 +76,6 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
-    show_all_ideals()
-
     problem = artificial_problem
     criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
                             (MeasurableCriterion.MeanFitnessCriterion(), 5),
@@ -107,12 +104,7 @@ if __name__ == '__main__':
               for population_size in [30, 50, 100, 300]]
 
     for miner in miners[0:1]:
-        features = miner.mine_features()
-        features = [feature.to_legacy_feature() for feature in features]
+        features = miner.get_meaningful_features(12)
         print("features_found:")
         pretty_print_features(problem, features)
 
-    """features = get_features_version_D(training_data, criteria_and_weights,
-                                      guaranteed_depth=1,
-                                      explored_depth=5)
-    """
