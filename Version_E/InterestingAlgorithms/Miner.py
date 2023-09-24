@@ -2,7 +2,7 @@ import random
 
 import utils
 from Version_E.Feature import Feature
-from Version_E.MeasurableCriterion import LayerScoringCriteria, compute_scores_for_features
+from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 import numpy as np
@@ -15,15 +15,15 @@ Layer = dict[Feature, Score]
 
 class FeatureSelector:
     ppi: PrecomputedPopulationInformation
-    criteria_and_weights: LayerScoringCriteria
+    criterion: MeasurableCriterion
 
-    def __init__(self, ppi: PrecomputedPopulationInformation, criteria_and_weights: LayerScoringCriteria):
+    def __init__(self, ppi: PrecomputedPopulationInformation, criterion: MeasurableCriterion):
         self.ppi = ppi
-        self.criteria_and_weights = criteria_and_weights
+        self.criterion = criterion
 
     def get_scores(self, features: list[Feature]) -> np.ndarray:
         pfi = PrecomputedFeatureInformation(self.ppi, features)
-        return compute_scores_for_features(pfi, self.criteria_and_weights)
+        return self.criterion.get_score_array(pfi)
 
     def keep_best_features(self, features: list[Feature], amount_to_keep: int) -> list[(Feature, Score)]:
         scores = self.get_scores(features)

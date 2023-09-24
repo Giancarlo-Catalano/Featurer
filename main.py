@@ -2,7 +2,9 @@ from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
-from Version_E import MeasurableCriterion
+from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance
+from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
+from Version_E.MeasurableCriterion.Explainability import Explainability
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
@@ -77,16 +79,19 @@ def show_all_ideals():
 if __name__ == '__main__':
 
     problem = artificial_problem
-    criteria_and_weights = [(MeasurableCriterion.explainability_of(problem), 5),
-                            (MeasurableCriterion.MeanFitnessCriterion(), 5),
-                            (MeasurableCriterion.FitnessConsistencyCriterion(), 2)]
+    is_explainable = Explainability(problem)
+    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()],
+                                            weights = [3, 1])
+
+    criterion = Balance([is_explainable, has_high_fitness_consistently],
+                        weights=[1, 2])
 
     training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
 
-    selector = FeatureSelector(training_data, criteria_and_weights)
+    selector = FeatureSelector(training_data, criterion)
 
     def get_miner(kind: str, stochastic: bool, population_size: int):
         if kind == "Constructive":
@@ -99,11 +104,11 @@ if __name__ == '__main__':
                                     at_least_parameters=1)
 
     miners = [get_miner(kind, stochastic, population_size)
-              for kind in ["Constructive", "Destructive"]
+              for kind in ["Destructive", "Constructive"]
               for stochastic in [True, False]
-              for population_size in [30, 50, 100, 300]]
+              for population_size in [30, 50, 100]]
 
-    for miner in miners[0:1]:
+    for miner in miners:
         features = miner.get_meaningful_features(12)
         print("features_found:")
         pretty_print_features(problem, features)
