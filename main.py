@@ -106,7 +106,7 @@ if __name__ == '__main__':
     miners = [get_miner(kind, stochastic, population_size)
               for kind in ["Destructive", "Constructive"]
               for stochastic in [True, False]
-              for population_size in [30, 50, 100]]
+              for population_size in [30, 50]]
 
     for miner in miners:
         features = miner.get_meaningful_features(12)
