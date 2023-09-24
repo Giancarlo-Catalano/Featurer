@@ -10,7 +10,6 @@ import numpy as np
 from SearchSpace import UserFeature
 
 Score = float
-Layer = dict[Feature, Score]
 
 
 class FeatureSelector:
@@ -51,6 +50,9 @@ class FeatureMiner:
         return [feature.to_legacy_feature() for feature in kept_features]
 
 
+Layer = list[(Feature, Score)]
+
+
 class LayeredFeatureMiner(FeatureMiner):
     amount_to_keep_in_each_layer: int
     stochastic: bool
@@ -70,15 +72,14 @@ class LayeredFeatureMiner(FeatureMiner):
         raise Exception("An implementation of FeatureMixer does not implement should_terminate")
 
     def make_layer(self, features: list[Feature]) -> Layer:
-        return dict(zip(features, self.feature_selector.get_scores(features)))
+        return list(zip(features, self.feature_selector.get_scores(features)))
 
     def keep_top_features_and_make_layer(self, features: list[Feature], amount_to_keep: int) -> Layer:
-        selected_with_scores = self.feature_selector.keep_best_features(features, amount_to_keep)
-        return dict(selected_with_scores)
+        return self.feature_selector.keep_best_features(features, amount_to_keep)
 
     def choose_features_stochastically(self, previous_layer: Layer) -> set[Feature]:
         tournament_size = 30
-        features_with_scores = list(previous_layer.items())
+        features_with_scores = previous_layer
         weights = utils.unzip(features_with_scores)[1]
 
         def tournament_select() -> Feature:
@@ -91,25 +92,26 @@ class LayeredFeatureMiner(FeatureMiner):
 
         return selected
 
-    def select_features(self, previous_layer):
+    def select_features(self, previous_layer) -> set[Feature]:
         if len(previous_layer) <= self.amount_to_keep_in_each_layer:
-            return set(previous_layer.keys())
+            return set(utils.unzip(previous_layer)[0])
 
         if self.stochastic:
             return self.choose_features_stochastically(previous_layer)
         else:
-            return set(previous_layer.keys())
+            return set(utils.unzip(previous_layer)[0])
 
     def get_next_layer(self, prev_layer: Layer) -> Layer:
-        selected_features = self.select_features(prev_layer)
+        selected_features: set[Feature] = self.select_features(prev_layer)
 
         modified_features = utils.concat_lists(self.branch_from_feature(feature) for feature in selected_features)
-        return self.keep_top_features_and_make_layer(modified_features, self.amount_to_keep_in_each_layer)
+        culled_features = list(set(modified_features))
+        return self.keep_top_features_and_make_layer(culled_features, self.amount_to_keep_in_each_layer)
 
     def mine_features(self) -> list[Feature]:
         initial_features = self.get_initial_features(self.feature_selector.ppi)
         initial_layer = self.make_layer(initial_features)
-        layers: list[dict[Feature, float]] = [initial_layer]
+        layers: list[Layer] = [initial_layer]
 
         iteration = 0
         while True:
@@ -120,5 +122,7 @@ class LayeredFeatureMiner(FeatureMiner):
 
             layers.append(self.get_next_layer(layers[-1]))
 
-        final_features = utils.concat_lists(list(layer.keys()) for layer in layers)
+        final_features = [feature
+                          for layer in layers
+                          for feature, score in layer]
         return final_features

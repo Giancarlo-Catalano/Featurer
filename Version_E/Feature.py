@@ -86,9 +86,15 @@ class Feature:
         return var_hash + val_hash
 
     def __eq__(self, other) -> bool:
+        # short circuit on active variables
         if self.variable_mask != other.variable_mask:
             return False
 
+        # shortcut on completely set features
+        if self.variable_mask.all():
+            return np.array_equal(self.values_mask, other.values_mask)
+
+        # full equality check
         for value_here, value_there, is_set in zip(self.values_mask, other.values_mask, self.variable_mask):
             if is_set and value_here != value_there:
                 return False

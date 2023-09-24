@@ -80,13 +80,11 @@ if __name__ == '__main__':
 
     problem = artificial_problem
     is_explainable = Explainability(problem)
-    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()],
-                                            weights = [3, 1])
+    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[0, 6])
 
-    criterion = Balance([is_explainable, has_high_fitness_consistently],
-                        weights=[1, 2])
+    criterion = Balance([is_explainable, has_high_fitness_consistently], weights=[1, 2])
 
-    training_data = get_training_data(problem, sample_size=1200)
+    training_data = get_training_data(problem, sample_size=3000)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
