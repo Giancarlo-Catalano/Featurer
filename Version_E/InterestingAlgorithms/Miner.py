@@ -1,4 +1,5 @@
 import random
+from typing import Iterable
 
 import utils
 from Version_E.Feature import Feature
@@ -43,11 +44,38 @@ class FeatureMiner:
     def mine_features(self) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement mine_features")
 
-    def get_meaningful_features(self, amount_to_return: int) -> list[UserFeature]:
+    def cull_subsets(self, features: list[Feature]) -> list[(Feature, Score)]:
+        #TODO this is not working as intended, some subsets are still present at the end!!
+        kept = []
+
+        def consider_feature(feature: Feature, score: Score):
+            was_subset = False
+            for index, (other_feature, other_score) in enumerate(kept):
+                if feature.is_subset_of(other_feature) or other_feature.is_subset_of(feature):
+                    if score > other_score:
+                        kept[index] = feature, score
+                    was_subset = True
+            if not was_subset:
+                kept.append((feature, score))
+
+        scores = self.feature_selector.get_scores(features)
+        for feature, score in zip(features, scores):
+            consider_feature(feature, score)
+
+        return kept
+
+
+    def get_meaningful_features(self, amount_to_return: int, cull_subsets=True) -> list[UserFeature]:
         mined_features = self.mine_features()
-        kept_features_with_scores = self.feature_selector.keep_best_features(mined_features, amount_to_return)
-        kept_features, scores = utils.unzip(kept_features_with_scores)
-        return [feature.to_legacy_feature() for feature in kept_features]
+        if cull_subsets:
+            culled_features = self.cull_subsets(mined_features)
+        else:
+            culled_features = zip(mined_features, self.feature_selector.get_scores(mined_features))
+
+
+        kept_features_with_scores = sorted(culled_features, key=utils.second, reverse=True)[:amount_to_return]
+        return [feature.to_legacy_feature()
+                for feature, score in kept_features_with_scores]
 
 
 Layer = list[(Feature, Score)]

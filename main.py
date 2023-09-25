@@ -80,9 +80,9 @@ if __name__ == '__main__':
 
     problem = artificial_problem
     is_explainable = Explainability(problem)
-    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[0, 6])
+    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[2, 6])
 
-    criterion = Balance([is_explainable, has_high_fitness_consistently], weights=[1, 2])
+    criterion = All([is_explainable, has_high_fitness_consistently])
 
     training_data = get_training_data(problem, sample_size=3000)
     print(f"The problem is {problem}")
@@ -107,7 +107,7 @@ if __name__ == '__main__':
               for population_size in [30, 50]]
 
     for miner in miners:
-        features = miner.get_meaningful_features(12)
+        features = miner.get_meaningful_features(12, cull_subsets=True)
         print("features_found:")
         pretty_print_features(problem, features)
 
