@@ -45,7 +45,7 @@ class FeatureMiner:
         raise Exception("An implementation of FeatureMiner does not implement mine_features")
 
     def cull_subsets(self, features: list[Feature]) -> list[(Feature, Score)]:
-        #TODO this is not working as intended, some subsets are still present at the end!!
+        #TODO this is not working as intended, some subsets are still present at the end!!!
         kept = []
 
         def consider_feature(feature: Feature, score: Score):
