@@ -49,14 +49,12 @@ class FeatureMiner:
         kept = []
 
         def consider_feature(feature: Feature, score: Score):
-            was_subset = False
             for index, (other_feature, other_score) in enumerate(kept):
                 if feature.is_subset_of(other_feature) or other_feature.is_subset_of(feature):
                     if score > other_score:
                         kept[index] = feature, score
-                    was_subset = True
-            if not was_subset:
-                kept.append((feature, score))
+                    return
+            kept.append((feature, score))
 
         scores = self.feature_selector.get_scores(features)
         for feature, score in zip(features, scores):
@@ -138,7 +136,7 @@ class LayeredFeatureMiner(FeatureMiner):
 
     def mine_features(self) -> list[Feature]:
         initial_features = self.get_initial_features(self.feature_selector.ppi)
-        initial_layer = self.make_layer(initial_features)
+        initial_layer = self.feature_selector.keep_best_features(initial_features, amount_to_keep=self.amount_to_keep_in_each_layer)
         layers: list[Layer] = [initial_layer]
 
         iteration = 0
