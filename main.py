@@ -78,9 +78,9 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
-    problem = artificial_problem
+    problem = graph_colouring
     is_explainable = Explainability(problem)
-    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[2, 6])
+    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[3, 6])
 
     criterion = All([is_explainable, has_high_fitness_consistently])
 
@@ -104,9 +104,9 @@ if __name__ == '__main__':
     miners = [get_miner(kind, stochastic, population_size)
               for kind in ["Destructive", "Constructive"]
               for stochastic in [True, False]
-              for population_size in [36, 50]]
+              for population_size in [72]]
 
-    for miner in miners:
+    for miner in miners[0:1]:
         features = miner.get_meaningful_features(12, cull_subsets=True)
         print("features_found:")
         pretty_print_features(problem, features)

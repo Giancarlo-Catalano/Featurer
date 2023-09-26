@@ -21,7 +21,7 @@ def get_mean_of_fuzzy_match_matrix(fuzzy_matrix: np.ndarray, pfi: PrecomputedFea
     return utils.divide_arrays_safely(sum_of_fitnesses, count_for_each_feature)
 
 
-class RobustnessCriterion(MeasurableCriterion):
+class Robustness(MeasurableCriterion):
     min_amount_of_differences: int
     max_amount_of_differences: int
 

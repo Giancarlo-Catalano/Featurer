@@ -8,7 +8,7 @@ from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterio
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from SearchSpace import SearchSpace
 
-class ProportionCriterion(MeasurableCriterion):
+class Commonality(MeasurableCriterion):
     def __init__(self):
         pass
 
@@ -44,7 +44,7 @@ def signed_chi_squared(observed, expected):
     return (signed_squared(observed - expected)) / expected
 
 
-class PopularityCriterion(MeasurableCriterion):
+class Overrepresentation(MeasurableCriterion):
     relative_to_uniform: bool
 
     def __init__(self, relative_to_uniform_distribution=True):
