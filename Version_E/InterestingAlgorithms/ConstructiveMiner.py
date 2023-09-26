@@ -11,6 +11,11 @@ class ConstructiveMiner(LayeredFeatureMiner):
         super().__init__(selector, amount_to_keep_in_each_layer, stochastic)
         self.at_most_parameters = at_most_parameters
 
+    def __repr__(self):
+        return (f"Constructive(population = {self.amount_to_keep_in_each_layer}, "
+                f"stochastic = {self.stochastic}, "
+                f"at_most = {self.at_most_parameters})")
+
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         return [Feature.empty_feature(self.search_space)]
 

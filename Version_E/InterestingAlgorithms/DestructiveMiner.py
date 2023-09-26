@@ -11,6 +11,11 @@ class DestructiveMiner(LayeredFeatureMiner):
         super().__init__(selector, amount_to_keep_in_each_layer, stochastic)
         self.at_least_parameters = at_least_parameters
 
+    def __repr__(self):
+        return (f"Destructive(population = {self.amount_to_keep_in_each_layer}, "
+                f"stochastic = {self.stochastic},"
+                f"at_least = {self.at_least_parameters})")
+
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         return Feature.candidate_matrix_to_features(ppi.candidate_matrix, self.search_space)
 

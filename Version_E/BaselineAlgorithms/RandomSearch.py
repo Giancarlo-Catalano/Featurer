@@ -26,5 +26,8 @@ class RandomSearch(FeatureMiner):
         super().__init__(selector)
         self.amount_to_generate = amount_to_generate
 
+    def __repr__(self):
+        return f"RandomSearch(population = {self.amount_to_generate}"
+
     def mine_features(self) -> list[Feature]:
         return [random_feature_in_search_space(self.search_space) for _ in range(self.amount_to_generate)]

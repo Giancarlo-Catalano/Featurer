@@ -12,6 +12,9 @@ class HillClimber(FeatureMiner):
         super().__init__(selector)
         self.amount_to_generate = amount_to_generate
 
+    def __repr__(self):
+        return f"RandomSearch(population = {self.amount_to_generate}"
+
     def get_mutations_of_feature(self, feature: Feature) -> list[Feature]:
         return (feature.get_generalisations() +
                 feature.get_specialisations(self.search_space) +

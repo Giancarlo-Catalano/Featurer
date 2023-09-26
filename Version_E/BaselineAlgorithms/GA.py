@@ -22,6 +22,11 @@ class GAMiner(FeatureMiner):
         self.population_size = population_size
         self.iterations = iterations
 
+
+    def __repr__(self):
+        return (f"RandomSearch(population = {self.population_size},"
+                f"iterations = {self.iterations})")
+
     def mutate(self, feature: Feature) -> Feature:
         def with_empty(current: Feature, var_index) -> Feature:
             return current.with_value(var_index, None)
