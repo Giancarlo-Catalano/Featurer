@@ -2,7 +2,7 @@ import copy
 
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
-from RandomSearch import random_feature_in_search_space
+from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_space
 
 
 class HillClimber(FeatureMiner):

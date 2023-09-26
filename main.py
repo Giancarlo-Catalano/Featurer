@@ -1,3 +1,5 @@
+import sys
+
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 import SearchSpace
@@ -9,6 +11,7 @@ from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInfo
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
+from Version_E.Testing import TestingUtilities
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
@@ -77,6 +80,14 @@ def show_all_ideals():
 
 
 if __name__ == '__main__':
+
+    command_line_arguments = sys.argv
+    if len(command_line_arguments) < 2:
+        raise Exception("Not enough arguments")
+
+    TestingUtilities.run_test(command_line_arguments[1])
+
+    raise Exception("sloth")
 
     problem = graph_colouring
     is_explainable = Explainability(problem)

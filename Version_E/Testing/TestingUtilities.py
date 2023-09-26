@@ -36,7 +36,7 @@ def to_json_object(input) -> JSON:
 
 
 def decode_problem(properties: JSON) -> CombinatorialProblem:
-    problem_string = properties["problem"]
+    problem_string = properties["which"]
 
     if problem_string == "binval":
         return BinValProblem(amount_of_bits=properties["size"],
@@ -67,7 +67,7 @@ def decode_problem(properties: JSON) -> CombinatorialProblem:
 
 
 def decode_criterion(properties: JSON, problem: CombinatorialProblem) -> MeasurableCriterion:
-    criterion_string = properties["criterion"]
+    criterion_string = properties["which"]
 
     if criterion_string == "explainability":
         return Explainability(problem)
@@ -102,8 +102,7 @@ def decode_criterion(properties: JSON, problem: CombinatorialProblem) -> Measura
 def decode_miner(properties: JSON, selector: FeatureSelector) -> FeatureMiner:
     """ converts a json string into an instance of a FeatureMiner object"""
 
-    kind = properties["kind"]
-    population_size = properties["popsize"]
+    kind = properties["which"]
 
     if kind in "Constructive":
         return ConstructiveMiner(selector,
@@ -117,14 +116,14 @@ def decode_miner(properties: JSON, selector: FeatureSelector) -> FeatureMiner:
                                 amount_to_keep_in_each_layer=properties["amount_to_keep_in_each_layer"])
     elif kind == "GA":
         return GAMiner(selector,
-                       population_size=population_size,
+                       population_size=properties["population_size"],
                        iterations=properties["iterations"])
     elif kind == "Hill":
         return HillClimber(selector,
-                           amount_to_generate=population_size)
+                           amount_to_generate=properties["population_size"])
     elif kind == "Random":
         return RandomSearch(selector,
-                            amount_to_generate=population_size)
+                            amount_to_generate=properties["population_size"])
 
 
 def get_random_candidates_and_fitnesses(problem: CombinatorialProblem,
@@ -162,12 +161,13 @@ def timed_function(func):
 
 @timed_function
 def count_ideals_test(problem, miner):
-    pass
+    return {"result": "good"}
 
 
 @timed_function
 def check_distribution_test(problem, miner):
-    pass
+    return {"result": "bad"}
+
 
 
 def apply_test(test_type: str, problem: CombinatorialProblem, miner: FeatureMiner) -> JSON:
@@ -185,14 +185,18 @@ def apply_test(test_type: str, problem: CombinatorialProblem, miner: FeatureMine
 
 
 def run_test(arguments_string) -> JSON:
-    arguments_json = to_json_object(to_json_object(arguments_string))
+    try:
+        arguments_json = to_json_object(arguments_string)
+    except JSONDecodeError:
+        return error_result("JSON could not be parsed in problem settings")
+
+    print(f"Received the arguments {arguments_json}")
     try:
         problem_object = decode_problem(arguments_json["problem"])
         criterion_object = decode_criterion(arguments_json["criterion"], problem_object)
     except KeyError:
         return error_result("missing parameter from JSON in problem settings")
-    except JSONDecodeError:
-        return error_result("JSON could not be parsed in problem settings")
+
 
     try:
         test_type = arguments_json["test"]
