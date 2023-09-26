@@ -46,6 +46,8 @@ class FeatureMiner:
 
     def cull_subsets(self, features: list[Feature]) -> list[(Feature, Score)]:
         #TODO this is not working as intended, some subsets are still present at the end!!!
+        features_with_scores = list(zip(features, self.feature_selector.get_scores(features)))
+        features_with_scores.sort(key=utils.second, reverse=True)
         kept = []
 
         def consider_feature(feature: Feature, score: Score):
@@ -56,8 +58,8 @@ class FeatureMiner:
                     return
             kept.append((feature, score))
 
-        scores = self.feature_selector.get_scores(features)
-        for feature, score in zip(features, scores):
+
+        for feature, score in features_with_scores:
             consider_feature(feature, score)
 
         return kept
