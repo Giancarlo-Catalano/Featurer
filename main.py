@@ -50,8 +50,10 @@ def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
     return PrecomputedPopulationInformation(problem.search_space, training_samples, fitness_list)
 
 
-def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False):
+def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features,
+                          with_scores=False):
     """prints the passed features, following the structure specified by the problem"""
+
     def print_feature_only(feature):
         print(f"{problem.feature_repr(feature)}")
 
@@ -82,17 +84,13 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
-    """
     command_line_arguments = sys.argv
     if len(command_line_arguments) < 2:
         raise Exception("Not enough arguments")
 
     TestingUtilities.run_test(command_line_arguments[1])
 
-    raise Exception("sloth")
-    
     """
-
     problem = constrained_BT
     is_explainable = Explainability(problem)
     has_good_fitness_consistently = Balance([Not(HighFitness()), ConsistentFitness()], weights=[2, 1])
@@ -133,5 +131,4 @@ if __name__ == '__main__':
             print(problem.feature_repr(feature.to_legacy_feature()))
             print(criterion.describe_feature(feature, training_data))
             print("\n")
-        #pretty_print_features(problem, features)
-
+        #pretty_print_features(problem, features)"""

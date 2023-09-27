@@ -2,10 +2,12 @@ import json
 import time
 from json import JSONDecodeError
 
+import numpy as np
+
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 from BenchmarkProblems.BinVal import BinValProblem
 from BenchmarkProblems.CheckerBoard import CheckerBoardProblem
-from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem, TestableCombinatorialProblem
 from BenchmarkProblems.GraphColouring import GraphColouringProblem
 from BenchmarkProblems.Knapsack import KnapsackProblem
 from BenchmarkProblems.OneMax import OneMaxProblem
@@ -15,6 +17,7 @@ from Version_E.BaselineAlgorithms import RandomSearch, HillClimber
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.BaselineAlgorithms.HillClimber import HillClimber
 from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
+from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner
@@ -159,15 +162,36 @@ def timed_function(func):
     return wrapper
 
 
-@timed_function
-def count_ideals_test(problem, miner):
-    return {"result": "good"}
+def execute_and_time(func, *args, **kwargs):
+    start_time = time.time()
+    result = func(*args, **kwargs)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    return result, execution_time
 
 
-@timed_function
-def check_distribution_test(problem, miner):
-    return {"result": "bad"}
+def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner):
+    ideals = problem.get_ideal_features()
+    amount_to_consider = len(ideals) * 2
+    found_features, execution_time = execute_and_time(miner.get_meaningful_features, amount_to_consider)
+    found_features = set(found_features)
+    return {"execution_time": execution_time,
+            "presence": {f"{ideal}": (ideal in found_features) for ideal in ideals}}
 
+
+def check_distribution_test(problem: CombinatorialProblem, miner):
+    def register_features(feature: Feature, accumulator):
+        mask_array = np.zeros(feature.variable_mask.tolist())
+        accumulator += mask_array
+
+    cell_coverings = np.zeros(problem.search_space.dimensions, dtype=int)
+    found_features, execution_time = execute_and_time(miner.get_meaningful_features, 100)
+
+    for feature in found_features:
+        register_features(feature, cell_coverings)
+
+    return {"execution_time": execution_time,
+            "cell_position_counts": [count for count in cell_coverings]}
 
 
 def apply_test(test_type: str, problem: CombinatorialProblem, miner: FeatureMiner) -> JSON:
@@ -196,7 +220,6 @@ def run_test(arguments_string) -> JSON:
         criterion_object = decode_criterion(arguments_json["criterion"], problem_object)
     except KeyError:
         return error_result("missing parameter from JSON in problem settings")
-
 
     try:
         test_type = arguments_json["test"]
