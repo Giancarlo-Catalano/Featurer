@@ -4,9 +4,10 @@ from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
-from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance
+from Version_E.MeasurableCriterion.CriterionUtilities import Any, Not, Balance
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
 from Version_E.MeasurableCriterion.Explainability import Explainability
+from Version_E.MeasurableCriterion.Robustness import Robustness
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
@@ -81,6 +82,7 @@ def show_all_ideals():
 
 if __name__ == '__main__':
 
+    """
     command_line_arguments = sys.argv
     if len(command_line_arguments) < 2:
         raise Exception("Not enough arguments")
@@ -88,12 +90,19 @@ if __name__ == '__main__':
     TestingUtilities.run_test(command_line_arguments[1])
 
     raise Exception("sloth")
+    
+    """
 
-    problem = graph_colouring
+    problem = checkerboard
     is_explainable = Explainability(problem)
-    has_high_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[3, 6])
+    has_good_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[2, 1])
+    robust_to_changes = Balance([Robustness(0, 1),
+                                 Robustness(1, 2),
+                                 Robustness(2, 5)],
+                                weights = [4, 2, 1])
 
-    criterion = All([is_explainable, has_high_fitness_consistently])
+    criterion = Balance([has_good_fitness_consistently, robust_to_changes],
+                        weights = [1, 2])
 
     training_data = get_training_data(problem, sample_size=3000)
     print(f"The problem is {problem}")
