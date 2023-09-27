@@ -71,7 +71,7 @@ class Overrepresentation(MeasurableCriterion):
 
 
     def describe_score(self, given_score) -> str:
-        return f"Representation has chi-score = {given_score}"
+        return f"Representation has chi-score = {given_score:.2f}"
 
 
 

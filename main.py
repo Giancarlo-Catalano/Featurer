@@ -93,16 +93,16 @@ if __name__ == '__main__':
     
     """
 
-    problem = checkerboard
+    problem = constrained_BT
     is_explainable = Explainability(problem)
-    has_good_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[2, 1])
+    has_good_fitness_consistently = Balance([Not(HighFitness()), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
                                  Robustness(1, 2),
                                  Robustness(2, 5)],
                                 weights = [4, 2, 1])
 
-    criterion = Balance([has_good_fitness_consistently, robust_to_changes],
-                        weights = [1, 2])
+    criterion = Balance([is_explainable, has_good_fitness_consistently, robust_to_changes],
+                        weights = [1, 1, 0])
 
     training_data = get_training_data(problem, sample_size=3000)
     print(f"The problem is {problem}")
@@ -129,5 +129,9 @@ if __name__ == '__main__':
     for miner in miners[0:1]:
         features = miner.get_meaningful_features(12, cull_subsets=True)
         print("features_found:")
-        pretty_print_features(problem, features)
+        for feature in features:
+            print(problem.feature_repr(feature.to_legacy_feature()))
+            print(criterion.describe_feature(feature, training_data))
+            print("\n")
+        #pretty_print_features(problem, features)
 

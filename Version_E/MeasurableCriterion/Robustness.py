@@ -40,4 +40,4 @@ class Robustness(MeasurableCriterion):
         return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
 
     def describe_score(self, given_score) -> str:
-        return f"Robustness score [{self.min_amount_of_differences}, {self.max_amount_of_differences}] = {given_score}"
+        return f"Robustness score [{self.min_amount_of_differences}, {self.max_amount_of_differences}] = {given_score:.2f}"

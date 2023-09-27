@@ -21,8 +21,8 @@ class Not(MeasurableCriterion):
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         return - self.criterion.get_raw_score_array(pfi)
 
-    def describe_score(self, given_score) -> str:
-        return self.criterion.describe_score(-given_score)
+    def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
+        return self.criterion.describe_feature(feature, ppi)
 
 
 class Balance(MeasurableCriterion):
@@ -47,9 +47,7 @@ class Balance(MeasurableCriterion):
         return utils.weighted_average_of_rows(atomic_scores, self.weights)
 
     def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
-        criteria_and_scores = [(criterion, criterion.get_single_raw_score(feature, ppi))
-                               for criterion in self.criteria]
-        return ", ".join(criterion.describe_score(score) for criterion, score in criteria_and_scores)
+        return ", ".join(criterion.describe_feature(feature, ppi) for criterion in self.criteria)
 
 
 class Any(MeasurableCriterion):
@@ -66,9 +64,7 @@ class Any(MeasurableCriterion):
         return np.max(atomic_scores, axis=0)
 
     def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
-        criteria_and_scores = [(criterion, criterion.get_single_raw_score(feature, ppi))
-                               for criterion in self.criteria]
-        return ", ".join(criterion.describe_score(score) for criterion, score in criteria_and_scores)
+        return ", ".join(criterion.describe_feature(feature, ppi) for criterion in self.criteria)
 
 
 class All(MeasurableCriterion):
@@ -85,9 +81,7 @@ class All(MeasurableCriterion):
         return np.min(atomic_scores, axis=0)
 
     def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
-        criteria_and_scores = [(criterion, criterion.get_single_raw_score(feature, ppi))
-                               for criterion in self.criteria]
-        return ", ".join(criterion.describe_score(score) for criterion, score in criteria_and_scores)
+        return ", ".join(criterion.describe_feature(feature, ppi) for criterion in self.criteria)
 
 
 class PPICachedData:

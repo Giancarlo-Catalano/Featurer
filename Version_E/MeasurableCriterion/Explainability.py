@@ -19,4 +19,4 @@ class Explainability(MeasurableCriterion):
         return np.array([-self.complexity_function(feature.to_legacy_feature()) for feature in pfi.features])
 
     def describe_score(self, given_score) -> str:
-        return f"Complexity = {-given_score}"
+        return f"Complexity = {-given_score:.2f}"

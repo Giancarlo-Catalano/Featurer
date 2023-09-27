@@ -65,7 +65,7 @@ class FeatureMiner:
         return kept
 
 
-    def get_meaningful_features(self, amount_to_return: int, cull_subsets=True) -> list[UserFeature]:
+    def get_meaningful_features(self, amount_to_return: int, cull_subsets=True) -> list[Feature]:
         mined_features = self.mine_features()
         if cull_subsets:
             culled_features = self.cull_subsets(mined_features)
@@ -74,7 +74,7 @@ class FeatureMiner:
 
 
         kept_features_with_scores = sorted(culled_features, key=utils.second, reverse=True)[:amount_to_return]
-        return [feature.to_legacy_feature()
+        return [feature  # .to_legacy_feature()
                 for feature, score in kept_features_with_scores]
 
 

@@ -276,7 +276,7 @@ class BTProblem(CombinatorialProblem):
                          for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)
                          if is_worth_showing(rota_index, starting_day))
 
-        return parameters + "\nThe ranges are " + repr_ranges()
+        return parameters # + "\nThe ranges are " + repr_ranges()
 
     def extend_rota_to_total_roster(self, rota: WorkerRota) -> list[bool]:
         result = []
