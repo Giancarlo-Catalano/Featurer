@@ -78,7 +78,7 @@ class FeatureMiner:
 
 
         kept_features_with_scores = sorted(culled_features, key=utils.second, reverse=True)[:amount_to_return]
-        return [feature.to_legacy_feature()
+        return [feature # .to_legacy_feature()
                 for feature, score in kept_features_with_scores]
 
 
@@ -148,7 +148,7 @@ class LayeredFeatureMiner(FeatureMiner):
         iteration = 0
         while True:
             iteration += 1
-            print(f"We're at iteration {iteration}")
+            # print(f"We're at iteration {iteration}")
             if self.should_terminate(iteration):
                 break
 

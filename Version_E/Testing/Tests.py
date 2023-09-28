@@ -26,10 +26,16 @@ def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner
     amount_to_consider = len(ideals) * 2
     total_ideals = len(ideals)
 
+    print("The ideals are\n"+"\n".join(f"{ideal}" for ideal in ideals))
+
     def single_run():
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, amount_to_consider)
         mined_features = [Feature.from_legacy_feature(old_feature, problem.search_space)
                           for old_feature in mined_features]
+
+        print("The Features are\n" + "\n".join(f"{feature}" for feature in mined_features))
+
+        print("The found")
         amount_of_found_ideals = len([ideal for ideal in ideals if ideal in mined_features])
         return {"found_ideals": amount_of_found_ideals, "total_ideals": total_ideals, "runtime": execution_time}
 

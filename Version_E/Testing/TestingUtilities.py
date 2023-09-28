@@ -52,5 +52,8 @@ def run_test(arguments: dict):
 
     output_json = {"parameters": arguments, "result": result_json}
 
+
+    print(f"The result is {output_json}")
+
     with open(output_name, 'w') as json_file:
         json.dump(output_json, json_file)

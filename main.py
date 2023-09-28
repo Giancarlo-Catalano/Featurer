@@ -91,19 +91,19 @@ if __name__ == '__main__':
     # settings = TestingUtilities.to_json_object(command_line_arguments[1])
 
     settings = dict()
-    settings["problem"] = Problems.make_problem("artificial", "medium")
+    settings["problem"] = Problems.make_problem("trapk", "medium")
     settings["criterion"] = Criteria.high_fitness_and_explainable
     settings["test"] = {"which": "count_ideals",
                         "runs":12}
     settings["miner"] = {"which": "destructive",
                          "stochastic": False,
                          "at_least": 1,
-                         "population_size": 120}
+                         "population_size": 60}
     settings["sample_size"] = 1200
     TestingUtilities.run_test(settings)
 
     """
-    problem = constrained_knapsack
+    problem = constrained_BT
     is_explainable = Explainability(problem)
     has_good_fitness_consistently = Balance([(HighFitness()), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
@@ -143,5 +143,4 @@ if __name__ == '__main__':
             print(problem.feature_repr(feature.to_legacy_feature()))
             print(criterion.describe_feature(feature, training_data))
             print("\n")
-        #pretty_print_features(problem, features)
-    """
+        pretty_print_features(problem, features)    """

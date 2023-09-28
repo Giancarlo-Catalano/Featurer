@@ -60,7 +60,7 @@ def make_problem(which, size: str):
     elif which == "trapk":
         return {"which": which,
                 "k": 5,
-                "amount_of_groups:": amount_of_bits // 5}
+                "amount_of_groups": (amount_of_bits // 5)}
     elif which == "checkerboard":
         if size == "small":
             rows = 4
