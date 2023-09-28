@@ -39,7 +39,9 @@ class Balance(MeasurableCriterion):
 
 
     def __repr__(self):
-        return "Balance of "+", ".join(f"{criterion}({weight})" for criterion, weight in zip(self.criteria, self.weights))
+        return "Balance of [" + \
+                ", ".join(f"{criterion}({weight})" for criterion, weight in zip(self.criteria, self.weights)) + \
+                "]"
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         scores = [criterion.get_score_array(pfi) for criterion in self.criteria]

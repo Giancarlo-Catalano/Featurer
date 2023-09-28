@@ -19,7 +19,7 @@ class ConstructiveMiner(LayeredFeatureMiner):
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         return [Feature.empty_feature(self.search_space)]
 
-    def branch_from_feature(self, feature: Feature) -> list[Feature]:
+    def modifications_of_feature(self, feature: Feature) -> list[Feature]:
         return feature.get_specialisations(self.search_space)
 
     def should_terminate(self, next_iteration: int):

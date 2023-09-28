@@ -13,7 +13,7 @@ class Explainability(MeasurableCriterion):
         self.complexity_function = problem.get_complexity_of_feature
 
     def __repr__(self):
-        return "Explainability.py"
+        return "Explainability"
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         return np.array([-self.complexity_function(feature.to_legacy_feature()) for feature in pfi.features])

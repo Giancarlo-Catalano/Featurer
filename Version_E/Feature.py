@@ -34,6 +34,9 @@ class Feature:
             values[var] = val
         return SearchSpace.Candidate(values)
 
+
+
+
     @classmethod
     def overlap(cls, first, second) -> bool:
         overlap: frozenbitarray = first.variable_mask & second.variable_mask
@@ -114,6 +117,18 @@ class Feature:
 
     def to_legacy_feature(self) -> SearchSpace.UserFeature:
         return SearchSpace.UserFeature(self.to_var_val_pairs())
+
+    @classmethod
+    def from_legacy_feature(cls, legacy_feature: SearchSpace.UserFeature, search_space: SearchSpace.SearchSpace):
+        result_values = np.zeros(search_space.dimensions, dtype=int)
+        mask = bitarray(search_space.dimensions)
+        mask.setall(0)
+
+        for var, val in legacy_feature.var_vals:
+            result_values[var] = val
+            mask[var] = 1
+
+        return cls(frozenbitarray(mask), result_values)
 
     @classmethod
     def from_candidate(cls, candidate: SearchSpace.Candidate):

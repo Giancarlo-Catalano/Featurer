@@ -1,6 +1,7 @@
 import random
 from typing import Iterable
 
+import SearchSpace
 import utils
 from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
@@ -20,6 +21,9 @@ class FeatureSelector:
     def __init__(self, ppi: PrecomputedPopulationInformation, criterion: MeasurableCriterion):
         self.ppi = ppi
         self.criterion = criterion
+
+    def __repr__(self):
+        return "FeatureSelector"
 
     def get_scores(self, features: list[Feature]) -> np.ndarray:
         pfi = PrecomputedFeatureInformation(self.ppi, features)
@@ -65,7 +69,7 @@ class FeatureMiner:
         return kept
 
 
-    def get_meaningful_features(self, amount_to_return: int, cull_subsets=True) -> list[Feature]:
+    def get_meaningful_features(self, amount_to_return: int, cull_subsets=True) -> list[SearchSpace.UserFeature]:
         mined_features = self.mine_features()
         if cull_subsets:
             culled_features = self.cull_subsets(mined_features)
@@ -74,7 +78,7 @@ class FeatureMiner:
 
 
         kept_features_with_scores = sorted(culled_features, key=utils.second, reverse=True)[:amount_to_return]
-        return [feature  # .to_legacy_feature()
+        return [feature.to_legacy_feature()
                 for feature, score in kept_features_with_scores]
 
 
@@ -93,7 +97,7 @@ class LayeredFeatureMiner(FeatureMiner):
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement get_initial_layer")
 
-    def branch_from_feature(self, feature: Feature) -> list[Feature]:
+    def modifications_of_feature(self, feature: Feature) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement branch_from_feature")
 
     def should_terminate(self, next_iteration: int):
@@ -132,8 +136,8 @@ class LayeredFeatureMiner(FeatureMiner):
     def get_next_layer(self, prev_layer: Layer) -> Layer:
         selected_features: set[Feature] = self.select_features(prev_layer)
 
-        modified_features = utils.concat_lists(self.branch_from_feature(feature) for feature in selected_features)
-        culled_features = list(set(modified_features))
+        modified_features = utils.concat_lists(self.modifications_of_feature(feature) for feature in selected_features)
+        culled_features = list(set(modified_features))  # removes duplicates
         return self.keep_top_features_and_make_layer(culled_features, self.amount_to_keep_in_each_layer)
 
     def mine_features(self) -> list[Feature]:

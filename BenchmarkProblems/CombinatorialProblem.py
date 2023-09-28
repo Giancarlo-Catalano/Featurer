@@ -1,5 +1,6 @@
 import SearchSpace
 import utils
+from Version_E.Feature import Feature
 
 
 class CombinatorialProblem:

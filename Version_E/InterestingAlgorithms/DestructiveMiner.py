@@ -19,7 +19,7 @@ class DestructiveMiner(LayeredFeatureMiner):
     def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
         return Feature.candidate_matrix_to_features(ppi.candidate_matrix, self.search_space)
 
-    def branch_from_feature(self, feature: Feature) -> list[Feature]:
+    def modifications_of_feature(self, feature: Feature) -> list[Feature]:
         return feature.get_generalisations()
 
     def should_terminate(self, next_iteration: int):

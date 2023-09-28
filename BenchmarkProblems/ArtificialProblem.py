@@ -5,6 +5,8 @@ import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 from typing import List, Optional
 
+from Version_E.Feature import Feature
+
 
 class ArtificialProblem(TestableCombinatorialProblem):
     """In this problem, the fitness function is given by the presence of some features"""
@@ -37,7 +39,7 @@ class ArtificialProblem(TestableCombinatorialProblem):
 
 
     def generate_features(self) -> list[SearchSpace.UserFeature]:
-        accumulator = []
+        accumulator = set()
         def is_eligible(new_feature: SearchSpace.UserFeature):
             return all([self.features_are_disjoint(old_feature, new_feature) for old_feature in accumulator])
 
@@ -45,13 +47,13 @@ class ArtificialProblem(TestableCombinatorialProblem):
         while len(accumulator) < self.amount_of_features:
             new_feature = self.get_random_feature()
             if self.allow_overlaps or (not self.allow_overlaps and is_eligible(new_feature)):
-                accumulator.append(new_feature)
+                accumulator.add(new_feature)
             attempts_until_next_reset -= 1
             if attempts_until_next_reset < 1:
-                accumulator = []
+                accumulator = set()
                 attempts_until_next_reset = 1000
 
-        return accumulator
+        return list(accumulator)
 
 
     def generate_scores_for_features(self):

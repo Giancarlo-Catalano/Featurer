@@ -12,7 +12,7 @@ from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInfo
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
-from Version_E.Testing import TestingUtilities
+from Version_E.Testing import TestingUtilities, Problems, Criteria
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
@@ -88,12 +88,24 @@ if __name__ == '__main__':
     if len(command_line_arguments) < 2:
         raise Exception("Not enough arguments")
 
-    TestingUtilities.run_test(command_line_arguments[1])
+    # settings = TestingUtilities.to_json_object(command_line_arguments[1])
+
+    settings = dict()
+    settings["problem"] = Problems.make_problem("artificial", "medium")
+    settings["criterion"] = Criteria.high_fitness_and_explainable
+    settings["test"] = {"which": "count_ideals",
+                        "runs":12}
+    settings["miner"] = {"which": "destructive",
+                         "stochastic": False,
+                         "at_least": 1,
+                         "population_size": 120}
+    settings["sample_size"] = 1200
+    TestingUtilities.run_test(settings)
 
     """
-    problem = constrained_BT
+    problem = constrained_knapsack
     is_explainable = Explainability(problem)
-    has_good_fitness_consistently = Balance([Not(HighFitness()), ConsistentFitness()], weights=[2, 1])
+    has_good_fitness_consistently = Balance([(HighFitness()), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
                                  Robustness(1, 2),
                                  Robustness(2, 5)],
@@ -131,4 +143,5 @@ if __name__ == '__main__':
             print(problem.feature_repr(feature.to_legacy_feature()))
             print(criterion.describe_feature(feature, training_data))
             print("\n")
-        #pretty_print_features(problem, features)"""
+        #pretty_print_features(problem, features)
+    """
