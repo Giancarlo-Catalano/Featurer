@@ -3,7 +3,7 @@ import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class FourPeaksProblem(TestableCombinatorialProblem):
+class FourPeaksProblem(BenchmarkProblems.CombinatorialProblem):
     amount_of_bits: int
     t: int
 
@@ -44,9 +44,3 @@ class FourPeaksProblem(TestableCombinatorialProblem):
 
         return "".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
 
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
-        """TODO"""
-        def feature_with_a_single_one(var_index):
-            return SearchSpace.UserFeature([(var_index, 1)])
-
-        return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]
