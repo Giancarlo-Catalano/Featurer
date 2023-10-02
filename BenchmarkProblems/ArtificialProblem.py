@@ -2,6 +2,7 @@ import random
 
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
+import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 from typing import List, Optional
 
@@ -84,10 +85,13 @@ class ArtificialProblem(TestableCombinatorialProblem):
         def repr_for_each_feature(feature: SearchSpace.UserFeature, value: int):
             return f"\t{self.feature_repr(feature)}, value = {value}"
 
+        features_with_weight = sorted(zip(self.important_features, self.score_for_each_feature),
+                                      key=utils.second,
+                                      reverse=True)
 
         return ("Contains the following features:\n"+
                 "\n".join([repr_for_each_feature(f, v)
-                 for f, v in zip(self.important_features, self.score_for_each_feature)]))
+                 for f, v in features_with_weight]))
 
     def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         return super().get_area_of_smallest_bounding_box(feature) ** 2

@@ -37,3 +37,21 @@ class ConsistentFitness(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Consistent with t-value = {given_score:.2f}"
+
+
+class FitnessHigherThanAverage(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "Fitness Higher Than average"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        """this will simply return a count of how the proportion of solutions containing the feature which have a higher than average fitness"""
+        which_are_better_than_average = np.array(pfi.fitness_array > pfi.population_mean, dtype=float)
+        count_of_greater_than_average = utils.weighted_sum_of_rows(pfi.feature_presence_matrix,
+                                                                   which_are_better_than_average)
+        return utils.divide_arrays_safely(count_of_greater_than_average, pfi.count_for_each_feature, else_value=0.0)
+
+    def describe_score(self, given_score) -> str:
+        return f"Fitness higher than average {given_score*100:.2f}% of the time"

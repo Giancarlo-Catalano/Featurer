@@ -4,8 +4,9 @@ from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
+from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.CriterionUtilities import Any, Not, Balance
-from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
+from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
 from Version_E.MeasurableCriterion.Explainability import Explainability
 from Version_E.MeasurableCriterion.Robustness import Robustness
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
@@ -103,16 +104,16 @@ def test_command_line():
 
 
 def test_miner():
-    problem = artificial_problem
+    problem = checkerboard
     is_explainable = Explainability(problem)
-    has_good_fitness_consistently = Balance([(HighFitness()), ConsistentFitness()], weights=[2, 1])
+    has_good_fitness_consistently = Balance([FitnessHigherThanAverage(), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
                                  Robustness(1, 2),
                                  Robustness(2, 5)],
                                 weights=[4, 2, 1])
 
-    criterion = Balance([is_explainable, has_good_fitness_consistently, robust_to_changes],
-                        weights=[1, 1, 0])
+    criterion = Balance([is_explainable, has_good_fitness_consistently],
+                        weights=[2, 1])
 
     training_data = get_training_data(problem, sample_size=3000)
     print(f"The problem is {problem}")
@@ -127,6 +128,16 @@ def test_miner():
                              at_least_parameters=1)
 
     features = miner.get_meaningful_features(12, cull_subsets=True)
+
+    # debug
+    """relevant_features = [Feature.from_legacy_feature(ideal, problem.search_space)
+                         for ideal in problem.important_features]
+    print("The scores of the intended features are:")
+    for relevant_feature in relevant_features:
+        print(f"For feature {relevant_feature}, the description is")
+        print(miner.feature_selector.criterion.describe_feature(relevant_feature, miner.feature_selector.ppi))
+    """
+    # end debug
     print("features_found:")
     for feature in features:
         print(problem.feature_repr(feature.to_legacy_feature()))
