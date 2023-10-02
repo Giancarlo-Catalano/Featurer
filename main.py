@@ -94,7 +94,7 @@ if __name__ == '__main__':
     settings["problem"] = Problems.make_problem("trapk", "medium")
     settings["criterion"] = Criteria.high_fitness_and_explainable
     settings["test"] = {"which": "count_ideals",
-                        "runs":12}
+                        "runs": 12}
     settings["miner"] = {"which": "destructive",
                          "stochastic": False,
                          "at_least": 1,
