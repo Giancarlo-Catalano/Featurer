@@ -67,7 +67,7 @@ class FeatureMiner:
 
         return kept
 
-    def get_meaningful_features(self, amount_to_return: int, cull_subsets=False) -> list[SearchSpace.UserFeature]:
+    def get_meaningful_features(self, amount_to_return: int, cull_subsets=False) -> list[Feature]:
         mined_features = self.mine_features()
         if cull_subsets:
             culled_features = self.cull_subsets(mined_features)
@@ -75,18 +75,14 @@ class FeatureMiner:
             culled_features = zip(mined_features, self.feature_selector.get_scores(mined_features))
 
         kept_features_with_scores = sorted(culled_features, key=utils.second, reverse=True)[:amount_to_return]
-        return [feature  # .to_legacy_feature()
+        return [feature
                 for feature, score in kept_features_with_scores]
 
 
 Layer = list[(Feature, Score)]
 
 
-def select_features_heuristically(previous_layer: Layer, amount_to_return: int) -> set[Feature]:
-    """Select features using truncation selection"""
-    # ensure previous layer is sorted
-    previous_layer.sort(key=utils.second, reverse=True)
-    return {feature for feature, _ in previous_layer[:amount_to_return]}
+
 
 
 class LayeredFeatureMiner(FeatureMiner):
@@ -113,7 +109,7 @@ class LayeredFeatureMiner(FeatureMiner):
     def keep_top_features_and_make_layer(self, features: list[Feature], amount_to_keep: int) -> Layer:
         return self.feature_selector.keep_best_features(features, amount_to_keep)
 
-    def select_features_stochastically(self, previous_layer: Layer, amount_to_return: int) -> set[Feature]:
+    def select_features_stochastically(self, previous_layer: Layer, amount_to_return: int) -> list[Feature]:
         """
         This function selects features using tournament selection, returning a distinct set of features
         :param previous_layer: layer to select from
@@ -132,9 +128,15 @@ class LayeredFeatureMiner(FeatureMiner):
         while len(selected) < amount_to_return:
             selected.add(tournament_select())
 
-        return selected
+        return list(selected)
 
-    def select_features(self, previous_layer) -> set[Feature]:
+    def select_features_heuristically(self, previous_layer: Layer, amount_to_return: int) -> list[Feature]:
+        """Select features using truncation selection"""
+        # ensure previous layer is sorted
+        previous_layer.sort(key=utils.second, reverse=True)
+        return [feature for feature, _ in previous_layer[:amount_to_return]]
+
+    def select_features(self, previous_layer) -> list[Feature]:
         """
         This function selects a portion of the population, using a different method based on internal parameters
         :param previous_layer: the layer to select from
@@ -144,25 +146,32 @@ class LayeredFeatureMiner(FeatureMiner):
         proportion = 0.5
         amount_to_return = int(len(previous_layer) * proportion)
         if len(previous_layer) <= amount_to_return:
-            return set(utils.unzip(previous_layer)[0])
+            return utils.unzip(previous_layer)[0]
 
         if self.stochastic:
             return self.select_features_stochastically(previous_layer, amount_to_return)
         else:
-            return select_features_heuristically(previous_layer, amount_to_return)
-
-    def get_next_layer(self, prev_layer: Layer) -> Layer:
-        selected_features: set[Feature] = self.select_features(prev_layer)
-
-        modified_features = utils.concat_lists(self.modifications_of_feature(feature) for feature in selected_features)
-        culled_features = list(set(modified_features))  # removes duplicates
-        return self.keep_top_features_and_make_layer(culled_features, self.amount_to_keep_in_each_layer)
+            return self.select_features_heuristically(previous_layer, amount_to_return)
 
     def mine_features(self) -> list[Feature]:
-        initial_features = self.get_initial_features(self.feature_selector.ppi)
-        initial_layer = self.feature_selector.keep_best_features(initial_features,
-                                                                 amount_to_keep=self.amount_to_keep_in_each_layer)
-        layers: list[Layer] = [initial_layer]
+
+        def truncate_and_make_layer(features: list[Feature]) -> Layer:
+            return self.feature_selector.keep_best_features(features, self.amount_to_keep_in_each_layer)
+
+        def get_initial_layer():
+            initial_features = self.get_initial_features(self.feature_selector.ppi)
+            return truncate_and_make_layer(initial_features)
+
+        def get_next_layer(prev_layer: Layer) -> Layer:
+            selected_features: list[Feature] = self.select_features(prev_layer)
+
+            modified_features = [modified_feature
+                                 for feature in selected_features
+                                 for modified_feature in self.modifications_of_feature(feature)]
+            modified_features = list(set(modified_features)) # to remove duplicates
+            return truncate_and_make_layer(modified_features)
+
+        layers: list[Layer] = [get_initial_layer()]
 
         iteration = 0
         while True:
@@ -171,9 +180,9 @@ class LayeredFeatureMiner(FeatureMiner):
             if self.should_terminate(iteration):
                 break
 
-            layers.append(self.get_next_layer(layers[-1]))
+            layers.append(get_next_layer(layers[-1]))
 
         final_features = [feature
                           for layer in layers
-                          for feature, score in layer]
+                          for feature, _ in layer]
         return final_features

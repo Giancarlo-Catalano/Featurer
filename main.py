@@ -82,8 +82,7 @@ def show_all_ideals():
         print("_" * 40)
 
 
-if __name__ == '__main__':
-
+def test_command_line():
     command_line_arguments = sys.argv
     if len(command_line_arguments) < 2:
         raise Exception("Not enough arguments")
@@ -102,17 +101,18 @@ if __name__ == '__main__':
     settings["sample_size"] = 1200
     TestingUtilities.run_test(settings)
 
-    """
-    problem = constrained_BT
+
+def test_miner():
+    problem = artificial_problem
     is_explainable = Explainability(problem)
     has_good_fitness_consistently = Balance([(HighFitness()), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
                                  Robustness(1, 2),
                                  Robustness(2, 5)],
-                                weights = [4, 2, 1])
+                                weights=[4, 2, 1])
 
     criterion = Balance([is_explainable, has_good_fitness_consistently, robust_to_changes],
-                        weights = [1, 1, 0])
+                        weights=[1, 1, 0])
 
     training_data = get_training_data(problem, sample_size=3000)
     print(f"The problem is {problem}")
@@ -121,26 +121,18 @@ if __name__ == '__main__':
 
     selector = FeatureSelector(training_data, criterion)
 
-    def get_miner(kind: str, stochastic: bool, population_size: int):
-        if kind == "Constructive":
-            return ConstructiveMiner(selector, population_size,
-                                     stochastic=stochastic,
-                                     at_most_parameters=5)
-        elif kind == "Destructive":
-            return DestructiveMiner(selector, population_size,
-                                    stochastic,
-                                    at_least_parameters=1)
+    miner = DestructiveMiner(selector,
+                             amount_to_keep_in_each_layer=72,
+                             stochastic=False,
+                             at_least_parameters=1)
 
-    miners = [get_miner(kind, stochastic, population_size)
-              for kind in ["Destructive", "Constructive"]
-              for stochastic in [True, False]
-              for population_size in [72]]
+    features = miner.get_meaningful_features(12, cull_subsets=True)
+    print("features_found:")
+    for feature in features:
+        print(problem.feature_repr(feature.to_legacy_feature()))
+        print(criterion.describe_feature(feature, training_data))
+        print("\n")
 
-    for miner in miners[0:1]:
-        features = miner.get_meaningful_features(12, cull_subsets=True)
-        print("features_found:")
-        for feature in features:
-            print(problem.feature_repr(feature.to_legacy_feature()))
-            print(criterion.describe_feature(feature, training_data))
-            print("\n")
-        pretty_print_features(problem, features)    """
+
+if __name__ == '__main__':
+    test_miner()
