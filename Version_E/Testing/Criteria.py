@@ -1,7 +1,7 @@
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance
 from Version_E.MeasurableCriterion.Explainability import Explainability
-from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
+from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness
@@ -22,6 +22,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Overrepresentation()
     elif criterion_string == "underrepresentation":
         return Not(Overrepresentation())
+    elif criterion_string == "fitness_higher_than_average":
+        return FitnessHigherThanAverage()
     elif criterion_string == "commonality":
         return Commonality()
     elif criterion_string == "robustness":

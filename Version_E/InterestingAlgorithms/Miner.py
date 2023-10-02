@@ -120,9 +120,10 @@ class LayeredFeatureMiner(FeatureMiner):
         tournament_size = 30
         features_with_scores = previous_layer
         weights = utils.unzip(features_with_scores)[1]
+        cumulative_weights = np.cumsum(weights)
 
         def tournament_select() -> Feature:
-            extracted = random.choices(features_with_scores, weights, k=tournament_size)
+            extracted = random.choices(features_with_scores, cum_weights=cumulative_weights, k=tournament_size)
             return max(extracted, key=utils.second)[0]
 
         selected = set()

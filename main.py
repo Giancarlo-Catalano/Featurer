@@ -34,7 +34,7 @@ knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
 constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
                                                            [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
                                                             KnapsackConstraint.WITHIN_WEIGHT])
-artificial_problem = ArtificialProblem(12, 3, 4, False)
+artificial_problem = ArtificialProblem(12, 3, 4, True)
 four_peaks = FourPeaks.FourPeaksProblem(12, 4)
 
 
@@ -92,29 +92,33 @@ def test_command_line():
     # settings = TestingUtilities.to_json_object(command_line_arguments[1])
 
     settings = dict()
-    settings["problem"] = Problems.make_problem("trapk", "medium")
-    settings["criterion"] = Criteria.high_fitness_and_explainable
+    settings["problem"] = Problems.make_problem("artificial", "medium")
+    settings["criterion"] = {"which": "balance",
+                             "arguments": [{"which": "fitness_higher_than_average"},
+                                           {"which": "consistent_fitness"},
+                                           {"which": "explainability"}],
+                             "weights": [2, 1, 4]}
     settings["test"] = {"which": "count_ideals",
-                        "runs": 12}
+                        "runs": 3}
     settings["miner"] = {"which": "destructive",
                          "stochastic": False,
                          "at_least": 1,
-                         "population_size": 60}
+                         "population_size": 72}
     settings["sample_size"] = 1200
     TestingUtilities.run_test(settings)
 
 
 def test_miner():
-    problem = four_peaks
+    problem = artificial_problem
     is_explainable = Explainability(problem)
-    has_good_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[2, 1])
+    has_good_fitness_consistently = Balance([FitnessHigherThanAverage(), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
                                  Robustness(1, 2),
                                  Robustness(2, 5)],
                                 weights=[4, 2, 1])
 
     criterion = Balance([is_explainable, has_good_fitness_consistently],
-                        weights=[1, 2])
+                        weights=[2, 1])
 
     training_data = get_training_data(problem, sample_size=600)
     print(f"The problem is {problem}")
@@ -123,10 +127,10 @@ def test_miner():
 
     selector = FeatureSelector(training_data, criterion)
 
-    miner = ConstructiveMiner(selector,
+    miner = DestructiveMiner(selector,
                              amount_to_keep_in_each_layer=144,
                              stochastic=False,
-                             at_most_parameters=6)
+                             at_least_parameters=1)
 
     features = miner.get_meaningful_features(12, cull_subsets=True)
 
@@ -147,4 +151,4 @@ def test_miner():
 
 
 if __name__ == '__main__':
-    test_miner()
+    test_command_line()

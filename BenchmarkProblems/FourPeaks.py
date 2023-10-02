@@ -3,7 +3,7 @@ import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class FourPeaksProblem(BenchmarkProblems.CombinatorialProblem):
+class FourPeaksProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     amount_of_bits: int
     t: int
 

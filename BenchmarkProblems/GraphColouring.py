@@ -22,7 +22,8 @@ class GraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combinatorial
                                 for _ in range(self.amount_of_nodes)])
         asymmetric = np.array(result_list, dtype=int)
         upper_triangle = np.triu(asymmetric)
-        symmetric = upper_triangle+upper_triangle.T - np.diag(upper_triangle)
+        upper_triangle -= np.diag(np.diag(upper_triangle))
+        symmetric = upper_triangle+upper_triangle.T
         return symmetric
 
     def get_connected_pairs_from_adjacency_matrix(self, adjacency_matrix: np.ndarray):

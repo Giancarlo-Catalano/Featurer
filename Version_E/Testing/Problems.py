@@ -76,7 +76,7 @@ def make_problem(which, size: str):
                 "size": amount_of_bits,
                 "size_of_partials": 5,
                 "amount_of_features": 5,
-                "allow_overlaps": True}
+                "allow_overlaps": False}
     elif which == "knapsack":
         return {"which": which,
                 "expected_price": 50,
