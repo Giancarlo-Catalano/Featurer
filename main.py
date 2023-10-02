@@ -1,6 +1,6 @@
 import sys
 
-from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack, FourPeaks
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
@@ -29,12 +29,13 @@ constrained_BT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_H
                                                  BT.BTPredicate.BAD_SATURDAY,
                                                  BT.BTPredicate.BAD_SUNDAY])
 
-graph_colouring = GraphColouring.GraphColouringProblem(3, 10, 0.5)
+graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
 constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
                                                            [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
                                                             KnapsackConstraint.WITHIN_WEIGHT])
 artificial_problem = ArtificialProblem(12, 3, 4, False)
+four_peaks = FourPeaks.FourPeaksProblem(12, 4)
 
 
 def get_random_candidates_and_fitnesses(problem: CombinatorialProblem.CombinatorialProblem,
@@ -104,28 +105,28 @@ def test_command_line():
 
 
 def test_miner():
-    problem = checkerboard
+    problem = four_peaks
     is_explainable = Explainability(problem)
-    has_good_fitness_consistently = Balance([FitnessHigherThanAverage(), ConsistentFitness()], weights=[2, 1])
+    has_good_fitness_consistently = Balance([HighFitness(), ConsistentFitness()], weights=[2, 1])
     robust_to_changes = Balance([Robustness(0, 1),
                                  Robustness(1, 2),
                                  Robustness(2, 5)],
                                 weights=[4, 2, 1])
 
     criterion = Balance([is_explainable, has_good_fitness_consistently],
-                        weights=[2, 1])
+                        weights=[1, 2])
 
-    training_data = get_training_data(problem, sample_size=3000)
+    training_data = get_training_data(problem, sample_size=600)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
 
     selector = FeatureSelector(training_data, criterion)
 
-    miner = DestructiveMiner(selector,
-                             amount_to_keep_in_each_layer=72,
+    miner = ConstructiveMiner(selector,
+                             amount_to_keep_in_each_layer=144,
                              stochastic=False,
-                             at_least_parameters=1)
+                             at_most_parameters=6)
 
     features = miner.get_meaningful_features(12, cull_subsets=True)
 

@@ -1,3 +1,4 @@
+import math
 import random
 from typing import Iterable
 
@@ -144,7 +145,7 @@ class LayeredFeatureMiner(FeatureMiner):
         """
 
         proportion = 0.5
-        amount_to_return = int(len(previous_layer) * proportion)
+        amount_to_return = math.ceil(len(previous_layer) * proportion)
         if len(previous_layer) <= amount_to_return:
             return utils.unzip(previous_layer)[0]
 
