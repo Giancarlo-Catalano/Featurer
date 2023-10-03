@@ -23,11 +23,11 @@ def run_multiple_times(func, runs, *args, **kwargs):
 def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner, runs: int) -> dict:
     ideals = problem.get_ideal_features()
     ideals = [Feature.from_legacy_feature(ideal, problem.search_space)
-     for ideal in ideals]
+              for ideal in ideals]
     amount_to_consider = len(ideals) * 2
     total_ideals = len(ideals)
 
-    print("The ideals are\n"+"\n".join(f"{ideal}" for ideal in ideals))
+    print("The ideals are\n" + "\n".join(f"{ideal}" for ideal in ideals))
 
     def single_run():
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, amount_to_consider)
@@ -57,9 +57,7 @@ def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, 
     return {"test_results": [single_run() for _ in range(runs)]}
 
 
-
 def check_linkage(problem: BenchmarkProblems.GraphColouring.GraphColouringProblem, miner: FeatureMiner, runs: int):
-
     def register_feature(feature: Feature, accumulator):
         used_vars = np.array(feature.variable_mask.tolist(), dtype=float)
         accumulator += np.outer(used_vars, used_vars)
@@ -93,16 +91,20 @@ def check_linkage(problem: BenchmarkProblems.GraphColouring.GraphColouringProble
     return {"test_results": [single_run() for _ in range(runs)]}
 
 
+def no_test(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem, miner: FeatureMiner, runs: int):
+    print(f"The generated problem is {problem}, more specifically \n{problem.long_repr()}")
+    def single_run():
+        mined_features, execution_time = execute_and_time(miner.get_meaningful_features, 100)
+        print(f"The process took {execution_time} seconds")
+        print("The features are:")
+        for feature in mined_features:
+            print(problem.feature_repr(feature.to_legacy_feature()))
+            print(miner.feature_selector.criterion.describe_feature(feature, miner.feature_selector.ppi))
 
+    for _ in range(runs):
+        single_run()
 
-
-
-
-
-
-
-
-
+    return {"test_results": "you get to have lunch early!"}
 
 
 def apply_test(test_parameters: dict, problem: CombinatorialProblem, miner: FeatureMiner) -> dict:
@@ -114,10 +116,7 @@ def apply_test(test_parameters: dict, problem: CombinatorialProblem, miner: Feat
         return check_distribution_test(problem, miner, runs)
     elif test_type == "check_linkage":
         return check_linkage(problem, miner, runs)
+    elif test_type == "no_test":
+        return no_test(problem, miner, runs)
     else:
         raise Exception("Test was not recognised")
-
-
-
-
-

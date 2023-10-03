@@ -1,5 +1,5 @@
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
-from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance
+from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance, Extreme
 from Version_E.MeasurableCriterion.Explainability import Explainability
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
@@ -30,6 +30,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Robustness(properties["min_diff"], "max_diff")
     elif criterion_string == "not":
         return Not(decode_criterion(properties["argument"], problem))
+    elif criterion_string == "extreme":
+        return Extreme(decode_criterion(properties["argument"], problem))
     elif criterion_string == "all":
         parsed_arguments = [decode_criterion(criterion, problem) for criterion in properties["arguments"]]
         return All(parsed_arguments)

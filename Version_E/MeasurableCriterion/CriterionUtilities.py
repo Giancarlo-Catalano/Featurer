@@ -25,6 +25,23 @@ class Not(MeasurableCriterion):
         return self.criterion.describe_feature(feature, ppi)
 
 
+class Extreme(MeasurableCriterion):
+    criterion: MeasurableCriterion
+
+    def __init__(self, criterion: MeasurableCriterion):
+        self.criterion = criterion
+
+    def __repr__(self):
+        return "Extreme"
+
+    def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        untreated = self.criterion.get_score_array(pfi)
+        return np.abs(2*untreated - 1)
+
+    def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
+        return self.criterion.describe_feature(feature, ppi)
+
+
 class Balance(MeasurableCriterion):
     criteria: list[MeasurableCriterion]
     weights: np.ndarray

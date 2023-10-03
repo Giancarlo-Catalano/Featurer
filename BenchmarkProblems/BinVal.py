@@ -1,6 +1,7 @@
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+from Version_E.Feature import Feature
 
 
 class BinValProblem(TestableCombinatorialProblem):
@@ -19,7 +20,7 @@ class BinValProblem(TestableCombinatorialProblem):
         return self.__repr__()
 
     def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
-        return super().get_area_of_smallest_bounding_box(feature)
+        return self.amount_of_set_values_in_feature(feature)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         digit_value = 1
@@ -30,10 +31,7 @@ class BinValProblem(TestableCombinatorialProblem):
         return total
 
     def feature_repr(self, feature):
-        def cell_repr(cell):
-            return "-" if cell is None else str(cell)
-
-        return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
+        return f"{Feature.from_legacy_feature(feature, self.search_space)}"
 
     def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
         def feature_with_a_single_one(var_index):

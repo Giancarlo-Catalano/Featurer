@@ -92,17 +92,22 @@ def test_command_line():
     # settings = TestingUtilities.to_json_object(command_line_arguments[1])
 
     settings = dict()
-    settings["problem"] = Problems.make_problem("artificial", "medium")
+
+    settings["problem"] = {"which": "binval",
+                           "size": 12,
+                           "base": 2}
+
     settings["criterion"] = {"which": "balance",
-                             "arguments": [{"which": "fitness_higher_than_average"},
-                                           {"which": "consistent_fitness"},
+                             "arguments": [{"which": "high_fitness"},
+                                           {"which": "extreme",
+                                            "argument": {"which": "consistent_fitness"}},
                                            {"which": "explainability"}],
-                             "weights": [2, 1, 4]}
-    settings["test"] = {"which": "count_ideals",
+                             "weights": [2, 2, 2]}
+    settings["test"] = {"which": "no_test",
                         "runs": 3}
-    settings["miner"] = {"which": "destructive",
+    settings["miner"] = {"which": "constructive",
                          "stochastic": False,
-                         "at_least": 1,
+                         "at_most": 1,
                          "population_size": 72}
     settings["sample_size"] = 1200
     TestingUtilities.run_test(settings)
