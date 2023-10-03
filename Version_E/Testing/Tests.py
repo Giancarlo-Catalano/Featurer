@@ -1,3 +1,4 @@
+import itertools
 import time
 
 import numpy as np
@@ -43,7 +44,7 @@ def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner
 
 def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int):
     def register_feature(feature: Feature, accumulator):
-        mask_array = np.zeros(feature.variable_mask.tolist())
+        mask_array = np.array(feature.variable_mask.tolist())
         accumulator += mask_array
 
     def single_run():
@@ -91,8 +92,43 @@ def check_linkage(problem: BenchmarkProblems.GraphColouring.GraphColouringProble
     return {"test_results": [single_run() for _ in range(runs)]}
 
 
+def check_connectedness(problem: BenchmarkProblems.GraphColouring.GraphColouringProblem, miner: FeatureMiner, runs: int):
+
+    def single_run():
+        def are_connected(node_index_a: int, node_index_b) -> bool:
+            return bool(problem.adjacency_matrix[node_index_a, node_index_b])
+
+        def count_edges(node_list: list[int]) -> int:
+            return len([(node_a, node_b) for node_a, node_b in itertools.combinations(node_list, 2)
+                        if are_connected(node_a, node_b)])
+
+        def register_feature(feature: Feature, accumulator: list[(int, int)]):
+            present_nodes = [var for var, val in feature.to_var_val_pairs()]
+            amount_of_nodes = len(present_nodes)
+            accumulator.append((amount_of_nodes, count_edges(present_nodes)))
+
+        edge_counts = []
+
+        mined_features, execution_time = execute_and_time(miner.get_meaningful_features, 100)
+        for feature in mined_features:
+            register_feature(feature, edge_counts)
+
+        return {"edge_counts": edge_counts,
+                "chance_of_connection": problem.chance_of_connection,
+                "runtime": execution_time}
+
+    return {"test_results": [single_run() for _ in range(runs)]}
+
+
 def no_test(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem, miner: FeatureMiner, runs: int):
     print(f"The generated problem is {problem}, more specifically \n{problem.long_repr()}")
+
+    ideals = problem.get_ideal_features()
+    ideals = [Feature.from_legacy_feature(ideal, problem.search_space)
+              for ideal in ideals]
+    for ideal in ideals:
+        print(f"Ideal {problem.feature_repr(ideal.to_legacy_feature())}")
+        print(miner.feature_selector.criterion.describe_feature(ideal, miner.feature_selector.ppi))
     def single_run():
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, 100)
         print(f"The process took {execution_time} seconds")
@@ -116,6 +152,8 @@ def apply_test(test_parameters: dict, problem: CombinatorialProblem, miner: Feat
         return check_distribution_test(problem, miner, runs)
     elif test_type == "check_linkage":
         return check_linkage(problem, miner, runs)
+    elif test_type == "check_connectedness":
+        return check_connectedness(problem, miner, runs)
     elif test_type == "no_test":
         return no_test(problem, miner, runs)
     else:

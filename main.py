@@ -93,23 +93,19 @@ def test_command_line():
 
     settings = dict()
 
-    settings["problem"] = {"which": "binval",
-                           "size": 12,
-                           "base": 2}
+    settings["problem"] = Problems.make_problem("graph", "large")
 
     settings["criterion"] = {"which": "balance",
-                             "arguments": [{"which": "high_fitness"},
-                                           {"which": "extreme",
-                                            "argument": {"which": "consistent_fitness"}},
+                             "arguments": [{"which": "fitness_higher_than_average"},
                                            {"which": "explainability"}],
-                             "weights": [2, 2, 2]}
-    settings["test"] = {"which": "no_test",
-                        "runs": 3}
-    settings["miner"] = {"which": "constructive",
+                             "weights": [1, 3]}
+    settings["test"] = {"which": "check_connectedness",
+                        "runs": 1}
+    settings["miner"] = {"which": "destructive",
                          "stochastic": False,
-                         "at_most": 1,
+                         "at_least": 1,
                          "population_size": 72}
-    settings["sample_size"] = 1200
+    settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
 
 

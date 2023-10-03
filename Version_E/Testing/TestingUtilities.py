@@ -1,3 +1,4 @@
+import datetime
 import json
 from json import JSONDecodeError
 
@@ -45,10 +46,13 @@ def run_test(arguments: dict):
     miner = Miners.decode_miner(arguments["miner"], selector)
 
     test_dict = arguments["test"]
-    result_json = Tests.apply_test(test_dict, problem, miner)   # important part
+    runs = test_dict["runs"]
+    result_json = Tests.apply_test(test_dict, problem, miner)  # important part
 
     test_type = test_dict["which"]
-    output_name = f"{test_type}~{sample_size}~{problem}~{miner}"
+    date_and_time = datetime.datetime
+    now = datetime.datetime.now()
+    output_name = f"{test_type}~{sample_size}~{problem}~{miner}_({now.day}-{now.month})_[{now.hour}_{now.minute}].json"
 
     output_json = {"parameters": arguments, "result": result_json}
 
