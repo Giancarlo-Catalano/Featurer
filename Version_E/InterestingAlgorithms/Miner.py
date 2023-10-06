@@ -117,18 +117,8 @@ class LayeredFeatureMiner(FeatureMiner):
         :param amount_to_return: Res Ipsa Loquitur
         :return:
         """
-        tournament_size = 30
-        features_with_scores = previous_layer
-        weights = utils.unzip(features_with_scores)[1]
-        cumulative_weights = np.cumsum(weights)
-
-        def tournament_select() -> Feature:
-            extracted = random.choices(features_with_scores, cum_weights=cumulative_weights, k=tournament_size)
-            return max(extracted, key=utils.second)[0]
-
-        selected = set()
-        while len(selected) < amount_to_return:
-            selected.add(tournament_select())
+        features, weights = utils.unzip(previous_layer)
+        selected = random.choices(features, weights=weights, k=amount_to_return)
 
         return list(selected)
 

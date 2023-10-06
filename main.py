@@ -1,6 +1,7 @@
 import sys
 
-from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack, FourPeaks
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack, \
+    FourPeaks
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 import SearchSpace
 from BenchmarkProblems.Knapsack import KnapsackConstraint
@@ -93,17 +94,17 @@ def test_command_line():
 
     settings = dict()
 
-    settings["problem"] = Problems.make_problem("graph", "large")
+    settings["problem"] = Problems.make_problem("checkerboard", "large")
 
     settings["criterion"] = {"which": "balance",
-                             "arguments": [{"which": "fitness_higher_than_average"},
+                             "arguments": [{"which": "high_fitness"},
                                            {"which": "explainability"}],
-                             "weights": [1, 3]}
-    settings["test"] = {"which": "check_connectedness",
-                        "runs": 1}
-    settings["miner"] = {"which": "destructive",
-                         "stochastic": False,
-                         "at_least": 1,
+                             "weights": [2, 6]}
+    settings["test"] = {"which": "check_distribution",
+                        "runs": 60}
+    settings["miner"] = {"which": "constructive",
+                         "stochastic": True,
+                         "at_most": 4,
                          "population_size": 72}
     settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
@@ -121,7 +122,7 @@ def test_miner():
     criterion = Balance([is_explainable, has_good_fitness_consistently],
                         weights=[2, 1])
 
-    training_data = get_training_data(problem, sample_size=600)
+    training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
