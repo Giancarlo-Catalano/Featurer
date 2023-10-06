@@ -44,14 +44,14 @@ def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner
     return {"test_results": [single_run() for _ in range(runs)]}
 
 
-def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int) -> dict:
+def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int, features_per_run: int) -> dict:
     def register_feature(feature: Feature, accumulator):
         mask_array = np.array(feature.variable_mask.tolist())
         accumulator += mask_array
 
     def single_run():
         print("Start of a run")
-        mined_features, execution_time = execute_and_time(miner.get_meaningful_features, 100)
+        mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         cell_coverings = np.zeros(problem.search_space.dimensions, dtype=int)
         for feature in mined_features:
             register_feature(feature, cell_coverings)
@@ -69,6 +69,12 @@ def print_table_for_distribution(distribution_json: dict, original_problem):
 
     for row in counts:
         print("\t".join([f"{item}" for item in row]))
+
+
+def print_row_for_distribution(distribution_json: dict, original_problem):
+    counts = np.array([item["position_counts"] for item in distribution_json["test_results"]])
+    counts = np.sum(counts, axis=0)
+    print("\t".join([f"{item}" for item in counts]))
 
 
 def check_linkage(problem: BenchmarkProblems.GraphColouring.GraphColouringProblem, miner: FeatureMiner, runs: int):
@@ -171,7 +177,8 @@ def apply_test(test_parameters: dict, problem: CombinatorialProblem, miner: Feat
     if test_type == "count_ideals":
         return count_ideals_test(problem, miner, runs)
     elif test_type == "check_distribution":
-        print_table_for_distribution(check_distribution_test(problem, miner, runs), problem)
+        features_per_run = test_parameters["features_per_run"]
+        print_row_for_distribution(check_distribution_test(problem, miner, runs, features_per_run), problem)
     elif test_type == "check_linkage":
         return check_linkage(problem, miner, runs)
     elif test_type == "check_connectedness":

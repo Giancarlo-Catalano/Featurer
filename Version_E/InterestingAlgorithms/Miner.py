@@ -1,5 +1,6 @@
 import math
 import random
+import time
 from typing import Iterable
 
 import SearchSpace
@@ -118,6 +119,7 @@ class LayeredFeatureMiner(FeatureMiner):
         :return:
         """
         features, weights = utils.unzip(previous_layer)
+        random.seed(int(time.time()))  # to prevent predictable randomness
         selected = random.choices(features, weights=weights, k=amount_to_return)
 
         return list(selected)
@@ -160,7 +162,7 @@ class LayeredFeatureMiner(FeatureMiner):
             modified_features = [modified_feature
                                  for feature in selected_features
                                  for modified_feature in self.modifications_of_feature(feature)]
-            modified_features = list(set(modified_features)) # to remove duplicates
+            modified_features = utils.remove_duplicates(modified_features)
             return truncate_and_make_layer(modified_features)
 
         layers: list[Layer] = [get_initial_layer()]

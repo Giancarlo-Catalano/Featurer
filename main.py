@@ -94,18 +94,19 @@ def test_command_line():
 
     settings = dict()
 
-    settings["problem"] = Problems.make_problem("checkerboard", "large")
+    settings["problem"] = Problems.make_problem("onemax", "medium")
 
     settings["criterion"] = {"which": "balance",
                              "arguments": [{"which": "high_fitness"},
                                            {"which": "explainability"}],
                              "weights": [2, 6]}
     settings["test"] = {"which": "check_distribution",
-                        "runs": 60}
-    settings["miner"] = {"which": "constructive",
+                        "features_per_run": 300,
+                        "runs": 24}
+    settings["miner"] = {"which": "destructive",
                          "stochastic": True,
-                         "at_most": 4,
-                         "population_size": 72}
+                         "at_least": 1,
+                         "population_size": 144}
     settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
 
