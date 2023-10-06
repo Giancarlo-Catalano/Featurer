@@ -162,7 +162,7 @@ class LayeredFeatureMiner(FeatureMiner):
             modified_features = [modified_feature
                                  for feature in selected_features
                                  for modified_feature in self.modifications_of_feature(feature)]
-            modified_features = utils.remove_duplicates(modified_features)
+            modified_features = utils.remove_duplicates(modified_features, hashable=True)
             return truncate_and_make_layer(modified_features)
 
         layers: list[Layer] = [get_initial_layer()]
@@ -173,7 +173,6 @@ class LayeredFeatureMiner(FeatureMiner):
             # print(f"We're at iteration {iteration}")
             if self.should_terminate(iteration):
                 break
-
             layers.append(get_next_layer(layers[-1]))
 
         final_features = [feature

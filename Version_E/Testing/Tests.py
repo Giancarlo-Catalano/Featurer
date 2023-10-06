@@ -23,6 +23,23 @@ def run_multiple_times(func, runs, *args, **kwargs):
     return [func(*args, **kwargs) for _ in range(runs)]
 
 
+def check_successfullness(arguments: dict, miner: FeatureMiner, runs: int, features_per_run:int) -> dict:
+    problem_definition = arguments["problem"]
+
+    def get_problem_instance() -> TestableCombinatorialProblem:
+        return Problems.decode_problem(problem_definition)
+
+    def single_run() -> (int, int):
+        print("Start of a single run")
+        problem: TestableCombinatorialProblem = get_problem_instance()
+        mined_features = miner.get_meaningful_features(features_per_run)
+        ideals = [Feature.from_legacy_feature(ideal, problem.search_space) for ideal in problem.get_ideal_features()]
+        amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
+        return {"found": amount_of_found_ideals, "total":len(ideals)}
+
+    return {"test_results": [single_run() for _ in range(runs)]}
+
+
 def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner, runs: int) -> dict:
     ideals = problem.get_ideal_features()
     ideals = [Feature.from_legacy_feature(ideal, problem.search_space)
@@ -44,7 +61,8 @@ def count_ideals_test(problem: TestableCombinatorialProblem, miner: FeatureMiner
     return {"test_results": [single_run() for _ in range(runs)]}
 
 
-def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int, features_per_run: int) -> dict:
+def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int,
+                            features_per_run: int) -> dict:
     def register_feature(feature: Feature, accumulator):
         mask_array = np.array(feature.variable_mask.tolist())
         accumulator += mask_array
@@ -75,6 +93,19 @@ def print_row_for_distribution(distribution_json: dict, original_problem):
     counts = np.array([item["position_counts"] for item in distribution_json["test_results"]])
     counts = np.sum(counts, axis=0)
     print("\t".join([f"{item}" for item in counts]))
+
+
+def print_count_in_test(counts_json: dict):
+    counts = np.array([item["position_counts"] for item in counts_json["test_results"]])
+    counts = np.sum(counts, axis=0)
+    print("\t".join([f"{item}" for item in counts]))
+
+
+
+def print_count_pairs(counts_json: dict):
+    pairs = [(item["found"], item["total"]) for item in counts_json["test_results"]]
+    for found, total in pairs:
+        print(f"{found}\t{total}")
 
 
 def check_linkage(problem: BenchmarkProblems.GraphColouring.GraphColouringProblem, miner: FeatureMiner, runs: int):
@@ -110,9 +141,7 @@ def check_linkage(problem: BenchmarkProblems.GraphColouring.GraphColouringProble
 
     return {"test_results": [single_run() for _ in range(runs)]}
 
-
 def check_connectedness(arguments: dict, runs: int):
-
     def single_run():
         print("starting a single run")
         problem: BenchmarkProblems.GraphColouring.GraphColouringProblem = Problems.decode_problem(arguments["problem"])
@@ -148,7 +177,8 @@ def check_connectedness(arguments: dict, runs: int):
     return {"test_results": [single_run() for _ in range(runs)]}
 
 
-def no_test(problem: BenchmarkProblems.CombinatorialProblem.TestableCombinatorialProblem, miner: FeatureMiner, runs: int):
+def no_test(problem: BenchmarkProblems.CombinatorialProblem.TestableCombinatorialProblem, miner: FeatureMiner,
+            runs: int):
     print(f"The generated problem is {problem}, more specifically \n{problem.long_repr()}")
 
     ideals = problem.get_ideal_features()
@@ -157,6 +187,7 @@ def no_test(problem: BenchmarkProblems.CombinatorialProblem.TestableCombinatoria
     for ideal in ideals:
         print(f"Ideal {problem.feature_repr(ideal.to_legacy_feature())}")
         print(miner.feature_selector.criterion.describe_feature(ideal, miner.feature_selector.ppi))
+
     def single_run():
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, 100)
         print(f"The process took {execution_time} seconds")
@@ -183,10 +214,10 @@ def apply_test(test_parameters: dict, problem: CombinatorialProblem, miner: Feat
         return check_linkage(problem, miner, runs)
     elif test_type == "check_connectedness":
         return check_connectedness(arguments, runs)
+    elif test_type == "check_successfullness":
+        features_per_run = test_parameters["features_per_run"]
+        print_count_pairs(check_successfullness(arguments, miner, runs, features_per_run))
     elif test_type == "no_test":
         return no_test(problem, miner, runs)
     else:
         raise Exception("Test was not recognised")
-
-
-

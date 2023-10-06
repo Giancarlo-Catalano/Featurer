@@ -86,23 +86,25 @@ def show_all_ideals():
 
 
 def test_command_line():
-    command_line_arguments = sys.argv
-    if len(command_line_arguments) < 2:
-        raise Exception("Not enough arguments")
+    #command_line_arguments = sys.argv
+    #if len(command_line_arguments) < 2:
+    #    raise Exception("Not enough arguments")
 
     # settings = TestingUtilities.to_json_object(command_line_arguments[1])
 
     settings = dict()
 
-    settings["problem"] = Problems.make_problem("onemax", "medium")
+    settings["problem"] = Problems.make_problem("artificial", "medium")
 
     settings["criterion"] = {"which": "balance",
-                             "arguments": [{"which": "high_fitness"},
-                                           {"which": "explainability"}],
-                             "weights": [2, 6]}
-    settings["test"] = {"which": "check_distribution",
-                        "features_per_run": 300,
-                        "runs": 24}
+                    "arguments": [{"which": "fitness_higher_than_average"},
+                                   {"which": "consistent_fitness"},
+                                   {"which": "explainability"}],
+                    "weights": [2, 1, 4]}
+
+    settings["test"] = {"which": "check_successfullness",
+                        "features_per_run": 120,
+                        "runs": 12}
     settings["miner"] = {"which": "destructive",
                          "stochastic": True,
                          "at_least": 1,
