@@ -98,17 +98,16 @@ def test_command_line():
 
     settings["criterion"] = {"which": "balance",
                     "arguments": [{"which": "fitness_higher_than_average"},
-                                   {"which": "consistent_fitness"},
                                    {"which": "explainability"}],
-                    "weights": [2, 1, 4]}
+                    "weights": [2, 7]}
 
-    settings["test"] = {"which": "check_successfullness",
+    settings["test"] = {"which": "no_test",
                         "features_per_run": 120,
                         "runs": 12}
     settings["miner"] = {"which": "destructive",
-                         "stochastic": True,
+                         "stochastic": False,
                          "at_least": 1,
-                         "population_size": 144}
+                         "population_size": 72}
     settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
 

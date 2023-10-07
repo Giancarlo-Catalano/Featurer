@@ -64,6 +64,8 @@ class Candidate:
 
         return all(contains_var_val(var, val) for var, val in feature.var_vals)
 
+
+
 class SearchSpace:
     cardinalities: tuple[int]
     precomputed_offsets: list[int]
