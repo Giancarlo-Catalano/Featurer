@@ -29,21 +29,13 @@ def error_result(description) -> JSON:
 def run_test(arguments: dict):
     print(f"Received the arguments {arguments}")
 
-    problem = Problems.decode_problem(arguments["problem"])
-    criterion = Criteria.decode_criterion(arguments["criterion"], problem)
-    sample_size = arguments["sample_size"]
-    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-
-    selector = FeatureSelector(training_ppi, criterion)
-    miner = Miners.decode_miner(arguments["miner"], selector)
-
-    test_dict = arguments["test"]
-    result_json = Tests.apply_test(test_dict, problem, miner, arguments)  # important part
+    result_json = Tests.apply_test(arguments)  # important part
 
     test_type = arguments["test"]["which"]
-    problem = Problems.decode_problem(arguments["problem"])
+    problem_kind = arguments["problem"]["which"]
+    miner_kind = arguments["miner"]["which"]
     now = datetime.datetime.now()
-    output_name = f"{test_type}~{problem}~{miner}_({now.day}-{now.month})_[{now.hour}_{now.minute}].json"
+    output_name = f"{test_type}~{problem_kind}~{miner_kind}_({now.day}-{now.month})_[{now.hour}_{now.minute}].json"
 
     output_json = {"parameters": arguments, "result": result_json}
 
