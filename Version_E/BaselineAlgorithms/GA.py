@@ -79,10 +79,7 @@ class GAMiner(FeatureMiner):
             child = self.mutate(child)
             return child
 
-        children = set()
-        while len(children) < self.population_size:
-            children.add(make_child())
-
+        children = list(utils.generate_distinct(make_child, self.population_size))
         return self.with_scores(children)
 
     def mine_features(self) -> list[Feature]:

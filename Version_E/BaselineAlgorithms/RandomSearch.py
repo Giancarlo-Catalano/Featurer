@@ -4,6 +4,7 @@ import numpy as np
 from bitarray import frozenbitarray
 from bitarray.util import urandom
 
+import utils
 from SearchSpace import SearchSpace
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector, FeatureMiner
@@ -29,5 +30,8 @@ class RandomSearch(FeatureMiner):
     def __repr__(self):
         return f"RandomSearch(population = {self.amount_to_generate}"
 
+    def get_random_feature(self) -> Feature:
+        return random_feature_in_search_space(self.search_space)
+
     def mine_features(self) -> list[Feature]:
-        return [random_feature_in_search_space(self.search_space) for _ in range(self.amount_to_generate)]
+        return list(utils.generate_distinct(self.get_random_feature, self.amount_to_generate))

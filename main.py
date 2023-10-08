@@ -104,8 +104,7 @@ def test_command_line():
     settings["test"] = {"which": "check_successfullness",
                         "features_per_run": 100,
                         "runs": 12}
-    settings["miner"] = {"which": "ga",
-                         "iterations": 25,
+    settings["miner"] = {"which": "random",
                          "stochastic": False,
                          "at_least": 1,
                          "population_size": 72}

@@ -7,6 +7,7 @@ import random
 import time
 import traceback
 import warnings
+from typing import Callable
 
 import numpy as np
 
@@ -427,3 +428,10 @@ def remove_duplicates(input_list: list, hashable=False):
         return list(set(input_list))
     else:
         raise Exception("I don't know how to remove duplicates from an unhashable list, yet")
+
+
+def generate_distinct(generator: Callable, amount: int) -> set:
+    result = set()
+    while len(result) < amount:
+        result.add(generator())
+    return result

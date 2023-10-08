@@ -1,5 +1,6 @@
 import copy
 
+import utils
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
 from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_space
@@ -43,4 +44,4 @@ class HillClimber(FeatureMiner):
             start = random_feature_in_search_space(self.search_space)
             return self.improve_feature_until_stationary(start)
 
-        return [mine_feature() for _ in range(self.amount_to_generate)]
+        return list(utils.generate_distinct(mine_feature, self.amount_to_generate))
