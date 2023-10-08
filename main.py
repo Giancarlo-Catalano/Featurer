@@ -103,12 +103,13 @@ def test_command_line():
 
     settings["test"] = {"which": "check_successfullness",
                         "features_per_run": 100,
-                        "runs": 1}
-    settings["miner"] = {"which": "constructive",
+                        "runs": 12}
+    settings["miner"] = {"which": "ga",
+                         "iterations": 25,
                          "stochastic": False,
-                         "at_most": 5,
+                         "at_least": 1,
                          "population_size": 72}
-    settings["sample_size"] = 2400
+    settings["sample_size"] = 1200
     TestingUtilities.run_test(settings)
 
 

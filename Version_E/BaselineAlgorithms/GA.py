@@ -60,8 +60,7 @@ class GAMiner(FeatureMiner):
 
     def tournament_select(self, population: list[(Feature, float)]) -> Feature:
         tournament_pool = random.choices(population, k=self.tournament_size)
-        tournament_pool.sort(key=utils.second, reverse=True)
-        winner, score_of_winner = tournament_pool[0]
+        winner = max(tournament_pool, key=utils.second)[0]
         return winner
 
     def with_scores(self, features) -> list[(Feature, float)]:
@@ -72,7 +71,7 @@ class GAMiner(FeatureMiner):
         individuals = [random_feature_in_search_space(self.search_space) for _ in range(self.population_size)]
         return self.with_scores(individuals)
 
-    def get_next_population(self, previous_population: list[(Feature, float)]):
+    def get_next_population(self, previous_population: list[(Feature, float)]) -> list[(Feature, float)]:
         def make_child() -> Feature:
             mother = self.tournament_select(previous_population)
             father = self.tournament_select(previous_population)
@@ -80,7 +79,11 @@ class GAMiner(FeatureMiner):
             child = self.mutate(child)
             return child
 
-        return self.with_scores([make_child() for _ in range(self.population_size)])
+        children = set()
+        while len(children) < self.population_size:
+            children.add(make_child())
+
+        return self.with_scores(children)
 
     def mine_features(self) -> list[Feature]:
         population = self.get_initial_population()
