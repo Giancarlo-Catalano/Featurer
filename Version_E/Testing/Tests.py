@@ -62,7 +62,7 @@ def check_successfullness(arguments: Settings, runs: int, features_per_run: int,
     return result
 
 
-def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int,
+def check_distribution_test(arguments: Settings, runs: int,
                             features_per_run: int) -> TestResults:
     def register_feature(feature: Feature, accumulator):
         mask_array = np.array(feature.variable_mask.tolist())
@@ -70,6 +70,7 @@ def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, 
 
     def single_run():
         print("Start of a run")
+        problem, miner = generate_problem_miner(arguments)
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         cell_coverings = np.zeros(problem.search_space.dimensions, dtype=int)
         for feature in mined_features:
@@ -196,9 +197,7 @@ def apply_test(arguments: dict) -> dict:
     test_kind = test_parameters["which"]
 
     if test_kind == "check_distribution":
-        problem, miner = generate_problem_miner(arguments)
-        return check_distribution_test(problem=problem,
-                                       miner=miner,
+        return check_distribution_test(arguments,
                                        runs=test_parameters["runs"],
                                        features_per_run=test_parameters["features_per_run"])
     elif test_kind == "check_connectedness":

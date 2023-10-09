@@ -128,24 +128,24 @@ def test_command_line():
 
     settings = dict()
 
-    settings["problem"] = Problems.make_problem("artificial", "medium")
+    settings["problem"] = {"which": "binval",
+                           "size":25,
+                           "base": 1.1}
 
     settings["criterion"] = {"which": "balance",
-                             "arguments": [{"which": "fitness_higher_than_average"},
-                                           {"which": "consistent_fitness"},
+                             "arguments": [{"which": "high_fitness"},
                                            {"which": "explainability"}],
-                             "weights": [2, 1, 4]}
+                             "weights": [2, 1]}
 
 
-    settings["test"] = {"which": "check_miners",
+    settings["test"] = {"which": "check_distribution",
                         "features_per_run": 100,
-                        "runs": 36,
-                        "miners": many_miners}
-    settings["miner"] = {"which": "irrelevant",
+                        "runs": 600}
+    settings["miner"] = {"which": "constructive",
                          "stochastic": True,
-                         "at_most": 4,
+                         "at_most": 5,
                          "population_size": 144}
-    settings["sample_size"] = 1200
+    settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
 
 
