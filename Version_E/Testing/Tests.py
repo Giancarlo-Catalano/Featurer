@@ -1,4 +1,5 @@
 import itertools
+import json
 import time
 
 import numpy as np
@@ -9,6 +10,9 @@ from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import Problems, Criteria, Miners
+
+Settings = dict
+TestResults = dict
 
 
 def execute_and_time(func, *args, **kwargs):
@@ -23,20 +27,24 @@ def run_multiple_times(func, runs, *args, **kwargs):
     return [func(*args, **kwargs) for _ in range(runs)]
 
 
-def generate_problem_miner(arguments: dict) -> (CombinatorialProblem, FeatureMiner):
+def generate_problem_miner(arguments: Settings, miner_arguments=None) -> (CombinatorialProblem, FeatureMiner):
     problem = Problems.decode_problem(arguments["problem"])
     criterion = Criteria.decode_criterion(arguments["criterion"], problem)
     sample_size = arguments["sample_size"]
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
-    miner = Miners.decode_miner(arguments["miner"], selector)
+
+    if miner_arguments is None:
+        miner_arguments = arguments["miner"]
+    miner = Miners.decode_miner(miner_arguments, selector)
     return problem, miner
 
 
-def check_successfullness(arguments: dict, runs: int, features_per_run: int) -> dict:
+def check_successfullness(arguments: Settings, runs: int, features_per_run: int, miner_arguments=None,
+                          debug=False) -> TestResults:
     def single_run() -> (int, int):
         print("Start of a single run")
-        problem, miner = generate_problem_miner(arguments)
+        problem, miner = generate_problem_miner(arguments, miner_arguments=miner_arguments)
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         ideals = [Feature.from_legacy_feature(ideal, problem.search_space) for ideal in problem.get_ideal_features()]
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
@@ -48,12 +56,14 @@ def check_successfullness(arguments: dict, runs: int, features_per_run: int) -> 
             print(f"{found}\t{total}")
 
     result = {"test_results": [single_run() for _ in range(runs)]}
-    print_count_pairs(result)
+    if debug:
+        print_count_pairs(result)
+
     return result
 
 
 def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, runs: int,
-                            features_per_run: int) -> dict:
+                            features_per_run: int) -> TestResults:
     def register_feature(feature: Feature, accumulator):
         mask_array = np.array(feature.variable_mask.tolist())
         accumulator += mask_array
@@ -67,10 +77,19 @@ def check_distribution_test(problem: CombinatorialProblem, miner: FeatureMiner, 
         return {"position_counts": [int(count) for count in cell_coverings],
                 "runtime": execution_time}
 
-    return {"test_results": [single_run() for _ in range(runs)]}
+    result = {"test_results": [single_run() for _ in range(runs)]}
+
+    def print_overall_distribution(results: TestResults):
+        counts = np.array([item["position_counts"] for item in results["test_results"]])
+        counts = np.sum(counts, axis=0)
+        print("\t".join([f"{item}" for item in counts]))
+
+    print_overall_distribution(result)
+
+    return result
 
 
-def print_table_for_distribution(distribution_json: dict, original_problem):
+def print_table_for_distribution(distribution_json: TestResults, original_problem):
     counts = np.array([item["position_counts"] for item in distribution_json["test_results"]])
 
     counts = np.sum(counts, axis=0)
@@ -80,13 +99,25 @@ def print_table_for_distribution(distribution_json: dict, original_problem):
         print("\t".join([f"{item}" for item in row]))
 
 
-def print_row_for_distribution(distribution_json: dict, original_problem):
-    counts = np.array([item["position_counts"] for item in distribution_json["test_results"]])
-    counts = np.sum(counts, axis=0)
-    print("\t".join([f"{item}" for item in counts]))
+
+def make_csv_for_successes(input_name, output_name: str):
+    with open(input_name, "r") as input_file:
+        data = json.load(input_file)
+        miners_and_results = [(item["miner"], item["result"]) for item in data["result"]["test_results"]]
+
+        def convert_pairs(pairs_list):
+            return [item["found"] for item in pairs_list]
+
+        miners_and_results = [(miner, convert_pairs(result)) for miner, result in miners_and_results]
+
+        with open(output_name, "w") as output_file:
+            for miner, results in miners_and_results:
+                output_file.write(f"{miner}\t" + '\t'.join(f"{value}" for value in results))
 
 
-def check_connectedness(arguments: dict, runs: int, features_per_run: int):
+
+
+def check_connectedness(arguments: Settings, runs: int, features_per_run: int) -> TestResults:
     def single_run():
         print("starting a single run")
         problem, miner = generate_problem_miner(arguments)
@@ -98,8 +129,8 @@ def check_connectedness(arguments: dict, runs: int, features_per_run: int):
             return len([(node_a, node_b) for node_a, node_b in itertools.combinations(node_list, 2)
                         if are_connected(node_a, node_b)])
 
-        def register_feature(feature: Feature, accumulator: list[(int, int)]):
-            present_nodes = [var for var, val in feature.to_var_val_pairs()]
+        def register_feature(feature_to_register: Feature, accumulator: list[(int, int)]):
+            present_nodes = [var for var, val in feature_to_register.to_var_val_pairs()]
             amount_of_nodes = len(present_nodes)
             accumulator.append((amount_of_nodes, count_edges(present_nodes)))
 
@@ -114,6 +145,21 @@ def check_connectedness(arguments: dict, runs: int, features_per_run: int):
                 "runtime": execution_time}
 
     return {"test_results": [single_run() for _ in range(runs)]}
+
+
+def check_miners(arguments: Settings, features_per_run: int, runs_per_miner: int, miners_settings_list: list[Settings]) -> TestResults:
+
+    def single_run(miner_arguments) -> dict:
+        print(f"executing {miner_arguments}")
+        results = check_successfullness(arguments,
+                                        runs=runs_per_miner,
+                                        features_per_run=features_per_run,
+                                        miner_arguments=miner_arguments)
+
+        return {"miner": miner_arguments,
+                "result": results["test_results"]}
+
+    return {"test_results": [single_run(miner_arguments) for miner_arguments in miners_settings_list]}
 
 
 def no_test(problem: BenchmarkProblems.CombinatorialProblem.TestableCombinatorialProblem,
@@ -163,6 +209,11 @@ def apply_test(arguments: dict) -> dict:
         return check_successfullness(arguments=arguments,
                                      runs=test_parameters["runs"],
                                      features_per_run=test_parameters["features_per_run"])
+    elif test_kind == "check_miners":
+        return check_miners(arguments,
+                            runs_per_miner=test_parameters["runs"],
+                            features_per_run = test_parameters["features_per_run"],
+                            miners_settings_list = test_parameters["miners"])
     elif test_kind == "no_test":
         problem, miner = generate_problem_miner(arguments)
         return no_test(problem=problem,

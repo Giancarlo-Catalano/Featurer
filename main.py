@@ -1,5 +1,6 @@
 import sys
 
+import utils
 from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack, \
     FourPeaks
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
@@ -85,6 +86,39 @@ def show_all_ideals():
         print("_" * 40)
 
 
+
+constructive_miners = [{"which": "constructive",
+                        "stochastic": stochastic_item,
+                        "at_most": 5,
+                        "population_size": population_item}
+                       for stochastic_item in [True, False]
+                       for population_item in [36, 72, 144]]
+
+destructive_miners = [{"which": "destructive",
+                        "stochastic": stochastic_item,
+                        "at_least": 1,
+                        "population_size": population_item}
+                       for stochastic_item in [True, False]
+                       for population_item in [36, 72, 144]]
+
+ga_miners = [{"which": "ga",
+             "iterations": iteration_item,
+             "population_size": population_item}
+            for iteration_item in [5, 10, 20]
+            for population_item in [36, 72, 144]]
+
+
+random_miners = [{"which": "random",
+                  "population_size": population_item}
+                 for population_item in [36, 72, 144]]
+
+hill_climber = [{"which": "hill_climber",
+                 "population_size": population_item}
+                for population_item in [36, 72, 144]]
+
+many_miners = utils.concat_lists([constructive_miners, destructive_miners, ga_miners, random_miners, hill_climber])
+
+
 def test_command_line():
     # command_line_arguments = sys.argv
     # if len(command_line_arguments) < 2:
@@ -98,16 +132,19 @@ def test_command_line():
 
     settings["criterion"] = {"which": "balance",
                              "arguments": [{"which": "fitness_higher_than_average"},
+                                           {"which": "consistent_fitness"},
                                            {"which": "explainability"}],
-                             "weights": [4, 2]}
+                             "weights": [2, 1, 4]}
 
-    settings["test"] = {"which": "check_successfullness",
+
+    settings["test"] = {"which": "check_miners",
                         "features_per_run": 100,
-                        "runs": 12}
-    settings["miner"] = {"which": "random",
-                         "stochastic": False,
-                         "at_least": 1,
-                         "population_size": 72}
+                        "runs": 36,
+                        "miners": many_miners}
+    settings["miner"] = {"which": "irrelevant",
+                         "stochastic": True,
+                         "at_most": 4,
+                         "population_size": 144}
     settings["sample_size"] = 1200
     TestingUtilities.run_test(settings)
 

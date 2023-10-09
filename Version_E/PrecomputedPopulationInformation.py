@@ -17,6 +17,9 @@ class PrecomputedPopulationInformation:
         self.fitness_array = np.array(fitness_list)
         self.sample_size = len(population_sample)
 
+    def __repr__(self):
+        return f"PPI(sample_size = {self.sample_size})"
+
     @classmethod
     def from_problem(cls, problem: CombinatorialProblem.CombinatorialProblem,
                      amount_of_samples: int):
