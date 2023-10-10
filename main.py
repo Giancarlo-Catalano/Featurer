@@ -128,10 +128,10 @@ def test_command_line():
 
     settings = dict()
 
-    settings["problem"] = {"which": "checkerboard",
-                           "rows":8,
-                           "cols":8,
-                           "base": 1.1}
+    settings["problem"] = {"which": "graph",
+                           "amount_of_colours":3,
+                           "amount_of_nodes": 6,
+                           "chance_of_connection": 0.3}
 
     settings["criterion"] = {"which": "balance",
                              "arguments": [{"which": "high_fitness"},
@@ -139,11 +139,11 @@ def test_command_line():
                              "weights": [2, 1]}
 
 
-    settings["test"] = {"which": "check_distribution",
+    settings["test"] = {"which": "check_connectedness",
                         "features_per_run": 200,
                         "runs": 60}
     settings["miner"] = {"which": "constructive",
-                         "stochastic": True,
+                         "stochastic": False,
                          "at_most": 5,
                          "population_size": 72}
     settings["sample_size"] = 2400

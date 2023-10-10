@@ -2,6 +2,7 @@ import itertools
 import json
 import math
 import time
+import random
 
 import numpy as np
 
@@ -11,6 +12,7 @@ from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import Problems, Criteria, Miners
+from collections import defaultdict
 
 Settings = dict
 TestResults = dict
@@ -120,7 +122,7 @@ def make_csv_for_successes(input_name, output_name: str):
 
 
 
-def check_connectedness(arguments: Settings, runs: int, features_per_run: int) -> TestResults:
+def check_connectedness(arguments: Settings, runs: int, features_per_run: int, with_binomial_distribution=False) -> TestResults:
     def single_run():
         print("starting a single run")
         problem, miner = generate_problem_miner(arguments)
@@ -132,12 +134,12 @@ def check_connectedness(arguments: Settings, runs: int, features_per_run: int) -
             return len([(node_a, node_b) for node_a, node_b in itertools.combinations(node_list, 2)
                         if are_connected(node_a, node_b)])
 
-        def register_feature(feature_to_register: Feature, accumulator: list[(int, int)]):
+        def register_feature(feature_to_register: Feature, accumulator: defaultdict[int, list]):
             present_nodes = [var for var, val in feature_to_register.to_var_val_pairs()]
             amount_of_nodes = len(present_nodes)
-            accumulator.append((amount_of_nodes, count_edges(present_nodes)))
+            accumulator[amount_of_nodes].append(count_edges(present_nodes))
 
-        edge_counts = []
+        edge_counts = defaultdict(list)
 
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         for feature in mined_features:
@@ -148,6 +150,14 @@ def check_connectedness(arguments: Settings, runs: int, features_per_run: int) -
                 "runtime": execution_time}
 
     return {"test_results": [single_run() for _ in range(runs)]}
+
+
+
+def sample_from_binomial_distribution(n: int, chance_of_success: float, samples: int) -> list[int]:
+    def single_sample():
+        return sum([random.random() < chance_of_success for _ in range(n)])
+
+    return [single_sample() for _ in range(samples)]
 
 
 def check_miners(arguments: Settings, features_per_run: int, runs_per_miner: int, miners_settings_list: list[Settings]) -> TestResults:
