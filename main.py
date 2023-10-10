@@ -128,8 +128,9 @@ def test_command_line():
 
     settings = dict()
 
-    settings["problem"] = {"which": "binval",
-                           "size":25,
+    settings["problem"] = {"which": "checkerboard",
+                           "rows":8,
+                           "cols":8,
                            "base": 1.1}
 
     settings["criterion"] = {"which": "balance",
@@ -139,12 +140,12 @@ def test_command_line():
 
 
     settings["test"] = {"which": "check_distribution",
-                        "features_per_run": 100,
-                        "runs": 600}
+                        "features_per_run": 200,
+                        "runs": 60}
     settings["miner"] = {"which": "constructive",
                          "stochastic": True,
                          "at_most": 5,
-                         "population_size": 144}
+                         "population_size": 72}
     settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
 

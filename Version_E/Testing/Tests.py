@@ -1,5 +1,6 @@
 import itertools
 import json
+import math
 import time
 
 import numpy as np
@@ -80,26 +81,27 @@ def check_distribution_test(arguments: Settings, runs: int,
 
     result = {"test_results": [single_run() for _ in range(runs)]}
 
-    def print_overall_distribution(results: TestResults):
+    def get_flat_distribution(results: TestResults) -> np.ndarray:
         counts = np.array([item["position_counts"] for item in results["test_results"]])
         counts = np.sum(counts, axis=0)
-        print("\t".join([f"{item}" for item in counts]))
+        return counts
 
-    print_overall_distribution(result)
+    def print_row_distribution(results: TestResults):
+        print("\t".join([f"{item}" for item in get_flat_distribution(results)]))
+
+    def print_table_distribution(results: TestResults):
+        counts = get_flat_distribution(results)
+        rows = math.floor(math.sqrt(len(counts)))  # assumes it's a square
+        counts = counts.reshape((rows, -1))
+        for row in counts:
+            print("\t".join([f"{item}" for item in row]))
+
+    if arguments["problem"]["which"] == "checkerboard":
+        print_table_distribution(result)
+    else:
+        print_row_distribution(result)
 
     return result
-
-
-def print_table_for_distribution(distribution_json: TestResults, original_problem):
-    counts = np.array([item["position_counts"] for item in distribution_json["test_results"]])
-
-    counts = np.sum(counts, axis=0)
-    counts = counts.reshape((original_problem.rows, -1))
-
-    for row in counts:
-        print("\t".join([f"{item}" for item in row]))
-
-
 
 def make_csv_for_successes(input_name, output_name: str):
     with open(input_name, "r") as input_file:
