@@ -16,6 +16,7 @@ from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.Testing import TestingUtilities, Problems, Criteria
+from Version_E.Testing.Tests import make_csv_for_connectedness
 
 trap5 = TrapK.TrapK(5, 3)
 checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
@@ -129,8 +130,8 @@ def test_command_line():
     settings = dict()
 
     settings["problem"] = {"which": "graph",
-                           "amount_of_colours":3,
-                           "amount_of_nodes": 6,
+                           "amount_of_colours": 4,
+                           "amount_of_nodes": 12,
                            "chance_of_connection": 0.3}
 
     settings["criterion"] = {"which": "balance",
@@ -145,7 +146,7 @@ def test_command_line():
     settings["miner"] = {"which": "constructive",
                          "stochastic": False,
                          "at_most": 5,
-                         "population_size": 72}
+                         "population_size": 36}
     settings["sample_size"] = 2400
     TestingUtilities.run_test(settings)
 
@@ -193,4 +194,5 @@ def test_miner():
 
 
 if __name__ == '__main__':
+    #make_csv_for_connectedness("check_connectedness~graph~constructive_(10-10)_[14_9].json", "conn_out_3.csv")
     test_command_line()

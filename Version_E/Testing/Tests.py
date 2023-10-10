@@ -7,6 +7,7 @@ import random
 import numpy as np
 
 import BenchmarkProblems.GraphColouring
+import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
@@ -105,6 +106,7 @@ def check_distribution_test(arguments: Settings, runs: int,
 
     return result
 
+
 def make_csv_for_successes(input_name, output_name: str):
     with open(input_name, "r") as input_file:
         data = json.load(input_file)
@@ -120,9 +122,42 @@ def make_csv_for_successes(input_name, output_name: str):
                 output_file.write(f"{miner}\t" + '\t'.join(f"{value}" for value in results))
 
 
+def make_csv_for_connectedness(input_name, output_name: str):
+    def merge_dicts(dicts: list[dict]):
+        def items_for_key(key):
+            recovered_items = [single_dict.setdefault(key, []) for single_dict in dicts]
+            return utils.concat_lists(recovered_items)
+
+        all_keys = {key for single_dict in dicts
+                    for key in single_dict.keys()}
+        return {key: items_for_key(key) for key in all_keys}
+
+    with open(input_name, "r") as input_file:
+        data = json.load(input_file)
+        trials = [item["edge_counts"] for item in data["result"]["test_results"]]
+        baselines = [item["binomial_distributions"] for item in data["result"]["test_results"]]
+
+        # aggregate different trial runs
+        merged_trials = merge_dicts(trials)
+        merged_baselines = merge_dicts(baselines)
+
+        # sort by amount of nodes
+        merged_trials = dict(sorted(merged_trials.items(), key=utils.first))
+        merged_baselines = dict(sorted(merged_baselines.items(), key=utils.first))
+
+        with open(output_name, "w") as output_file:
+            for (observed_key, observed_values), (expected_key, expected_values) in zip(merged_trials.items(),
+                                                                                        merged_baselines.items()):
+                output_file.write(f"Observed_{observed_key}")
+                output_file.write("".join([f"\t{item}" for item in observed_values]))
+                output_file.write("\n")
+                output_file.write(f"Expected_{expected_key}")
+                output_file.write("".join([f"\t{item}" for item in expected_values]))
+                output_file.write("\n")
 
 
-def check_connectedness(arguments: Settings, runs: int, features_per_run: int, with_binomial_distribution=False) -> TestResults:
+def check_connectedness(arguments: Settings, runs: int, features_per_run: int,
+                        with_binomial_distribution=False) -> TestResults:
     def single_run():
         print("starting a single run")
         problem, miner = generate_problem_miner(arguments)
@@ -145,12 +180,19 @@ def check_connectedness(arguments: Settings, runs: int, features_per_run: int, w
         for feature in mined_features:
             register_feature(feature, edge_counts)
 
+        samples_for_each = runs ** 2  # arbitrary
+
+        binomial_distributions = {node_amount: sample_from_binomial_distribution(int(node_amount * node_amount / 2),
+                                                                                 problem.chance_of_connection,
+                                                                                 samples_for_each)
+                                  for node_amount in edge_counts.keys()}
+
         return {"edge_counts": edge_counts,
                 "chance_of_connection": problem.chance_of_connection,
+                "binomial_distributions": binomial_distributions,
                 "runtime": execution_time}
 
     return {"test_results": [single_run() for _ in range(runs)]}
-
 
 
 def sample_from_binomial_distribution(n: int, chance_of_success: float, samples: int) -> list[int]:
@@ -160,8 +202,8 @@ def sample_from_binomial_distribution(n: int, chance_of_success: float, samples:
     return [single_sample() for _ in range(samples)]
 
 
-def check_miners(arguments: Settings, features_per_run: int, runs_per_miner: int, miners_settings_list: list[Settings]) -> TestResults:
-
+def check_miners(arguments: Settings, features_per_run: int, runs_per_miner: int,
+                 miners_settings_list: list[Settings]) -> TestResults:
     def single_run(miner_arguments) -> dict:
         print(f"executing {miner_arguments}")
         results = check_successfullness(arguments,
@@ -223,8 +265,8 @@ def apply_test(arguments: dict) -> dict:
     elif test_kind == "check_miners":
         return check_miners(arguments,
                             runs_per_miner=test_parameters["runs"],
-                            features_per_run = test_parameters["features_per_run"],
-                            miners_settings_list = test_parameters["miners"])
+                            features_per_run=test_parameters["features_per_run"],
+                            miners_settings_list=test_parameters["miners"])
     elif test_kind == "no_test":
         problem, miner = generate_problem_miner(arguments)
         return no_test(problem=problem,
