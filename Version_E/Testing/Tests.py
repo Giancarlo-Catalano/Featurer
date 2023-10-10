@@ -135,24 +135,31 @@ def make_csv_for_connectedness(input_name, output_name: str):
     with open(input_name, "r") as input_file:
         data = json.load(input_file)
         trials = [item["edge_counts"] for item in data["result"]["test_results"]]
-        baselines = [item["binomial_distributions"] for item in data["result"]["test_results"]]
 
         # aggregate different trial runs
         merged_trials = merge_dicts(trials)
-        merged_baselines = merge_dicts(baselines)
+        def get_samples_for_amount_of_nodes(amount_of_nodes) -> list[int]:
+            possible_connections = amount_of_nodes*(amount_of_nodes-1)//2
+            chance_of_connection = data["parameters"]["problem"]["chance_of_connection"]
+            sample_size = 1000
+            return sample_from_binomial_distribution(possible_connections, chance_of_connection, sample_size)
+        merged_baselines = {amount_of_nodes: get_samples_for_amount_of_nodes(int(amount_of_nodes))
+                            for amount_of_nodes in merged_trials.keys()}
 
         # sort by amount of nodes
         merged_trials = dict(sorted(merged_trials.items(), key=utils.first))
         merged_baselines = dict(sorted(merged_baselines.items(), key=utils.first))
 
+        sample_limit = 1200
+
         with open(output_name, "w") as output_file:
             for (observed_key, observed_values), (expected_key, expected_values) in zip(merged_trials.items(),
                                                                                         merged_baselines.items()):
                 output_file.write(f"Observed_{observed_key}")
-                output_file.write("".join([f"\t{item}" for item in observed_values]))
+                output_file.write("".join([f"\t{item}" for item in observed_values[:sample_limit]]))
                 output_file.write("\n")
                 output_file.write(f"Expected_{expected_key}")
-                output_file.write("".join([f"\t{item}" for item in expected_values]))
+                output_file.write("".join([f"\t{item}" for item in expected_values[:sample_limit]]))
                 output_file.write("\n")
 
 
@@ -180,16 +187,8 @@ def check_connectedness(arguments: Settings, runs: int, features_per_run: int,
         for feature in mined_features:
             register_feature(feature, edge_counts)
 
-        samples_for_each = runs ** 2  # arbitrary
-
-        binomial_distributions = {node_amount: sample_from_binomial_distribution(int(node_amount * node_amount / 2),
-                                                                                 problem.chance_of_connection,
-                                                                                 samples_for_each)
-                                  for node_amount in edge_counts.keys()}
-
         return {"edge_counts": edge_counts,
                 "chance_of_connection": problem.chance_of_connection,
-                "binomial_distributions": binomial_distributions,
                 "runtime": execution_time}
 
     return {"test_results": [single_run() for _ in range(runs)]}
