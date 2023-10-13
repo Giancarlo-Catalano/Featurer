@@ -41,7 +41,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
     def get_predicates(self, candidate_solution: SearchSpace.Candidate) -> SearchSpace.Candidate:
         raise Exception("A class extending CombinatorialConstraintProblem does not implement .get_predicates(c)!")
 
-    def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
+    def predicate_feature_repr(self, predicates: SearchSpace.UserFeature) -> str:
         raise Exception("A class extending CombinatorialConstraintProblem "
                         "does not implement .predicate_feature_repr_(c)!")
 
@@ -49,7 +49,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
     def dimensions_in_unconstrained_space(self) -> int:
         return self.unconstrained_problem.search_space.dimensions
 
-    def split_feature(self, feature: SearchSpace.Feature) -> (SearchSpace.Feature, SearchSpace.Feature):
+    def split_feature(self, feature: SearchSpace.UserFeature) -> (SearchSpace.UserFeature, SearchSpace.UserFeature):
         parameter_var_vals = []
         predicates_var_vals = []
 
@@ -59,8 +59,8 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
             else:
                 predicates_var_vals.append((var-self.dimensions_in_unconstrained_space, val))
 
-        parameters = SearchSpace.Feature(parameter_var_vals)
-        predicates = SearchSpace.Feature(predicates_var_vals)
+        parameters = SearchSpace.UserFeature(parameter_var_vals)
+        predicates = SearchSpace.UserFeature(predicates_var_vals)
 
         return parameters, predicates
 
@@ -85,7 +85,7 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
         extension = self.get_predicates(solution_without_predicates)
         return SearchSpace.merge_two_candidates(solution_without_predicates, extension)
 
-    def feature_repr(self, feature: SearchSpace.Feature) -> str:
+    def feature_repr(self, feature: SearchSpace.UserFeature) -> str:
         parameters, predicates = self.split_feature(feature)
         return (f"{self.unconstrained_problem.feature_repr(parameters)}\n"
                 f" {self.predicate_feature_repr(predicates)}")
@@ -94,5 +94,5 @@ class CombinatorialConstrainedProblem(CombinatorialProblem.CombinatorialProblem)
         raise Exception("A class extending CombinatorialConstraintProblem does not implement .score_of_candidate(c)!")
 
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         return super().amount_of_set_values_in_feature(feature)

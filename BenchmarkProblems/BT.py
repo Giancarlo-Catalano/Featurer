@@ -1,5 +1,5 @@
-import itertools
 import random
+from typing import Optional
 
 import SearchSpace
 import utils
@@ -49,21 +49,24 @@ class WeeklySchedule:
         return self.working_days.__repr__()
 
 
-worker_first_names = ["Amy", "Bob", "Chris", "Darcy", "Elly", "Frank", "Gian", "Hugh", "Igo", "Joe", "Kyle", "Lola", "Moira",
-                "Naomi", "Otto", "Pascal", "Quinn", "Ruth", "Seth", "Ted", "Ugo", "Vicky", "Walter", "Xenia", "Yves",
-                "Zeno"]
+worker_first_names = ["Amy", "Bob", "Chris", "Darcy", "Elly", "Frank", "Gian", "Hugh", "Igo", "Joe", "Kyle", "Lola",
+                      "Moira",
+                      "Naomi", "Otto", "Pascal", "Quinn", "Ruth", "Seth", "Ted", "Ugo", "Vicky", "Walter", "Xenia",
+                      "Yves",
+                      "Zeno"]
 
+worker_surnames = ["Anderson", "Bokmal", "Catalano", "Devon", "Elsinor", "Fourier", "Gomez", "Hayashi", "Immaut",
+                   "Jackson", "Kingstone", "Ling", "Morris", "Noivern", "Olowasamelori", "Pulitser", "Quasimodo",
+                   "Rossi", "Stradivarius", "Turner", "Umm Summa",
+                   "Vladivosov", "Wieux", "Xerox", "Ypritte", "Zeppelin"]
 
-worker_surnames = ["Anderson", "Bokmal", "Catalano", "Devon", "Elsinor", "Fourier", "Gomez", "Hubert", "Immaut",
-"Jackson", "Kingstone", "Langton", "Morris", "Noivern", "Olowasamelori", "Pulitser", "Quasimodo", "Rossi", "Stradivarius", "Turner", "Umm Summa",
-"Vladivosov", "Wieux", "Xerox", "Ypritte", "Zeppelin"]
 
 def get_worker_names(amount_of_workers) -> list[str]:
     if len(worker_first_names) >= amount_of_workers:
         return worker_first_names[:amount_of_workers]
 
     def add_surnames(surname_permutation):
-        return [first_name+" "+surname for first_name, surname in zip(worker_first_names, surname_permutation)]
+        return [first_name + " " + surname for first_name, surname in zip(worker_first_names, surname_permutation)]
 
     resulting_names = []
 
@@ -75,82 +78,6 @@ def get_worker_names(amount_of_workers) -> list[str]:
     return resulting_names[:amount_of_workers]
 
 
-class SimpleWorker:
-    name: str
-    available_schedules: list
-
-    def __init__(self, name, available_schedules):
-        self.name = name
-        self.available_schedules = available_schedules
-
-    def __repr__(self):
-        return self.name + " has options " + \
-            "; ".join([schedule.__repr__() for schedule in self.available_schedules])
-
-    @classmethod
-    def random(cls, how_many_options):
-        random_name = random.choice(worker_first_names)
-        how_many_days_to_work = random.choice(range(1, 4))
-        options = [WeeklySchedule.random(how_many_days_to_work) for _ in range(how_many_options)]
-        return cls(random_name, options)
-
-
-class SimplifiedBTProblem(CombinatorialProblem):
-    total_workers: int
-    amount_of_choices: int
-    workers: list
-
-    def __init__(self, amount_of_workers, amount_of_choices):
-        self.total_workers = amount_of_workers
-        self.amount_of_choices = amount_of_choices
-        self.workers = [SimpleWorker.random(amount_of_choices) for _ in range(amount_of_workers)]
-        super().__init__(SearchSpace.SearchSpace([self.amount_of_choices] * self.total_workers))
-
-    def __repr__(self):
-        # return f"BTProblem:(" \
-        #        f"\n\t workers: " + \
-        #     "\n\t\t".join([worker.__repr__() for worker in self.workers])
-        return "BTProblem"
-
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        amount_of_workers = super().amount_of_set_values_in_feature(feature)
-        return amount_of_workers
-
-    def get_resulting_roster(self, candidate: SearchSpace.Candidate):
-        chosen_schedules = [worker.available_schedules[choice]
-                            for (worker, choice) in zip(self.workers, candidate.values)]
-        counts_for_each_day = [0] * 7
-        for schedule in chosen_schedules:
-            for day in schedule.working_days:
-                counts_for_each_day[day.value] += 1
-
-        return counts_for_each_day
-
-    def get_homogeneity_of_roster(self, roster):
-        (min_amount, max_amount) = utils.min_max(roster)
-        if max_amount == 0:
-            return 0
-
-        return (max_amount - min_amount) / max_amount
-
-    def get_preference_score_of_candidate(self, candidate: SearchSpace.Candidate):
-        how_many_top_choices = len([chosen_schedule_index for chosen_schedule_index
-                                    in candidate.values if chosen_schedule_index == 0])
-        return how_many_top_choices / self.total_workers
-
-    def score_of_candidate(self, candidate: SearchSpace.Candidate):
-        roster = self.get_resulting_roster(candidate)
-        return self.get_homogeneity_of_roster(roster)
-
-    def feature_repr(self, feature):
-        def repr_of_var_val(var, val):
-            worker = self.workers[var]
-            chosen_schedule = worker.available_schedules[val]
-            return f"{worker.name} with rota #{val}:{chosen_schedule.__repr__()}"
-
-        return "\n".join([repr_of_var_val(var, val) for (var, val) in feature.var_vals])
-
-
 class WorkerRota:
     week_size: int
     pattern: list[bool]
@@ -159,38 +86,61 @@ class WorkerRota:
         self.week_size = week_size
         self.pattern = pattern
 
+    @property
+    def total_days(self):
+        return len(self.pattern)
+
     def __repr__(self):
         week_starts = [day_index for day_index in range(len(self.pattern)) if day_index % self.week_size == 0]
         weeks = [self.pattern[week_start:(week_start + self.week_size)] for week_start in week_starts]
 
         def repr_week(week):
-            return "[" + "".join(["*" if works else "_" for works in week]) + "]"
+            return "【" + "".join(["*" if works else "_" for works in week]) + "】"
 
         return " ".join(repr_week(week) for week in weeks)
 
     @classmethod
-    def get_random(cls, week_size):
+    def get_random(cls, week_size, total_days):
         def random_day():
             return random.choice([True, False])
 
-        how_many_weeks = random.randrange(1, 5)
-        amount_of_days = how_many_weeks * week_size
+        return cls(week_size, [random_day() for _ in range(total_days)])
 
-        return cls(week_size, [random_day() for _ in range(amount_of_days)])
+    def get_rotated(self, starting_day):
+        wrap_around = self.pattern[:starting_day]
+        after_start = self.pattern[starting_day:]
+        new_pattern = after_start + wrap_around
+        return WorkerRota(self.week_size, new_pattern)
 
 
 class Worker:
     name: str
     options: list[WorkerRota]
+    days_in_pattern: int
 
     def __init__(self, name, options):
         self.name = name
         self.options = options
 
+    @property
+    def amount_of_rota_choices(self) -> int:
+        return len(self.options)
+
+    @property
+    def days_in_pattern(self) -> int:
+        # we assume that there's always at least one option
+        return len(self.options[0].pattern)
+
+    @property
+    def week_size(self) -> int:
+        return self.options[0].week_size
+
     @classmethod
     def get_random(cls, name, amount_of_options):
         week_size = random.randrange(4, 8)
-        options = [WorkerRota.get_random(week_size) for _ in range(amount_of_options)]
+        amount_of_weeks = random.randrange(1, 6)
+        days_in_pattern = week_size * amount_of_weeks
+        options = [WorkerRota.get_random(week_size, days_in_pattern) for _ in range(amount_of_options)]
         return cls(name, options)
 
     def __repr__(self):
@@ -198,14 +148,19 @@ class Worker:
             "\n\t".join(f"{rota}" for rota in self.options)
         )
 
+    def get_search_space_for_worker(self):
+        return SearchSpace.SearchSpace([self.amount_of_rota_choices, self.days_in_pattern])
+
+    def get_effective_rota_from_indices(self, rota_option, starting_day) -> WorkerRota:
+        return self.options[rota_option].get_rotated(starting_day)
+
 
 class BTProblem(CombinatorialProblem):
     total_workers: int
     amount_of_choices_per_worker: int
     workers: list[Worker]
     total_roster_length: int
-    
-    
+
     def get_worker_names(self):
         if self.total_workers < len(worker_first_names):
             return worker_first_names[:self.total_workers]
@@ -217,7 +172,8 @@ class BTProblem(CombinatorialProblem):
                         for name in get_worker_names(self.total_workers)]
         self.total_roster_length = total_rota_length
 
-        super().__init__(SearchSpace.SearchSpace(self.amount_of_choices_per_worker for worker in self.workers))
+        search_space = SearchSpace.merge_many_spaces([worker.get_search_space_for_worker() for worker in self.workers])
+        super().__init__(search_space)
 
     def __repr__(self):
         return f"BTProblem({self.total_workers}, {self.amount_of_choices_per_worker}, {self.total_roster_length})"
@@ -225,21 +181,102 @@ class BTProblem(CombinatorialProblem):
     def long_repr(self):
         return f"The workers and their options are:\n\t" + "\n\t".join([f"{worker}" for worker in self.workers])
 
-    def get_rotas_in_feature(self, feature: SearchSpace.Feature) -> list[WorkerRota]:
+    def get_rotas_in_feature(self, feature: SearchSpace.UserFeature) -> list[WorkerRota]:
         return [self.workers[worker_index].options[which_rota]
                 for worker_index, which_rota in feature.var_vals]
 
+    def break_candidate_by_worker(self, candidate: SearchSpace.Candidate) -> list[(int, int)]:
+        return [(candidate.values[2 * i], candidate.values[2 * i + 1]) for i, _ in enumerate(self.workers)]
+
     def get_rotas_in_candidate(self, candidate: SearchSpace.Candidate) -> list[WorkerRota]:
-        return [worker.options[which_rota] for worker, which_rota in zip(self.workers, candidate.values)]
+        rota_choices_and_starts = self.break_candidate_by_worker(candidate)
+        return [worker.get_effective_rota_from_indices(which_rota, starting_day)
+                for (worker, (which_rota, starting_day)) in zip(self.workers, rota_choices_and_starts)]
 
-    def feature_repr(self, feature: SearchSpace.Feature) -> str:
-        def repr_worker_and_rota(worker_index, rota_index):
-            worker = self.workers[worker_index]
-            rota = worker.options[rota_index]
-            return f"{worker.name} on #{rota_index} = \t\t{rota}"
+    def break_feature_by_worker(self, feature: SearchSpace.UserFeature) -> list[(Optional[int], Optional[int])]:
+        result: list[[Optional[int], Optional[int]]] = [[None, None] for _ in self.workers]
 
-        return "\n".join(repr_worker_and_rota(worker_index, rota_index)
-                         for worker_index, rota_index in feature.var_vals)
+        # the items are lists of 2 values rather than tuples, because they will be mutated
+        def update_result(var, val):
+            worker_index, is_starting_day_var = divmod(var, 2)
+            result[worker_index][is_starting_day_var] = val
+
+        for var, val in feature.var_vals:
+            update_result(var, val)
+
+        # now we can convert them into tuples
+        return [tuple(params) for params in result]
+
+
+    def get_ranges_for_rotas(self, rotas: list[WorkerRota]) -> list[float]:
+        counts_for_each_day = self.get_counts_for_overlapped_rotas(rotas)
+        counts_for_each_day = counts_for_each_day.reshape((-1, 7))
+        minimums = np.min(counts_for_each_day, axis=0)
+        maximums = np.max(counts_for_each_day, axis=0)
+
+        def range_score(min_value, max_value):
+            if max_value == 0:
+                return 0
+            else:
+                return (max_value - min_value) / max_value
+
+        return [range_score(min_val, max_val) for min_val, max_val in zip(minimums, maximums)]
+
+
+    def get_ranges_for_candidate(self, candidate: SearchSpace.Candidate) -> list[float]:
+        return self.get_ranges_for_rotas(self.get_rotas_in_candidate(candidate))
+
+    def feature_repr(self, feature: SearchSpace.UserFeature) -> str:
+
+        def get_usable_rota_from_worker_parameters(worker, rota_index, starting_day) -> Optional[WorkerRota]:
+            if rota_index is not None:
+                used_starting_day = 0 if starting_day is None else starting_day
+                return worker.get_effective_rota_from_indices(rota_index, used_starting_day)
+            else:
+                return None
+
+        def repr_worker_parameters(worker: Worker, rota_index: Optional[int], starting_day: Optional[int]) -> str:
+            result = f"{worker.name}"
+            if rota_index is not None:
+                result += f" using rota #{rota_index},"
+            if starting_day is not None:
+                result += f" starting from day #{starting_day}"
+
+            if rota_index is not None:
+                result += f"(corresponds to {get_usable_rota_from_worker_parameters(worker, rota_index, starting_day)})"
+            elif rota_index is None and starting_day is not None:
+                result += f"(the rotas are {worker.options})"
+
+            return result
+
+        def is_worth_showing(rota_index, starting_day) -> bool:
+            return (rota_index is not None) or (starting_day is not None)
+
+        worker_parameters = self.break_feature_by_worker(feature)
+
+
+        def repr_ranges():
+            usable_rotas = [get_usable_rota_from_worker_parameters(worker, rota_index, starting_day)
+                            for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)]
+            usable_rotas = [rota for rota in usable_rotas if rota is not None]
+
+            if len(usable_rotas) == 0:
+                return ""
+
+            ranges = self.get_ranges_for_rotas(usable_rotas)
+            return (f"M:{ranges[0]:.2f}, "
+                    f"Tu:{ranges[1]:.2f}, "
+                    f"W:{ranges[2]:.2f}, "
+                    f"Th:{ranges[3]:.2f}, "
+                    f"F:{ranges[4]:.2f}, "
+                    f"Sa:{ranges[5]:.2f}, "
+                    f"Su:{ranges[6]:.2f}")
+
+        parameters = "\n".join(repr_worker_parameters(worker, rota_index, starting_day)
+                         for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)
+                         if is_worth_showing(rota_index, starting_day))
+
+        return parameters # + "\nThe ranges are " + repr_ranges()
 
     def extend_rota_to_total_roster(self, rota: WorkerRota) -> list[bool]:
         result = []
@@ -251,32 +288,13 @@ class BTProblem(CombinatorialProblem):
     def get_counts_for_overlapped_rotas(self, rotas: list[WorkerRota]) -> np.ndarray:
         extended_rotas = [self.extend_rota_to_total_roster(rota) for rota in rotas]
         as_int_grid = np.array(extended_rotas, dtype=int)
-        return (np.sum(as_int_grid, axis=0))
-
-    def get_min_and_max_for_each_work_day(self, candidate: SearchSpace.Candidate) -> list[(int, int)]:
-        rotas = self.get_rotas_in_candidate(candidate)
-        counts_for_each_day = self.get_counts_for_overlapped_rotas(rotas)
-        counts_for_each_day = counts_for_each_day.reshape((-1, 7))
-        minimums = np.min(counts_for_each_day, axis=0)
-        maximums = np.max(counts_for_each_day, axis=0)
-
-        return list(zip(list(minimums), list(maximums)))
+        return np.sum(as_int_grid, axis=0)
 
     def get_amount_of_first_choices(self, candidate: SearchSpace.Candidate) -> int:
-        return len([value for value in candidate.values if value == 0])
-
-    def get_range_scores_for_each_day(self, candidate: SearchSpace.Candidate) -> list[float]:
-        def range_score(min_value, max_value):
-            if max_value == 0:
-                return 1000
-            else:
-                return (max_value - min_value) / max_value
-
-        mins_and_maxs = self.get_min_and_max_for_each_work_day(candidate)
-        return [range_score(max_val, min_val) for max_val, min_val in mins_and_maxs]
+        return len([value for variable, value in enumerate(candidate.values) if variable % 2 == 0 and value == 0])
 
     def get_range_score_of_candidate(self, candidate: SearchSpace.Candidate) -> float:
-        range_scores = self.get_range_scores_for_each_day(candidate)
+        range_scores = self.get_ranges_for_rotas(self.get_rotas_in_candidate(candidate))
         weights_for_days = [1, 1, 1, 1, 1, 10, 10]
         return sum((range_val ** 2) * weight for range_val, weight in zip(range_scores, weights_for_days))
 
@@ -287,8 +305,29 @@ class BTProblem(CombinatorialProblem):
 
         return range_score - weight_of_preference * preference_score
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature) -> float:
-        return super().amount_of_set_values_in_feature(feature)
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature) -> float:
+        # order of preference:
+        # nothing at all: bestest
+        # worker with a rota and starting day: best
+        # worker with a rota: almost worst
+        # worker with just a starting day: worst
+
+        def complexity_for_values(rota_index: Optional[int], starting_day: Optional[int]):
+            if (rota_index is None) and (starting_day is None):
+                return 0
+            elif (rota_index is not None) and (starting_day is None):
+                return 6
+            elif (rota_index is None) and (starting_day is not None):
+                return 10
+            elif (rota_index is not None) and (starting_day is not None):
+                return 1
+
+        worker_params = self.break_feature_by_worker(feature)
+        amount_of_workers = len(
+            [1 for rota_index, starting_day in worker_params if rota_index is not None or starting_day is not None])
+        ideal_amount_of_workers = 4
+        worker_amount_malus = abs(amount_of_workers - ideal_amount_of_workers) * 5
+        return sum(complexity_for_values(*params) for params in worker_params) + worker_amount_malus
 
 
 class BTPredicate(Enum):
@@ -312,7 +351,7 @@ class BTPredicate(Enum):
         return self.__repr__()
 
     def to_week_day(self):
-        return self.value-1  # THIS MEANS YOU CAN'T ADD MORE PREDICATES ABOVE MONDAY
+        return self.value - 1  # THIS MEANS YOU CAN'T ADD MORE PREDICATES ABOVE MONDAY
 
 
 class ExpandedBTProblem(CombinatorialConstrainedProblem):
@@ -322,7 +361,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
     def __init__(self, original_problem, predicates: list[BTPredicate]):
         self.original_problem = original_problem
         self.predicates = predicates
-        constraint_space = SearchSpace.SearchSpace([2 for pred in self.predicates])
+        constraint_space = SearchSpace.SearchSpace([2 for _ in self.predicates])
         super().__init__(original_problem, constraint_space)
 
     def __repr__(self):
@@ -337,9 +376,8 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
         as_matrix = np.array(extended_rota, dtype=int)
         as_matrix = as_matrix.reshape((-1, 7))
         hours_per_day = 8
-        weekly_hours = np.sum(as_matrix, axis=1) * 8
-        max_weekly_hours = np.max(weekly_hours)
-        return max_weekly_hours > max_allowed_weekly_hours
+        weekly_hours = np.sum(as_matrix, axis=1) * hours_per_day
+        return any(week_hours > max_allowed_weekly_hours for week_hours in weekly_hours)
 
     def any_rotas_exceed_weekly_working_hours(self, candidate: SearchSpace.Candidate):
         rotas = self.original_problem.get_rotas_in_candidate(candidate)
@@ -353,7 +391,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
             return [week[5] or week[6] for week in as_matrix]
 
         def count_consecutives(working_weekends):
-            return len([curr_week for (curr_week, next_week) in utils.adjacent_pairs(working_weekends)])
+            return len(list(utils.adjacent_pairs(working_weekends)))
 
         return count_consecutives(get_working_weekends(worker_rota))
 
@@ -365,10 +403,10 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
     def get_bad_weekdays(self, candidate: SearchSpace.Candidate) -> list[int]:
         """Note: the week days are 0 indexed!!"""
-        ranges = self.original_problem.get_range_scores_for_each_day(candidate)
+        ranges = self.original_problem.get_ranges_for_candidate(candidate)
         weekdays_and_scores = list(enumerate(ranges))
         weekdays_and_scores.sort(key=utils.second, reverse=True)
-        bad_days = utils.unzip(weekdays_and_scores[:3])[0]
+        bad_days = utils.unzip(weekdays_and_scores[:4])[0]
         return bad_days
 
     def get_predicates(self, candidate: SearchSpace.Candidate):
@@ -386,19 +424,19 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         return SearchSpace.Candidate([int(result_of_predicate(predicate)) for predicate in self.predicates])
 
-    def predicate_feature_repr(self, predicates: SearchSpace.Feature) -> str:
+    def predicate_feature_repr(self, predicates: SearchSpace.UserFeature) -> str:
 
         def repr_predicate(predicate: BTPredicate, value):
-            if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
+            if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return "Exceeds weekly hours" if value else "Within weekly hours"
+                # todo it would be nice to see the offenders as well!
             elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
-                return "Contains consecutive working weekends" if value else "Does not have consecutive working weekends"
+                return "Contains consecutive working weekends" if value \
+                    else "Does not have consecutive working weekends"
             else:
                 weekday = predicate.to_week_day()
                 weekday_name = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
-                return  f"{weekday_name} is UNstable" if value else f"{weekday_name} is Stable"
-        yes = "✓"
-        no = "⤬"
+                return f"{weekday_name} is UNstable" if value else f"{weekday_name} is Stable"
 
         return ", ".join(repr_predicate(self.predicates[var], bool(val)) for var, val in predicates.var_vals)
 
@@ -408,39 +446,46 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
         if (BTPredicate.EXCEEDS_WEEKLY_HOURS in self.predicates
                 and self.any_rotas_exceed_weekly_working_hours(original_candidate)):
-                return 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
+            return normal_score + 1000.0  # this is a minimisation task, so we return a big value when the constraint is broken
         else:
             return normal_score
 
-
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        unconstrained_feature, predicates = super().split_feature(feature)
-
-
-        def complexity_of_parameters(amount_of_workers: int):
-            ideal_amount_of_workers = 4
-            return abs(amount_of_workers - ideal_amount_of_workers)
-
+    def get_complexity_of_predicates(self, predicates: SearchSpace.UserFeature):
         def complexity_of_predicate(predicate, value):
-            if predicate ==  BTPredicate.EXCEEDS_WEEKLY_HOURS:
+            if predicate == BTPredicate.EXCEEDS_WEEKLY_HOURS:
                 return 2 if value else 20
             elif predicate == BTPredicate.CONSECUTIVE_WEEKENDS:
                 return 5 if value else 2
-            else:
+            else:  # weekday range
                 return 5 if value else 1
 
+        if predicates.var_vals:
+            return sum(complexity_of_predicate(self.predicates[index], bool(val))
+                       for index, val in predicates.var_vals)
+        else:
+            return 0
 
-        def complexity_of_predicates(predicates: SearchSpace.Feature):
-            if predicates.var_vals:
-                return sum(complexity_of_predicate(self.predicates[index], bool(val)) for index, val in predicates.var_vals)
+    def get_complexity_of_partial_solution(self, partial_solution: SearchSpace.UserFeature):
+        def get_amount_of_workers_involved(feature: SearchSpace.UserFeature):
+            which_workers_are_present: list[bool] = [False]*self.original_problem.total_workers
+            for var, val in partial_solution.var_vals:
+                which_workers_are_present[var // 2] = True
 
+            return len([is_present for is_present in which_workers_are_present if is_present])
 
-        amount_of_workers = super().amount_of_set_values_in_feature(unconstrained_feature)
-        complexity_of_unconstrained = complexity_of_parameters(amount_of_workers)
-        complexity_of_predicates_in_feature = complexity_of_predicates(predicates)
-        predicates_are_present = super().amount_of_set_values_in_feature(predicates) > 0
+        ideal_amount_of_workers = 3
+        return abs(get_amount_of_workers_involved(partial_solution) - ideal_amount_of_workers) * 5
 
-        if predicates_are_present and amount_of_workers > 0:
-            return complexity_of_predicates_in_feature + complexity_of_unconstrained * 100
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
+        partial_solution_parameters, descriptors_partial_solution = super().split_feature(feature)
+        predicates_are_present = super().amount_of_set_values_in_feature(descriptors_partial_solution) > 0
+
+        partial_solution_complexity = self.original_problem.get_complexity_of_feature(partial_solution_parameters)
+        predicates_complexity = self.get_complexity_of_predicates(descriptors_partial_solution)
+
+        # print(f"^^^^^\nFor the partial solution {feature}\n{super().feature_repr(feature)}\nThe scores are solution={partial_solution_complexity}, predicates={predicates_complexity}\nvvvvvv\n")
+
+        if predicates_are_present:
+            return partial_solution_complexity + predicates_complexity
         else:
             return 1000

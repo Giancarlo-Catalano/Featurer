@@ -1,9 +1,10 @@
 import SearchSpace
 import utils
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class CheckerBoardProblem(TestableCombinatorialProblem):
     rows: int
     cols: int
 
@@ -32,7 +33,7 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
         return min(rows_used), max(rows_used) + 1, \
             min(cols_used), max(cols_used) + 1
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """returns area of bounding box / area of board"""
 
         if len(feature.var_vals) == 0:
@@ -81,3 +82,24 @@ class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialPr
             return " ".join([cell_repr(cell) for cell in row])
 
         return "\n".join([row_repr(row) for row in as_grid])
+
+
+    def get_ideal_feature(self, input_row, input_col, ul_most_value:int, horizontal: bool):
+        def coords_to_index(row, col):
+            return row*self.rows + col
+
+
+        main_cell = (coords_to_index(input_row, input_col), ul_most_value)
+        other_cell_position = coords_to_index(input_row, input_col+1) if horizontal else coords_to_index(input_row+1, input_col)
+        other_cell = (other_cell_position, 1-ul_most_value)
+
+        return SearchSpace.UserFeature([main_cell, other_cell])
+
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+        horizontals = [self.get_ideal_feature(row, col, value, horizontal=True) for row in range(self.rows)
+                       for col in range(self.cols-1)
+                       for value in range(2)]
+        verticals = [self.get_ideal_feature(row, col, value, horizontal=False) for row in range(self.rows-1)
+                     for col in range(self.cols)
+                     for value in range(2)]
+        return horizontals + verticals

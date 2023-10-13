@@ -1,8 +1,9 @@
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class OneMaxProblem(TestableCombinatorialProblem):
     amount_of_bits: int
 
     def __init__(self, amount_of_bits):
@@ -16,7 +17,7 @@ class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
     def long_repr(self):
         return self.__repr__()
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """returns area of bounding box / area of board"""
         return super().amount_of_set_values_in_feature(feature)
 
@@ -31,3 +32,9 @@ class OneMaxProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
                 return str(cell)
 
         return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
+
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+        def feature_with_a_single_one(var_index):
+            return SearchSpace.UserFeature([(var_index, 1)])
+
+        return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]

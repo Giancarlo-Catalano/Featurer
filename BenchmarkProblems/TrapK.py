@@ -1,9 +1,9 @@
 import SearchSpace
 import utils
-import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 
 
-class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class TrapK(TestableCombinatorialProblem):
     k: int
     amount_of_groups: int
     amount_of_bits: int
@@ -20,13 +20,13 @@ class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
     def long_repr(self):
         return f"TrapK(K={self.k}, amount of groups = {self.amount_of_groups})"
 
-    def get_how_many_vars_per_group(self, feature: SearchSpace.Feature):
+    def get_how_many_vars_per_group(self, feature: SearchSpace.UserFeature):
         how_many_per_group = [0] * self.amount_of_groups
         for var, _ in feature.var_vals:
             how_many_per_group[var // self.k] += 1
         return how_many_per_group
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         count_per_group = self.get_how_many_vars_per_group(feature)
         amount_of_used_groups = len([count for count in count_per_group if count > 0])
         malus = 10 * amount_of_used_groups
@@ -58,3 +58,23 @@ class TrapK(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
 
         groups = self.divide_candidate_in_groups(SearchSpace.Candidate(super().get_positional_values(feature)))
         return "\n".join([group_repr(group) for group in groups])
+
+
+    def get_all_ones_ideals(self) -> list[SearchSpace.UserFeature]:
+        def all_ones_in_group(group_index) -> SearchSpace.UserFeature:
+            start = group_index*self.k
+            end = start+self.k
+            return SearchSpace.UserFeature([(var, 1) for var in range(start, end)])
+
+        return [all_ones_in_group(group_index) for group_index in range(self.amount_of_groups)]
+
+    def get_all_zero_ideals(self):
+        def feature_with_a_single_zero(var_index):
+            return SearchSpace.UserFeature([(var_index, 0)])
+
+        return [feature_with_a_single_zero(var_index) for var_index in range(self.amount_of_bits)]
+
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+        deceptive_groups = self.get_all_ones_ideals()
+        zeros = self.get_all_zero_ideals()
+        return deceptive_groups + zeros

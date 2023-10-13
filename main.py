@@ -1,63 +1,67 @@
-import utils
-from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack
-from Version_C.Sampler import Sampler
-from Version_C.FeatureFinder import ScoringCriterion, PopulationSamplePrecomputedData
-import HotEncoding
-import SearchSpace
-from Version_C.FeatureFinder import find_features
-from BenchmarkProblems.Knapsack import KnapsackConstraint
+#!/usr/bin/env python3
+import sys
 
-trap5 = TrapK.TrapK(5, 2)
-checkerboard = CheckerBoard.CheckerBoardProblem(6, 6)
+import utils
+from BenchmarkProblems import CombinatorialProblem, CheckerBoard, OneMax, BinVal, TrapK, BT, GraphColouring, Knapsack, \
+    FourPeaks
+from BenchmarkProblems.ArtificialProblem import ArtificialProblem
+import SearchSpace
+from BenchmarkProblems.Knapsack import KnapsackConstraint
+from Version_E.Feature import Feature
+from Version_E.MeasurableCriterion.CriterionUtilities import Any, Not, Balance
+from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
+from Version_E.MeasurableCriterion.Explainability import Explainability
+from Version_E.MeasurableCriterion.Robustness import Robustness
+from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector
+from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
+from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
+from Version_E.Testing import TestingUtilities, Problems, Criteria
+from Version_E.Testing.Tests import make_csv_for_connectedness
+
+trap5 = TrapK.TrapK(5, 3)
+checkerboard = CheckerBoard.CheckerBoardProblem(5, 5)
 onemax = OneMax.OneMaxProblem(12)
 binval = BinVal.BinValProblem(12, 2)
-simpleBT = BT.SimplifiedBTProblem(25, 3)
-almostBT = BT.BTProblem(30, 4, 28)
-constrainedBT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
-                                                BT.BTPredicate.BAD_MONDAY,
-                                                BT.BTPredicate.BAD_TUESDAY,
-                                                BT.BTPredicate.BAD_WEDNESDAY,
-                                                BT.BTPredicate.BAD_THURSDAY,
-                                                BT.BTPredicate.BAD_FRIDAY,
-                                                BT.BTPredicate.BAD_SATURDAY,
-                                                BT.BTPredicate.BAD_SUNDAY])
+almostBT = BT.BTProblem(12, 4, 56)
+constrained_BT = BT.ExpandedBTProblem(almostBT, [BT.BTPredicate.EXCEEDS_WEEKLY_HOURS,
+                                                 BT.BTPredicate.BAD_MONDAY,
+                                                 BT.BTPredicate.BAD_TUESDAY,
+                                                 BT.BTPredicate.BAD_WEDNESDAY,
+                                                 BT.BTPredicate.BAD_THURSDAY,
+                                                 BT.BTPredicate.BAD_FRIDAY,
+                                                 BT.BTPredicate.BAD_SATURDAY,
+                                                 BT.BTPredicate.BAD_SUNDAY])
 
-graph_colouring = GraphColouring.GraphColouringProblem(4, 10, 0.5)
+graph_colouring = GraphColouring.GraphColouringProblem(3, 6, 0.5)
 knapsack = Knapsack.KnapsackProblem(50.00, 1000, 15)
-c_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack, [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
-                                                            KnapsackConstraint.WITHIN_WEIGHT,
-                                                            KnapsackConstraint.WITHIN_VOLUME])
-
-guaranteed_depth = 2
-extra_depth = 4
-importance_of_explainability = 0.5
+constrained_knapsack = Knapsack.ConstrainedKnapsackProblem(knapsack,
+                                                           [KnapsackConstraint.BEACH, KnapsackConstraint.FLYING,
+                                                            KnapsackConstraint.WITHIN_WEIGHT])
+artificial_problem = ArtificialProblem(12, 3, 4, True)
+four_peaks = FourPeaks.FourPeaksProblem(12, 4)
 
 
-def get_problem_training_data(problem: CombinatorialProblem.CombinatorialProblem,
-                              sample_size) -> (list[SearchSpace.Candidate], list[float]):
+def get_random_candidates_and_fitnesses(problem: CombinatorialProblem.CombinatorialProblem,
+                                        sample_size) -> (list[SearchSpace.Candidate], list[float]):
     random_candidates = [problem.get_random_candidate_solution() for _ in range(sample_size)]
 
     scores = [problem.score_of_candidate(c) for c in random_candidates]
     return random_candidates, scores
 
 
-def get_problem_compact_training_data(problem: CombinatorialProblem.CombinatorialProblem,
-                                      sample_size) -> PopulationSamplePrecomputedData:
-    training_samples, fitness_list = get_problem_training_data(problem, sample_size)
-    # print("The generated samples are:")
-    # for sample, fitness in zip(training_samples, fitness_list):
-    #     print(f"{problem.candidate_repr(sample)}\n(has score {fitness:.2f})")
-    return PopulationSamplePrecomputedData(problem.search_space, training_samples, fitness_list)
+def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
+                      sample_size) -> PrecomputedPopulationInformation:
+    training_samples, fitness_list = get_random_candidates_and_fitnesses(problem, sample_size)
+    return PrecomputedPopulationInformation(problem.search_space, training_samples, fitness_list)
 
 
-def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features, with_scores=False,
-                          combinatorial=False):
+def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, input_list_of_features,
+                          with_scores=False):
     """prints the passed features, following the structure specified by the problem"""
-    hot_encoder = HotEncoding.HotEncoder(problem.search_space)
 
     def print_feature_only(feature):
-        featureC = feature if combinatorial else hot_encoder.feature_from_hot_encoding(feature)
-        print(f"{problem.feature_repr(featureC)}")
+        print(f"{problem.feature_repr(feature)}")
 
     def print_with_or_without_score(maybe_pair):
         if with_scores:
@@ -72,71 +76,124 @@ def pretty_print_features(problem: CombinatorialProblem.CombinatorialProblem, in
         print("\n")
 
 
-def get_features(problem: CombinatorialProblem,
-                 sample_data: PopulationSamplePrecomputedData,
-                 criterion: ScoringCriterion,
-                 amount_requested: int):
-    print("Finding the features...")
-    features, scores = find_features(problem=problem,
-                                     sample_data=sample_data,
-                                     criterion=criterion,
-                                     importance_of_explainability=importance_of_explainability,
-                                     guaranteed_depth=guaranteed_depth,
-                                     extra_depth=extra_depth,
-                                     amount_requested=amount_requested)
-    return features
+def show_all_ideals():
+    problems_with_ideals = [onemax, binval, trap5, artificial_problem, checkerboard]
+
+    for problem in problems_with_ideals:
+        print(f"The problem is {problem}, more specifically \n{problem.long_repr()}")
+        print("\n The ideals are ")
+        for feature in problem.get_ideal_features():
+            print(f"\n{problem.feature_repr(feature)}")
+
+        print("_" * 40)
 
 
-def get_sampler(problem: CombinatorialProblem,
-                training_data: PopulationSamplePrecomputedData,
-                amount_of_features_per_sampler,
-                is_maximisation_task=True) -> Sampler:
-    print("Constructing the sampler, involves finding:")
-    print("\t -fit features")
-    fit_features = get_features(problem, training_data, ScoringCriterion.HIGH_FITNESS, amount_of_features_per_sampler)
-    print("\t -unfit features")
-    unfit_features = get_features(problem, training_data, ScoringCriterion.LOW_FITNESS, amount_of_features_per_sampler)
-    print("\t -novel features")
-    novel_features = get_features(problem, training_data, ScoringCriterion.NOVELTY, amount_of_features_per_sampler)
 
-    wanted_features, unwanted_features = (fit_features, unfit_features) if is_maximisation_task else (
-    unfit_features, fit_features)
+constructive_miners = [{"which": "constructive",
+                        "stochastic": stochastic_item,
+                        "at_most": 5,
+                        "population_size": population_item}
+                       for stochastic_item in [True, False]
+                       for population_item in [36, 72, 144]]
 
-    sampler = Sampler(search_space=problem.search_space,
-                      wanted_features=wanted_features,
-                      unwanted_features=unwanted_features,
-                      unpopular_features=novel_features,
-                      importance_of_novelty=0.1)
+destructive_miners = [{"which": "destructive",
+                        "stochastic": stochastic_item,
+                        "at_least": 1,
+                        "population_size": population_item}
+                       for stochastic_item in [True, False]
+                       for population_item in [36, 72, 144]]
 
-    print("Then we train the sampler")
-    sampler.train(training_data)
-    return sampler
+ga_miners = [{"which": "ga",
+             "iterations": iteration_item,
+             "population_size": population_item}
+            for iteration_item in [5, 10, 20]
+            for population_item in [36, 72, 144]]
 
 
-def get_good_samples(sampler, problem, attempts, keep, maximise=True):
-    samples = [sampler.sample() for _ in range(attempts)]
-    samples_with_scores = [(sample, problem.score_of_candidate(sample)) for sample in samples]
-    samples_with_scores.sort(key=utils.second, reverse=maximise)
-    return utils.unzip(samples_with_scores[:keep])
+random_miners = [{"which": "random",
+                  "population_size": population_item}
+                 for population_item in [36, 72, 144]]
+
+hill_climber = [{"which": "hill_climber",
+                 "population_size": population_item}
+                for population_item in [36, 72, 144]]
+
+many_miners = utils.concat_lists([constructive_miners, destructive_miners, ga_miners, random_miners, hill_climber])
 
 
-if __name__ == '__main__':
-    problem = checkerboard
-    maximise = True
-    training_data = get_problem_compact_training_data(problem, sample_size=1200)
+def test_command_line():
+    # command_line_arguments = sys.argv
+    # if len(command_line_arguments) < 2:
+    #    raise Exception("Not enough arguments")
+
+    # settings = TestingUtilities.to_json_object(command_line_arguments[1])
+
+    settings = dict()
+
+    settings["problem"] = {"which": "graph",
+                           "amount_of_colours":4,
+                           "amount_of_nodes": 6,
+                           "chance_of_connection": 0.3}
+
+    settings["criterion"] = {"which": "balance",
+                             "arguments": [{"which": "high_fitness"},
+                                           {"which": "explainability"}],
+                             "weights": [2, 1]}
+
+
+    settings["test"] = {"which": "check_connectedness",
+                        "features_per_run": 200,
+                        "runs": 24}
+    settings["miner"] = {"which": "constructive",
+                         "stochastic": False,
+                         "at_most": 5,
+                         "population_size": 36}
+    settings["sample_size"] = 2400
+    TestingUtilities.run_test(settings)
+
+
+def test_miner():
+    problem = artificial_problem
+    is_explainable = Explainability(problem)
+    has_good_fitness_consistently = Balance([FitnessHigherThanAverage(), ConsistentFitness()], weights=[2, 1])
+    robust_to_changes = Balance([Robustness(0, 1),
+                                 Robustness(1, 2),
+                                 Robustness(2, 5)],
+                                weights=[4, 2, 1])
+
+    criterion = Balance([is_explainable, has_good_fitness_consistently],
+                        weights=[2, 1])
+
+    training_data = get_training_data(problem, sample_size=1200)
     print(f"The problem is {problem}")
     print("More specifically, it is")
     print(problem.long_repr())
-    criteria = ScoringCriterion.HIGH_FITNESS if maximise else ScoringCriterion.LOW_FITNESS
-    requested_amount_of_features = 12
-    features = get_features(problem, training_data, criteria, requested_amount_of_features)
 
-    print(f"For the problem {problem}, the found features are:")
-    pretty_print_features(problem, features, combinatorial=True)
+    selector = FeatureSelector(training_data, criterion)
 
-    # sampler = get_sampler(problem, training_data, requested_amount_of_features // 2, maximise)
+    miner = DestructiveMiner(selector,
+                             amount_to_keep_in_each_layer=144,
+                             stochastic=False,
+                             at_least_parameters=1)
 
-    # print("We can sample some individuals")
-    # good_samples, good_sample_scores = get_good_samples(sampler, problem, 30, 6, maximise)
-    # for good_sample, good_score in zip(good_samples, good_sample_scores):
-    #     print(f"{problem.candidate_repr(good_sample)}\n(Has score {good_score:.2f})\n")
+    features = miner.get_meaningful_features(12, cull_subsets=True)
+
+    # debug
+    """relevant_features = [Feature.from_legacy_feature(ideal, problem.search_space)
+                         for ideal in problem.important_features]
+    print("The scores of the intended features are:")
+    for relevant_feature in relevant_features:
+        print(f"For feature {relevant_feature}, the description is")
+        print(miner.feature_selector.criterion.describe_feature(relevant_feature, miner.feature_selector.ppi))
+    """
+    # end debug
+    print("features_found:")
+    for feature in features:
+        print(problem.feature_repr(feature.to_legacy_feature()))
+        print(criterion.describe_feature(feature, training_data))
+        print("\n")
+
+
+if __name__ == '__main__':
+    #make_csv_for_connectedness("check_connectedness~graph~constructive_(10-10)_[15_42].json", "conn_out_3.csv")
+    test_command_line()

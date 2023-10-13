@@ -22,7 +22,8 @@ class GraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combinatorial
                                 for _ in range(self.amount_of_nodes)])
         asymmetric = np.array(result_list, dtype=int)
         upper_triangle = np.triu(asymmetric)
-        symmetric = upper_triangle+upper_triangle.T - np.diag(upper_triangle)
+        upper_triangle -= np.diag(np.diag(upper_triangle))
+        symmetric = upper_triangle+upper_triangle.T
         return symmetric
 
     def get_connected_pairs_from_adjacency_matrix(self, adjacency_matrix: np.ndarray):
@@ -56,11 +57,11 @@ class GraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combinatorial
 
         return "Connected pairs:" + ", ".join([repr_pair(*pair) for pair in self.connected_pairs])
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """returns area of bounding box / area of board"""
         amount_of_set_vars = super().amount_of_set_values_in_feature(feature)
         amount_of_distinct_colours = len(set([val for var, val in feature.var_vals]))
-        return (amount_of_distinct_colours/self.amount_of_colours) + (amount_of_set_vars/self.amount_of_nodes)*2
+        return (amount_of_set_vars/self.amount_of_nodes)  # + (amount_of_distinct_colours/self.amount_of_colours)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         def are_different_colours(node_x, node_y):

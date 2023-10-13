@@ -4,8 +4,10 @@ import itertools
 import math
 import operator
 import random
+import time
 import traceback
 import warnings
+from typing import Callable
 
 import numpy as np
 
@@ -44,8 +46,19 @@ def sort_using_scores(elements, scores, increasing=False):
     return [first(pair) for pair in zipped]
 
 
-def concat(lists):
+def concat_lists(lists):
     return sum(lists, [])
+
+
+def concat_tuples(tuples):
+    return sum(tuples, ())
+
+
+def concat_sets(sets):
+    result = set()
+    for single_set in sets:
+        result.update(single_set)
+    return result
 
 
 def group(iterable, key_function=lambda x: x):
@@ -85,26 +98,6 @@ def group_unhashable(iterable, key=lambda x: x, custom_equals=lambda x, y: x == 
         add_to_catalog(item_key, item)
 
     return catalog
-
-
-# def remove_duplicates(iterable, key=lambda x: x):
-#    return [cluster[0] for cluster in group(iterable, key).values()]
-
-
-def remove_duplicates(iterable, key=lambda x: x):
-    seen_keys_set = set()
-    seen_items = list()
-    for item in iterable:
-        item_key = key(item)
-        if item_key not in seen_keys_set:
-            seen_keys_set.add(item_key)
-            seen_items.append(item)
-    return seen_items
-
-
-def remove_duplicates_unhashable(iterable, key=lambda x: x, custom_equals=lambda x, y: x == y):
-    return [group_items[0] for (group_key, group_items) in group_unhashable(iterable, key, custom_equals)]
-
 
 def rows_in_matrix(input_matrix):
     return input_matrix.shape[0]
@@ -185,7 +178,7 @@ def from_hot_encoding_old(hot_encoding):
 
 
 def weighted_sum_of_columns(weights, matrix):
-    return np.sum(matrix @ np.diag(weights), axis=1)
+    return np.sum(matrix * weights, axis=1)
 
 
 def negate_list(iterable):
@@ -250,7 +243,7 @@ def chi_squared(observed, expected):
 
 def sample_from_grid_of_weights(probabilities):
     rows = len(probabilities)
-    flattened_probabilities = concat(probabilities)
+    flattened_probabilities = concat_lists(probabilities)
     aggregated_index = sample_index_with_weights(flattened_probabilities)
     return divmod(aggregated_index, rows)
 
@@ -264,6 +257,7 @@ def reattempt_until(generator, condition_to_satisfy):
 
 def as_row_matrix(array_input):
     return np.reshape(array_input, (1, array_input.shape[0]))
+
 
 def as_column_matrix(array_input):
     return np.reshape(array_input, (array_input.shape[0], 1))
@@ -307,13 +301,14 @@ def remap_array_in_zero_one(input_array):
     max_value = np.max(input_array)
 
     if (min_value == max_value):
-        return np.ones_like(input_array)/2  # all 0.5!
+        return np.ones_like(input_array) / 2  # all 0.5!
 
     return (input_array - min_value) / (max_value - min_value)
 
+
 def remap_array_in_zero_one_ammortise(input_array):
     amount_of_items = len(input_array)
-    positions = np.arange(start=0, stop=amount_of_items, dtype = float) / (amount_of_items-1)
+    positions = np.arange(start=0, stop=amount_of_items, dtype=float) / (amount_of_items - 1)
 
     zipped = sorted(zip(input_array, positions), key=utils.first)
     _, rearranged_positions = unzip(zipped)
@@ -321,9 +316,9 @@ def remap_array_in_zero_one_ammortise(input_array):
 
 
 def remap_array_in_zero_one_ignore_zeros(input_array):
-
     def is_zero(x):
         return x < 0.01
+
     min_value = np.min([datapoint for datapoint in input_array if not is_zero(datapoint)])
     max_value = np.max(input_array)
 
@@ -331,7 +326,7 @@ def remap_array_in_zero_one_ignore_zeros(input_array):
         return input_array / min_value  # should be all ones! TODO perhaps these should be all 0.5?
 
     def remap(original):
-        return (original-min_value) / (max_value-min_value)
+        return (original - min_value) / (max_value - min_value)
 
     return np.array([0.0 if is_zero(datapoint) else remap(datapoint) for datapoint in input_array])
 
@@ -352,50 +347,91 @@ def min_max(array_of_values):
         raise Exception("utils.min_max was called on an empty array")
     return (np.min(array_of_values), np.max(array_of_values))
 
+
 def get_min_max_of_arrays(arrays):
     """returns the min and max of concat(arrays), without actually contanenating them"""
-    min_maxes = [min_max(single_array) for single_array in arrays if len(single_array)>0]
+    min_maxes = [min_max(single_array) for single_array in arrays if len(single_array) > 0]
     if len(min_maxes) == 0:
-        raise("utils.get_min_max_of_arrays received either an empty lists or all the arrays are empty")
+        raise ("utils.get_min_max_of_arrays received either an empty lists or all the arrays are empty")
     (mins, maxes) = unzip(min_maxes)
     return (np.min(mins), np.max(maxes))
 
 
 def nth_power_flat_outer_product(array: np.ndarray, n: int):
     current_result = array.copy()
-    if (n<1):
+    if (n < 1):
         raise Exception("in nth_power_flat_outer_product, n<1")
 
-    for _ in range(n-1):
+    for _ in range(n - 1):
         current_result = np.outer(current_result, array).ravel()
 
     return current_result
 
 
-def row_wise_nth_power_self_outer_product(input_matrix, n:int):
+def row_wise_nth_power_self_outer_product(input_matrix, n: int):
     current_result = input_matrix.copy()
     if (n < 1):
         raise Exception("in nth_power_flat_outer_product, n<1")
 
     for _ in range(n - 1):
-        current_result = np.einsum('ij,ik->ijk', current_result, input_matrix, optimize=True).reshape(input_matrix.shape[0], -1)
+        current_result = np.einsum('ij,ik->ijk', current_result, input_matrix, optimize=True).reshape(
+            input_matrix.shape[0], -1)
 
     return current_result
 
 
-
-
-
 def product(iterable):
-    return functools.reduce(operator.mul, iterable)
+    return functools.reduce(operator.mul, iterable, 1)
 
 
 def weighted_sum_of_rows(matrix: np.ndarray, weights: np.ndarray):
     return np.einsum('ij,i->j', matrix, weights)
 
 
-def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray):
+def divide_arrays_safely(numerator: np.ndarray, denominator: np.ndarray, else_value=0):
+    else_array = np.ones_like(numerator, dtype=numerator.dtype) * else_value
     """returns the element wise division between 2 arrays, and 0 where there was a zero denominator"""
-    return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0.0)
+    return np.divide(numerator, denominator, out=else_array, where=denominator != 0.0)
 
 
+def weighted_average_of_columns(matrix: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    sum_for_each_row = weighted_sum_of_columns(weights, matrix)
+    denominator = np.sum(weights)
+    return sum_for_each_row / denominator
+
+
+def weighted_average_of_rows(matrix: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    sum_for_each_row = weighted_sum_of_rows(matrix, weights)
+    denominator = np.sum(weights)
+    return sum_for_each_row / denominator
+
+
+def find_first(input_iterable, predicate):
+    found = [item for item in input_iterable if predicate(input)]
+    if found:
+        return found[0]
+    else:
+        return None
+
+
+def scale_columns(matrix, scalings):
+    return matrix * scalings
+
+
+def initialise_random():
+    random.seed(int(time.time()))
+
+
+
+def remove_duplicates(input_list: list, hashable=False):
+    if hashable:
+        return list(set(input_list))
+    else:
+        raise Exception("I don't know how to remove duplicates from an unhashable list, yet")
+
+
+def generate_distinct(generator: Callable, amount: int) -> set:
+    result = set()
+    while len(result) < amount:
+        result.add(generator())
+    return result

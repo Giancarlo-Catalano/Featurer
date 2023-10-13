@@ -1,8 +1,10 @@
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+from Version_E.Feature import Feature
 
 
-class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):
+class BinValProblem(TestableCombinatorialProblem):
     amount_of_bits: int
     base: float
 
@@ -14,12 +16,11 @@ class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
     def __repr__(self):
         return f"BinValProblem(bits={self.amount_of_bits}, base = {self.base})"
 
-
     def long_repr(self):
         return self.__repr__()
 
-    def get_complexity_of_feature(self, feature: SearchSpace.Feature):
-        return super().get_area_of_smallest_bounding_box(feature)
+    def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
+        return self.amount_of_set_values_in_feature(feature)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         digit_value = 1
@@ -30,7 +31,10 @@ class BinValProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem)
         return total
 
     def feature_repr(self, feature):
-        def cell_repr(cell):
-            return "-" if cell is None else str(cell)
+        return f"{Feature.from_legacy_feature(feature, self.search_space)}"
 
-        return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
+    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+        def feature_with_a_single_one(var_index):
+            return SearchSpace.UserFeature([(var_index, 1)])
+
+        return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]
