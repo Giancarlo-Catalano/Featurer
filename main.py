@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import sys
 
 import utils
@@ -34,39 +35,17 @@ def get_training_data(problem: CombinatorialProblem.CombinatorialProblem,
     return PrecomputedPopulationInformation(problem.search_space, training_samples, fitness_list)
 
 
-def test_command_line():
-    # command_line_arguments = sys.argv
-    # if len(command_line_arguments) < 2:
-    #    raise Exception("Not enough arguments")
+def execute_command_line():
+    command_line_arguments = sys.argv
+    if len(command_line_arguments) < 2:
+       raise Exception("Not enough arguments")
 
-    # settings = TestingUtilities.to_json_object(command_line_arguments[1])
+    first_argument = command_line_arguments[1]
+    with open(first_argument) as settings_file:
+        settings = json.load(settings_file)
+        TestingUtilities.run_test(settings)
 
-
-
-    settings = dict()
-
-    settings["problem"] = {"which": "graph",
-                           "amount_of_colours":4,
-                           "amount_of_nodes": 6,
-                           "chance_of_connection": 0.3}
-
-    settings["criterion"] = {"which": "balance",
-                             "arguments": [{"which": "high_fitness"},
-                                           {"which": "explainability"}],
-                             "weights": [2, 1]}
-
-
-    settings["test"] = {"which": "check_connectedness",
-                        "features_per_run": 200,
-                        "runs": 24}
-    settings["miner"] = {"which": "constructive",
-                         "stochastic": False,
-                         "at_most": 5,
-                         "population_size": 36}
-    settings["sample_size"] = 2400
-    TestingUtilities.run_test(settings)
 
 
 if __name__ == '__main__':
-    #make_csv_for_connectedness("check_connectedness~graph~constructive_(10-10)_[15_42].json", "conn_out_3.csv")
-    test_command_line()
+    execute_command_line()

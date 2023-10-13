@@ -27,18 +27,8 @@ def error_result(description) -> JSON:
 
 
 def run_test(arguments: dict):
-    #print(f"Received the arguments {arguments}")
-
     result_json = Tests.apply_test(arguments)  # important part
-
-    test_type = arguments["test"]["which"]
-    problem_kind = arguments["problem"]["which"]
-    miner_kind = arguments["miner"]["which"]
-    now = datetime.datetime.now()
-    output_name = f"{test_type}~{problem_kind}~{miner_kind}_({now.day}-{now.month})_[{now.hour}_{now.minute}].json"
-
     output_json = {"parameters": arguments, "result": result_json}
-
     print(json.dumps(output_json))
 
 

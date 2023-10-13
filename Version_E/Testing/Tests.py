@@ -34,7 +34,7 @@ def run_multiple_times(func, runs, *args, **kwargs):
 def generate_problem_miner(arguments: Settings, miner_arguments=None) -> (CombinatorialProblem, FeatureMiner):
     problem = Problems.decode_problem(arguments["problem"])
     criterion = Criteria.decode_criterion(arguments["criterion"], problem)
-    sample_size = arguments["sample_size"]
+    sample_size = arguments["test"]["sample_size"]
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
@@ -249,7 +249,7 @@ def apply_test(arguments: dict) -> dict:
     test_kind = test_parameters["which"]
 
     if test_kind == "check_distribution":
-        return check_distribution_test(arguments,
+        return check_distribution_test(arguments=arguments,
                                        runs=test_parameters["runs"],
                                        features_per_run=test_parameters["features_per_run"])
     elif test_kind == "check_connectedness":
