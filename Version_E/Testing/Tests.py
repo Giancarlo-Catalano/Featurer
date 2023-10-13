@@ -166,7 +166,6 @@ def make_csv_for_connectedness(input_name, output_name: str):
 def check_connectedness(arguments: Settings, runs: int, features_per_run: int,
                         with_binomial_distribution=False) -> TestResults:
     def single_run():
-        print("starting a single run")
         problem, miner = generate_problem_miner(arguments)
 
         def are_connected(node_index_a: int, node_index_b) -> bool:

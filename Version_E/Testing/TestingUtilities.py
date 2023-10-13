@@ -27,7 +27,7 @@ def error_result(description) -> JSON:
 
 
 def run_test(arguments: dict):
-    print(f"Received the arguments {arguments}")
+    #print(f"Received the arguments {arguments}")
 
     result_json = Tests.apply_test(arguments)  # important part
 
@@ -39,10 +39,7 @@ def run_test(arguments: dict):
 
     output_json = {"parameters": arguments, "result": result_json}
 
-    print(f"The result is {output_json}")
-
-    with open(output_name, 'w') as json_file:
-        json.dump(output_json, json_file)
+    print(json.dumps(output_json))
 
 
 
