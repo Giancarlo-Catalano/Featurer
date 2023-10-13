@@ -47,7 +47,6 @@ def generate_problem_miner(arguments: Settings, miner_arguments=None) -> (Combin
 def check_successfullness(arguments: Settings, runs: int, features_per_run: int, miner_arguments=None,
                           debug=False) -> TestResults:
     def single_run() -> (int, int):
-        print("Start of a single run")
         problem, miner = generate_problem_miner(arguments, miner_arguments=miner_arguments)
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         ideals = [Feature.from_legacy_feature(ideal, problem.search_space) for ideal in problem.get_ideal_features()]
@@ -73,7 +72,6 @@ def check_distribution_test(arguments: Settings, runs: int,
         accumulator += mask_array
 
     def single_run():
-        print("Start of a run")
         problem, miner = generate_problem_miner(arguments)
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         cell_coverings = np.zeros(problem.search_space.dimensions, dtype=int)
@@ -150,21 +148,19 @@ def make_csv_for_connectedness(input_name, output_name: str):
         merged_trials = dict(sorted(merged_trials.items(), key=utils.first))
         merged_baselines = dict(sorted(merged_baselines.items(), key=utils.first))
 
-        sample_limit = 1200
 
         with open(output_name, "w") as output_file:
             for (observed_key, observed_values), (expected_key, expected_values) in zip(merged_trials.items(),
                                                                                         merged_baselines.items()):
                 output_file.write(f"Observed_{observed_key}")
-                output_file.write("".join([f"\t{item}" for item in observed_values[:sample_limit]]))
+                output_file.write("".join([f"\t{item}" for item in observed_values]))
                 output_file.write("\n")
                 output_file.write(f"Expected_{expected_key}")
-                output_file.write("".join([f"\t{item}" for item in expected_values[:sample_limit]]))
+                output_file.write("".join([f"\t{item}" for item in expected_values]))
                 output_file.write("\n")
 
 
-def check_connectedness(arguments: Settings, runs: int, features_per_run: int,
-                        with_binomial_distribution=False) -> TestResults:
+def check_connectedness(arguments: Settings, runs: int, features_per_run: int) -> TestResults:
     def single_run():
         problem, miner = generate_problem_miner(arguments)
 

@@ -1,3 +1,5 @@
+import random
+
 import utils
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 from BenchmarkProblems.BinVal import BinValProblem
@@ -34,7 +36,7 @@ def decode_problem(properties: dict) -> CombinatorialProblem:
                                expected_volume=properties["expected_volume"])
     elif problem_string == "graph":
         return GraphColouringProblem(amount_of_colours=properties["amount_of_colours"],
-                                     amount_of_nodes=properties["amount_of_nodes"],
+                                     amount_of_nodes=random.randrange(10, 30),
                                      chance_of_connection=properties["chance_of_connection"])
     else:
         raise Exception("The problem was not recognised")

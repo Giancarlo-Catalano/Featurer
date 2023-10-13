@@ -1,0 +1,177 @@
+{
+  "problem": {
+    "which": "artificial",
+    "size": 30,
+    "size_of_partials": 5,
+    "amount_of_features": 5,
+    "allow_overlaps": false
+  },
+  "criterion": {
+    "which": "balance",
+    "arguments": [
+      {
+        "which": "fitness_higher_than_average"
+      },
+      {
+        "which": "consistent_fitness"
+      },
+      {
+        "which": "explainability"
+      }
+    ],
+    "weights": [
+      2,
+      1,
+      4
+    ]
+  },
+  "test": {
+    "which": "check_miners",
+    "features_per_run": 100,
+    "runs": 2,
+    "sample_size": 2400,
+    "miners": [
+      {
+        "which": "constructive",
+        "stochastic": true,
+        "at_most": 5,
+        "population_size": 50
+      },
+      {
+        "which": "constructive",
+        "stochastic": true,
+        "at_most": 5,
+        "population_size": 100
+      },
+      {
+        "which": "constructive",
+        "stochastic": true,
+        "at_most": 5,
+        "population_size": 150
+      },
+      {
+        "which": "constructive",
+        "stochastic": false,
+        "at_most": 5,
+        "population_size": 50
+      },
+      {
+        "which": "constructive",
+        "stochastic": false,
+        "at_most": 5,
+        "population_size": 100
+      },
+      {
+        "which": "constructive",
+        "stochastic": false,
+        "at_most": 5,
+        "population_size": 150
+      },
+      {
+        "which": "destructive",
+        "stochastic": true,
+        "at_least": 1,
+        "population_size": 50
+      },
+      {
+        "which": "destructive",
+        "stochastic": true,
+        "at_least": 1,
+        "population_size": 100
+      },
+      {
+        "which": "destructive",
+        "stochastic": true,
+        "at_least": 1,
+        "population_size": 150
+      },
+      {
+        "which": "destructive",
+        "stochastic": false,
+        "at_least": 1,
+        "population_size": 50
+      },
+      {
+        "which": "destructive",
+        "stochastic": false,
+        "at_least": 1,
+        "population_size": 100
+      },
+      {
+        "which": "destructive",
+        "stochastic": false,
+        "at_least": 1,
+        "population_size": 150
+      },
+      {
+        "which": "ga",
+        "iterations": 10,
+        "population_size": 50
+      },
+      {
+        "which": "ga",
+        "iterations": 10,
+        "population_size": 100
+      },
+      {
+        "which": "ga",
+        "iterations": 10,
+        "population_size": 150
+      },
+      {
+        "which": "ga",
+        "iterations": 50,
+        "population_size": 50
+      },
+      {
+        "which": "ga",
+        "iterations": 50,
+        "population_size": 100
+      },
+      {
+        "which": "ga",
+        "iterations": 50,
+        "population_size": 150
+      },
+      {
+        "which": "ga",
+        "iterations": 100,
+        "population_size": 50
+      },
+      {
+        "which": "ga",
+        "iterations": 100,
+        "population_size": 100
+      },
+      {
+        "which": "ga",
+        "iterations": 100,
+        "population_size": 150
+      },
+      {
+        "which": "random",
+        "population_size": 1000
+      },
+      {
+        "which": "random",
+        "population_size": 10000
+      },
+      {
+        "which": "random",
+        "population_size": 100000
+      },
+      {
+        "which": "hill_climber",
+        "population_size": 100
+      },
+      {
+        "which": "hill_climber",
+        "population_size": 1000
+      },
+      {
+        "which": "hill_climber",
+        "population_size": 10000
+      }
+    ]
+  }
+}
