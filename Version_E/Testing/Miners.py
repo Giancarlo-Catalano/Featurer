@@ -40,20 +40,29 @@ def decode_miner(properties: dict, selector: FeatureSelector) -> FeatureMiner:
 
 
 def aggregate_jsons_into_csv(json_file_list: list[str], output_file_name: str):
-    def get_runs_from_file(single_file_name) -> list[dict]:
+    def generate_miner_name(miner_json: dict) -> str:
+        miner_name = miner_json["which"]
+        if miner_name in {"constructive", "destructive"}:
+            stochastic = miner_json["stochastic"]
+            pop_size = miner_json["population_size"]
+            return f"{miner_name}_{'S' if stochastic else 'H'}_{pop_size}"
+        elif miner_name in {"hill_climber", "random"}:
+            pop_size = miner_json["population_size"]
+            return f"{miner_name}_{pop_size}"
+        elif miner_name == "ga":
+            pop_size = miner_json["population_size"]
+            iterations = miner_json["iterations"]
+            return f"{miner_name}_{iterations}_{pop_size}"
+    def get_miner_result_dict_from_file(single_file_name: str) -> dict:
         with open(single_file_name, "r") as file:
             data = json.load(file)
-            return data["result"]["test_results"]
+            miner_runs: list[dict] = data["result"]["test_results"]
+            as_dict = {generate_miner_name(item['miner']): [result_item["found"]
+                                            for result_item in item['result']]
+                       for item in miner_runs}
+            return as_dict
 
-    def get_results_from_run(single_run: dict) -> dict[str, list[int]]:
-        miners_and_results = [(item["miner"], item["result"]) for item in single_run]
-
-        def convert_pairs(pairs_list) -> list[int]:
-            return [item["found"] for item in pairs_list]
-
-        return {f"{miner}": convert_pairs(result) for miner, result in miners_and_results}
-
-    def merge_results(results: list[dict]) -> dict:
+    def merge_results_by_keys(results: list[dict]) -> dict:
         def get_aggregated_by_key(key) -> list[int]:
             return [item for single_result in results for item in single_result.setdefault(key, [])]
 
@@ -61,17 +70,14 @@ def aggregate_jsons_into_csv(json_file_list: list[str], output_file_name: str):
 
         return {key: get_aggregated_by_key(key) for key in all_keys}
 
-    all_runs: list[dict] = [run for file_name in json_file_list
-                            for run in get_runs_from_file(file_name)]
+    miner_result_dicts : list[dict] = [get_miner_result_dict_from_file(input_file) for input_file in json_file_list]
+    aggregated = merge_results_by_keys(miner_result_dicts)
 
-    aggregated_results = merge_results([get_results_from_run(run) for run in all_runs])
-    aggregated_results = sorted(aggregated_results.items(), key=lambda p: int(p[0]))
+
+
 
     with open(output_file_name, "w") as output_file:
-        for category, results in aggregated_results:
+        for category, results in aggregated.items():
             output_file.write(f"{category}, ")
             output_file.write(", ".join([f"{item}" for item in results]))
             output_file.write("\n")
-
-
-

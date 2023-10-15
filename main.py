@@ -30,5 +30,5 @@ def aggregate_files(directory:str, output_name: str):
 
 
 if __name__ == '__main__':
-    execute_command_line()
-    #aggregate_files("/home/gian/Documents/CondorDataCollection/PSs/testing", "aggregated.csv")
+    #execute_command_line()
+    aggregate_files("/home/gian/PycharmProjects/Featurer/output_files", "aggregated.csv")
