@@ -64,7 +64,7 @@ def aggregate_jsons_into_csv(json_file_list: list[str], output_file_name: str):
     all_runs: list[dict] = [run for file_name in json_file_list
                             for run in get_runs_from_file(file_name)]
 
-    aggregated_results= merge_results([get_results_from_run(run) for run in all_runs])
+    aggregated_results = merge_results([get_results_from_run(run) for run in all_runs])
     aggregated_results = sorted(aggregated_results.items(), key=lambda p: int(p[0]))
 
     with open(output_file_name, "w") as output_file:
