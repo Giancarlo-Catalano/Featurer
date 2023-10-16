@@ -199,7 +199,7 @@ def sample_from_binomial_distribution(n: int, chance_of_success: float, samples:
 def check_miners(arguments: Settings, features_per_run: int, runs_per_miner: int,
                  miners_settings_list: list[Settings]) -> TestResults:
     def single_run(miner_arguments) -> dict:
-        print(f"executing {miner_arguments}")
+        #print(f"executing {miner_arguments}")
         results = check_successfullness(arguments,
                                         runs=runs_per_miner,
                                         features_per_run=features_per_run,

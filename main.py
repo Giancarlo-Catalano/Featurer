@@ -31,4 +31,4 @@ def aggregate_files(directory:str, output_name: str):
 
 if __name__ == '__main__':
     #execute_command_line()
-    aggregate_files("/home/gian/PycharmProjects/Featurer/output_files", "aggregated.csv")
+    aggregate_files("C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\algo_comparison", "aggregated.csv")
