@@ -53,14 +53,14 @@ def generate_miner_name(miner_json: dict) -> str:
         return f"{miner_name}_{iterations}_{pop_size}"
 
 
-def aggregate_jsons_into_csv(json_file_list: list[str], output_file_name: str):
+def aggregate_algorithm_jsons_into_csv(json_file_list: list[str], output_file_name: str, for_time=False):
 
     def get_miner_result_dict_from_file(single_file_name: str) -> dict:
         with open(single_file_name, "r") as file:
             data = json.load(file)
             miner_runs: list[dict] = data["result"]["test_results"]
-            as_dict = {generate_miner_name(item['miner']): [result_item["found"]
-                                            for result_item in item['result']]
+            as_dict = {generate_miner_name(item['miner']): [result_item["time" if for_time else "found"]
+                                                            for result_item in item['result']]
                        for item in miner_runs}
             return as_dict
 

@@ -5,7 +5,7 @@ from os import listdir
 from os.path import isfile, join
 
 from Version_E.Testing import TestingUtilities
-from Version_E.Testing.Miners import aggregate_jsons_into_csv
+from Version_E.Testing.Miners import aggregate_algorithm_jsons_into_csv
 
 
 def execute_command_line():
@@ -26,9 +26,9 @@ def aggregate_files(directory:str, output_name: str):
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     #aggregate
-    aggregate_jsons_into_csv(files_in_directory, output_name)
+    aggregate_algorithm_jsons_into_csv(files_in_directory, output_name, for_time=False)
 
 
 if __name__ == '__main__':
     #execute_command_line()
-    aggregate_files("C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_2\\run_2", "run_2.csv")
+    aggregate_files("C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\collective_runs", "temp_runtimes.csv")
