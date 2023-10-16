@@ -51,7 +51,7 @@ def check_successfullness(arguments: Settings, runs: int, features_per_run: int,
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         ideals = [Feature.from_legacy_feature(ideal, problem.search_space) for ideal in problem.get_ideal_features()]
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
-        return {"found": amount_of_found_ideals, "total": len(ideals)}
+        return {"found": amount_of_found_ideals, "total": len(ideals), "time": execution_time}
 
     def print_count_pairs(counts_json: dict):
         pairs = [(item["found"], item["total"]) for item in counts_json["test_results"]]

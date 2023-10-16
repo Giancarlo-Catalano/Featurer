@@ -38,21 +38,23 @@ def decode_miner(properties: dict, selector: FeatureSelector) -> FeatureMiner:
         return RandomSearch(selector,
                             amount_to_generate=properties["population_size"])
 
+def generate_miner_name(miner_json: dict) -> str:
+    miner_name = miner_json["which"]
+    if miner_name in {"constructive", "destructive"}:
+        stochastic = miner_json["stochastic"]
+        pop_size = miner_json["population_size"]
+        return f"{miner_name}_{'S' if stochastic else 'H'}_{pop_size}"
+    elif miner_name in {"hill_climber", "random"}:
+        pop_size = miner_json["population_size"]
+        return f"{miner_name}_{pop_size}"
+    elif miner_name == "ga":
+        pop_size = miner_json["population_size"]
+        iterations = miner_json["iterations"]
+        return f"{miner_name}_{iterations}_{pop_size}"
+
 
 def aggregate_jsons_into_csv(json_file_list: list[str], output_file_name: str):
-    def generate_miner_name(miner_json: dict) -> str:
-        miner_name = miner_json["which"]
-        if miner_name in {"constructive", "destructive"}:
-            stochastic = miner_json["stochastic"]
-            pop_size = miner_json["population_size"]
-            return f"{miner_name}_{'S' if stochastic else 'H'}_{pop_size}"
-        elif miner_name in {"hill_climber", "random"}:
-            pop_size = miner_json["population_size"]
-            return f"{miner_name}_{pop_size}"
-        elif miner_name == "ga":
-            pop_size = miner_json["population_size"]
-            iterations = miner_json["iterations"]
-            return f"{miner_name}_{iterations}_{pop_size}"
+
     def get_miner_result_dict_from_file(single_file_name: str) -> dict:
         with open(single_file_name, "r") as file:
             data = json.load(file)
@@ -72,9 +74,6 @@ def aggregate_jsons_into_csv(json_file_list: list[str], output_file_name: str):
 
     miner_result_dicts : list[dict] = [get_miner_result_dict_from_file(input_file) for input_file in json_file_list]
     aggregated = merge_results_by_keys(miner_result_dicts)
-
-
-
 
     with open(output_file_name, "w") as output_file:
         for category, results in aggregated.items():
