@@ -77,6 +77,6 @@ def aggregate_algorithm_jsons_into_csv(json_file_list: list[str], output_file_na
 
     with open(output_file_name, "w") as output_file:
         for category, results in aggregated.items():
-            output_file.write(f"{category}, ")
-            output_file.write(", ".join([f"{item}" for item in results]))
+            output_file.write(f"{category},")
+            output_file.write(",".join([f"{item:.3f}" for item in results]))
             output_file.write("\n")
