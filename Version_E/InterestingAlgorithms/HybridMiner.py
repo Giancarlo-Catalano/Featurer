@@ -53,7 +53,7 @@ class HybridMiner(FeatureMiner):
         current_best = self.get_max_score_of_population(current_population)
 
 
-        allowed_successive_fails = 3
+        allowed_successive_fails = 5
         current_successive_fails = 0
 
         while current_successive_fails < allowed_successive_fails:
