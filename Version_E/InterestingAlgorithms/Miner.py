@@ -3,15 +3,13 @@ import random
 import time
 from typing import Iterable
 
-import SearchSpace
+import numpy as np
+
 import utils
 from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-import numpy as np
-
-from SearchSpace import UserFeature
 
 Score = float
 
@@ -31,10 +29,31 @@ class FeatureSelector:
         pfi = PrecomputedFeatureInformation(self.ppi, features)
         return self.criterion.get_score_array(pfi)
 
-    def keep_best_features(self, features: list[Feature], amount_to_keep: int) -> list[(Feature, Score)]:
-        scores = self.get_scores(features)
-        sorted_paired = sorted(zip(features, scores), key=utils.second, reverse=True)
+    def keep_best_features(self, features: Iterable[Feature], amount_to_keep: int) -> list[(Feature, Score)]:
+        features_list = list(features)
+        scores = self.get_scores(features_list)
+        sorted_paired = sorted(zip(features_list, scores), key=utils.second, reverse=True)
         return sorted_paired[:amount_to_keep]
+
+    def select_features_stochastically(self, features_with_scores: list[(Feature, Score)],
+                                       amount_to_return: int) -> list[Feature]:
+        """
+        This function selects features using tournament selection, returning a distinct set of features
+        :param features_with_scores: layer to select from
+        :param amount_to_return: Res Ipsa Loquitur
+        :return:
+        """
+        features, weights = utils.unzip(features_with_scores)
+        random.seed(int(time.time()))  # to prevent predictable randomness
+        selected = random.choices(features, weights=weights, k=amount_to_return)
+
+        return list(selected)
+
+    def select_features_heuristically(self, features_with_scores: list[(Feature, Score)], amount_to_return: int) -> list[Feature]:
+        """Select features using truncation selection"""
+        # ensure previous layer is sorted
+        features_with_scores.sort(key=utils.second, reverse=True)
+        return [feature for feature, _ in features_with_scores[:amount_to_return]]
 
 
 class FeatureMiner:
@@ -111,24 +130,7 @@ class LayeredFeatureMiner(FeatureMiner):
     def keep_top_features_and_make_layer(self, features: list[Feature], amount_to_keep: int) -> Layer:
         return self.feature_selector.keep_best_features(features, amount_to_keep)
 
-    def select_features_stochastically(self, previous_layer: Layer, amount_to_return: int) -> list[Feature]:
-        """
-        This function selects features using tournament selection, returning a distinct set of features
-        :param previous_layer: layer to select from
-        :param amount_to_return: Res Ipsa Loquitur
-        :return:
-        """
-        features, weights = utils.unzip(previous_layer)
-        random.seed(int(time.time()))  # to prevent predictable randomness
-        selected = random.choices(features, weights=weights, k=amount_to_return)
 
-        return list(selected)
-
-    def select_features_heuristically(self, previous_layer: Layer, amount_to_return: int) -> list[Feature]:
-        """Select features using truncation selection"""
-        # ensure previous layer is sorted
-        previous_layer.sort(key=utils.second, reverse=True)
-        return [feature for feature, _ in previous_layer[:amount_to_return]]
 
     def select_features(self, previous_layer) -> list[Feature]:
         """
@@ -143,9 +145,9 @@ class LayeredFeatureMiner(FeatureMiner):
             return utils.unzip(previous_layer)[0]
 
         if self.stochastic:
-            return self.select_features_stochastically(previous_layer, amount_to_return)
+            return self.feature_selector.select_features_stochastically(previous_layer, amount_to_return)
         else:
-            return self.select_features_heuristically(previous_layer, amount_to_return)
+            return self.feature_selector.select_features_heuristically(previous_layer, amount_to_return)
 
     def mine_features(self) -> list[Feature]:
 

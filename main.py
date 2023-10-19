@@ -31,6 +31,6 @@ def aggregate_files(directory:str, output_name: str, for_time):
 
 if __name__ == '__main__':
     #execute_command_line()
-    input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_6"
+    input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
     aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
     aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
