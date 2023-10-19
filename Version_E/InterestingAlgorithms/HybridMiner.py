@@ -43,7 +43,7 @@ class HybridMiner(FeatureMiner):
     def get_initial_population(self) -> list[(Feature, float)]:
         initial_features = [Feature.empty_feature(self.search_space)]
         scores = self.feature_selector.get_scores(initial_features)
-        return zip(initial_features, scores)
+        return list(zip(initial_features, scores))
 
     def get_max_score_of_population(self, population: list[(Feature, float)]) -> float:
         return max(population, key = utils.second)[1]
@@ -59,7 +59,7 @@ class HybridMiner(FeatureMiner):
         while current_successive_fails < allowed_successive_fails:
             current_population = self.get_next_population(current_population)
             new_best = self.get_max_score_of_population(current_population)
-            if new_best < current_best:
+            if new_best <= current_best:
                 current_successive_fails +=1
             else:
                 current_successive_fails = 0

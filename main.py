@@ -4,7 +4,10 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
-from Version_E.Testing import TestingUtilities
+from Version_E.InterestingAlgorithms.HybridMiner import HybridMiner
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector
+from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Testing import TestingUtilities, Problems, Criteria
 from Version_E.Testing.Miners import aggregate_algorithm_jsons_into_csv
 
 
@@ -29,8 +32,43 @@ def aggregate_files(directory:str, output_name: str, for_time):
     aggregate_algorithm_jsons_into_csv(files_in_directory, output_name, for_time=for_time)
 
 
+def test_new_miner():
+    problem = {"which": "checkerboard",
+                    "rows": 4,
+                    "cols": 4}
+
+    criterion = {"which": "balance",
+                 "arguments": [
+                     {"which": "high_fitness"},
+                     {"which": "explainability"}
+                 ],
+                 "weights" : [2, 4]}
+
+
+
+    problem = Problems.decode_problem(problem)
+    criterion = Criteria.decode_criterion(criterion, problem)
+    sample_size = 1200
+    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+    selector = FeatureSelector(training_ppi, criterion)
+
+
+    miner = HybridMiner(selector, population_size = 60, stochastic=False)
+
+    print(f"The miner is {miner}")
+
+    good_features = miner.get_meaningful_features(60)
+    print("The good features are: ")
+    for feature in good_features:
+        print(problem.feature_repr(feature))
+        print(criterion.describe_feature(feature, training_ppi))
+
+
 if __name__ == '__main__':
     #execute_command_line()
-    input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
-    aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
-    aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
+    #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
+    #aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
+    #aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
+
+
+    test_new_miner()
