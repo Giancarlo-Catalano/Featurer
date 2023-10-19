@@ -36,14 +36,7 @@ class CheckerBoardProblem(TestableCombinatorialProblem):
     def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
         """returns area of bounding box / area of board"""
 
-        if len(feature.var_vals) == 0:
-            return 0
-
-        bounds = self.get_bounding_box(feature)
-        bounds_rows = bounds[1] - bounds[0]
-        bounds_cols = bounds[3] - bounds[2]
-        bounds_area = bounds_cols * bounds_rows
-        return bounds_area
+        return super().amount_of_set_values_in_feature(feature)
 
     def candidate_to_boolean_grid(self, candidate: SearchSpace.Candidate):
         candidate_bools = [val == 1 for val in candidate.values]
