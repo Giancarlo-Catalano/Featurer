@@ -42,7 +42,7 @@ def test_new_miner():
                      {"which": "high_fitness"},
                      {"which": "explainability"}
                  ],
-                 "weights" : [2, 4]}
+                 "weights": [2, 1]}
 
 
 
@@ -60,7 +60,7 @@ def test_new_miner():
     good_features = miner.get_meaningful_features(60)
     print("The good features are: ")
     for feature in good_features:
-        print(problem.feature_repr(feature))
+        print(problem.feature_repr(feature.to_legacy_feature()))
         print(criterion.describe_feature(feature, training_ppi))
 
 

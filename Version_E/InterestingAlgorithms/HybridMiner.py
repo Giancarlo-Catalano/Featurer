@@ -66,6 +66,6 @@ class HybridMiner(FeatureMiner):
 
             current_best = new_best
 
-        return current_population
+        return utils.unzip(current_population)[0]
 
 
