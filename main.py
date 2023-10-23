@@ -43,9 +43,10 @@ def test_new_miner():
     criterion = {"which": "balance",
                  "arguments": [
                      {"which": "high_fitness"},
+                     {"which": "consistent_fitness"},
                      {"which": "explainability"}
                  ],
-                 "weights": [1, 1.1]}
+                 "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -53,7 +54,7 @@ def test_new_miner():
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = ArchiveMiner(selector, population_size=60, generations=12, stochastic=False)
+    miner = ArchiveMiner(selector, population_size=60, generations=60, stochastic=False)
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")

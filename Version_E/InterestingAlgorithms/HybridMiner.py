@@ -36,14 +36,15 @@ class HybridMiner(FeatureMiner):
 
     def get_next_population(self, prev_population: list[(Feature, float)]) -> list[(Feature, float)]:
         selected_parents = self.select_parents(prev_population)
-        simplifications = {simplified for feature in selected_parents
-                           for simplified in feature.get_generalisations()}
+        simplifications = [simplified for feature in selected_parents
+                           for simplified in feature.get_generalisations()]
 
-        complications = {complected for feature in selected_parents
-                         for complected in feature.get_specialisations(self.search_space)}
+        complications = [complected for feature in selected_parents
+                         for complected in feature.get_specialisations(self.search_space)]
 
-        prev_population_as_set = {feature for feature, score in prev_population}
-        unselected_new_population = simplifications.union(complications).union(prev_population_as_set)
+        prev_population_as_set = [feature for feature, score in prev_population]
+        unselected_new_population = set(prev_population_as_set + simplifications + complications)
+        #unselected_new_population = simplifications.union(complications).union(prev_population_as_set)
         return self.feature_selector.keep_best_features(unselected_new_population, self.population_size)
 
 
