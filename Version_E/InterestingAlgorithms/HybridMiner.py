@@ -9,15 +9,18 @@ from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInfo
 class HybridMiner(FeatureMiner):
     population_size: int
     stochastic: bool
+    generations: int
 
-    def __init__(self, selector: FeatureSelector, population_size: int, stochastic: bool):
+    def __init__(self, selector: FeatureSelector, population_size: int, generations: int, stochastic: bool):
         super().__init__(selector)
         self.population_size = population_size
+        self.generations = generations
         self.stochastic = stochastic
 
     def __repr__(self):
         return (f"Hybrid(population = {self.population_size}, "
-                f"stochastic = {self.stochastic}")
+                f"generations = {self.generations},"
+                f"stochastic = {self.stochastic})")
 
     def select_parents(self, current_population: list[(Feature, float)]) -> list[Feature]:
         portion_to_select = 0.5
@@ -50,21 +53,10 @@ class HybridMiner(FeatureMiner):
 
     def mine_features(self) -> list[Feature]:
         current_population = self.get_initial_population()
-        current_best = self.get_max_score_of_population(current_population)
 
-
-        allowed_successive_fails = 5
-        current_successive_fails = 0
-
-        while current_successive_fails < allowed_successive_fails:
+        for iteration in range(self.generations):
+            print(f"Processing iteration {iteration} / {self.generations}")
             current_population = self.get_next_population(current_population)
-            new_best = self.get_max_score_of_population(current_population)
-            if new_best <= current_best:
-                current_successive_fails +=1
-            else:
-                current_successive_fails = 0
-
-            current_best = new_best
 
         return utils.unzip(current_population)[0]
 
