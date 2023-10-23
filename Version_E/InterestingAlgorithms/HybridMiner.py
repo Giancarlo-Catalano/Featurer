@@ -168,6 +168,7 @@ class ArchiveMiner(FeatureMiner):
 
         for iteration in range(self.generations):
             print(f"In iteration {iteration}")
+            population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.limit_population_size(evaluated_population)
 
@@ -175,6 +176,7 @@ class ArchiveMiner(FeatureMiner):
             children = [child for parent in parents for child in self.get_children(parent)]
 
             archive.update(parents)
+            population = self.without_scores(evaluated_population)  # to add the effect of limit_population_size
             population.extend(children)
             population = self.without_features_in_archive(population, archive)
 

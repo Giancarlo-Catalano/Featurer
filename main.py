@@ -33,16 +33,19 @@ def aggregate_files(directory: str, output_name: str, for_time):
 
 
 def test_new_miner():
-    problem = {"which": "checkerboard",
-               "rows": 4,
-               "cols": 4}
+    problem = {"which": "artificial",
+               "size": 25,
+               "size_of_partials": 5,
+               "amount_of_features": 5,
+               "allow_overlaps": False}
+
 
     criterion = {"which": "balance",
                  "arguments": [
                      {"which": "high_fitness"},
                      {"which": "explainability"}
                  ],
-                 "weights": [2, 1]}
+                 "weights": [1, 1.1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -52,6 +55,7 @@ def test_new_miner():
 
     miner = ArchiveMiner(selector, population_size=60, generations=12, stochastic=False)
 
+    print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
 
     good_features = miner.get_meaningful_features(60)
