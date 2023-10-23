@@ -1,4 +1,8 @@
 import math
+import random
+from enum import auto, Enum
+
+import numpy as np
 
 import utils
 from Version_E.Feature import Feature
@@ -61,3 +65,100 @@ class HybridMiner(FeatureMiner):
         return utils.unzip(current_population)[0]
 
 
+class ArchiveMiner(FeatureMiner):
+    population_size: int
+    stochastic: bool
+    generations: int
+
+    Population = list[Feature]
+    EvaluatedPopulation = list[(Feature, float)]
+
+    def __init__(self, selector: FeatureSelector, population_size: int, generations: int, stochastic: bool):
+        super().__init__(selector)
+        self.population_size = population_size
+        self.generations = generations
+        self.stochastic = stochastic
+
+    def __repr__(self):
+        return (f"ArchiveMiner(population = {self.population_size}, "
+                f"generations = {self.generations},"
+                f"stochastic = {self.stochastic})")
+
+
+    def get_children(self, feature: Feature) -> list[Feature]:
+        result = feature.get_specialisations(self.search_space)
+        result.extend(feature.get_generalisations())
+        return result
+
+
+    def with_scores(self, feature_list: Population) -> EvaluatedPopulation:
+        scores = self.feature_selector.get_scores(feature_list)
+        return list(zip(feature_list, scores))
+
+    def without_scores(self, feature_list: EvaluatedPopulation) -> Population:
+        return utils.unzip(feature_list)[0]
+
+    def remove_duplicate_features(self, features: Population) -> Population:
+        return list(set(features))
+
+    def truncation_selection(self, evaluated_features: EvaluatedPopulation, how_many_to_keep: int) -> EvaluatedPopulation:
+        evaluated_features.sort(key=utils.second, reverse=True)
+        return evaluated_features[:how_many_to_keep]
+
+
+    def tournament_selection(self, evaluated_features: EvaluatedPopulation, how_many_to_keep: int) -> EvaluatedPopulation:
+        tournament_size = 12
+
+        scores = utils.unzip(evaluated_features)[1]
+        cumulative_probabilities = np.cumsum(scores)
+        def get_tournament_pool() -> list[(Feature, float)]:
+            return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=tournament_size)
+
+        def pick_winner(tournament_pool: list[Feature, float]) -> (Feature, float):
+            return max(tournament_pool, key=utils.second)
+
+        return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))
+
+    def limit_population_size(self, features: Population) -> Population:
+        evaluated_features = self.with_scores(features)
+        truncated_and_evaluated = self.truncation_selection(evaluated_features, self.population_size)
+        return self.without_scores(truncated_and_evaluated)
+
+
+
+    def select_parents(self, evaluated_population: EvaluatedPopulation) -> Population:
+        parents_proportion = 0.3
+        amount_of_parents = math.ceil(len(evaluated_population)*parents_proportion)
+        if self.stochastic:
+            selected_with_scores = self.tournament_selection(evaluated_population, amount_of_parents)
+        else:
+            selected_with_scores = self.truncation_selection(evaluated_population, amount_of_parents)
+
+        return self.without_scores(selected_with_scores)
+
+    def without_features_in_archive(self, population: Population, archive: set[Feature]) -> Population:
+        return [feature for feature in population if feature not in archive]
+
+
+
+    def mine_features(self) -> Population:
+        population = [Feature.empty_feature(self.search_space)]
+        archive = set()
+
+        for iteration in range(self.generations):
+            print(f"In iteration {iteration}")
+            evaluated_population = self.with_scores(population)
+            parents = self.select_parents(evaluated_population)
+            children = [child for parent in parents for child in self.get_children(parent)]
+
+            archive.update(parents)
+            population.extend(children)
+            population = self.without_features_in_archive(population, archive)
+
+            population = self.limit_population_size(population)
+
+
+        winning_features = list(archive)
+        evaluated_winners = self.with_scores(winning_features)
+        evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
+        return self.without_scores(evaluated_winners)

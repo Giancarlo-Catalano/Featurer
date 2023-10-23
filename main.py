@@ -4,7 +4,7 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
-from Version_E.InterestingAlgorithms.HybridMiner import HybridMiner
+from Version_E.InterestingAlgorithms.HybridMiner import HybridMiner, ArchiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import TestingUtilities, Problems, Criteria
@@ -34,23 +34,23 @@ def aggregate_files(directory: str, output_name: str, for_time):
 
 def test_new_miner():
     problem = {"which": "checkerboard",
-               "rows": 8,
-               "cols": 8}
+               "rows": 4,
+               "cols": 4}
 
     criterion = {"which": "balance",
                  "arguments": [
                      {"which": "high_fitness"},
                      {"which": "explainability"}
                  ],
-                 "weights": [2, 1]}
+                 "weights": [1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 1200
+    sample_size = 2400
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = HybridMiner(selector, population_size=60, generations=36, stochastic=False)
+    miner = ArchiveMiner(selector, population_size=60, generations=36, stochastic=False)
 
     print(f"The miner is {miner}")
 
