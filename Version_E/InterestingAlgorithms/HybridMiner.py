@@ -119,10 +119,8 @@ class ArchiveMiner(FeatureMiner):
 
         return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))
 
-    def limit_population_size(self, features: Population) -> Population:
-        evaluated_features = self.with_scores(features)
-        truncated_and_evaluated = self.truncation_selection(evaluated_features, self.population_size)
-        return self.without_scores(truncated_and_evaluated)
+    def limit_population_size(self, evaluated_features: EvaluatedPopulation) -> EvaluatedPopulation:
+        return self.truncation_selection(evaluated_features, self.population_size)
 
 
 
@@ -141,7 +139,7 @@ class ArchiveMiner(FeatureMiner):
 
 
 
-    def mine_features(self) -> Population:
+    def mine_features_old(self) -> Population:
         population = [Feature.empty_feature(self.search_space)]
         archive = set()
 
@@ -162,3 +160,27 @@ class ArchiveMiner(FeatureMiner):
         evaluated_winners = self.with_scores(winning_features)
         evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
         return self.without_scores(evaluated_winners)
+
+
+    def mine_features(self) -> Population:
+        population = [Feature.empty_feature(self.search_space)]
+        archive = set()
+
+        for iteration in range(self.generations):
+            print(f"In iteration {iteration}")
+            evaluated_population = self.with_scores(population)
+            evaluated_population = self.limit_population_size(evaluated_population)
+
+            parents = self.select_parents(evaluated_population)
+            children = [child for parent in parents for child in self.get_children(parent)]
+
+            archive.update(parents)
+            population.extend(children)
+            population = self.without_features_in_archive(population, archive)
+
+        winning_features = list(archive)
+        evaluated_winners = self.with_scores(winning_features)
+        evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
+        return self.without_scores(evaluated_winners)
+
+
