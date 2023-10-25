@@ -102,7 +102,7 @@ class ArtificialProblem(TestableCombinatorialProblem):
                            for f, v in features_with_weight]))
 
     def get_complexity_of_feature(self, feature: SearchSpace.UserFeature):
-        return super().get_area_of_smallest_bounding_box(feature) ** 2
+        return super().amount_of_set_values_in_feature(feature)
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         def contains_fast_feature(feature: Feature) -> bool:

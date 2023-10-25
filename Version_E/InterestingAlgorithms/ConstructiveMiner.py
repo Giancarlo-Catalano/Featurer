@@ -1,27 +1,33 @@
 from Version_E.Feature import Feature
-from Version_E.InterestingAlgorithms.Miner import LayeredFeatureMiner, FeatureSelector
+from Version_E.InterestingAlgorithms.Miner import LayeredFeatureMiner, FeatureSelector, ArchiveMiner
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 
-class ConstructiveMiner(LayeredFeatureMiner):
-    at_most_parameters: int
+class ConstructiveMiner(ArchiveMiner):
+    stochastic: bool
 
-    def __init__(self, selector: FeatureSelector, amount_to_keep_in_each_layer: int, stochastic: bool,
-                 at_most_parameters: int):
-        super().__init__(selector, amount_to_keep_in_each_layer, stochastic)
-        self.at_most_parameters = at_most_parameters
+    Population = list[Feature]
+    EvaluatedPopulation = list[(Feature, float)]
+
+    def __init__(self, selector: FeatureSelector, population_size: int, generations: int, stochastic: bool):
+        super().__init__(selector, population_size, generations, stochastic)
 
     def __repr__(self):
-        return (f"Constructive(population = {self.amount_to_keep_in_each_layer}, "
+        return (f"Constructive(population = {self.population_size}, "
                 f"stochastic = {self.stochastic}, "
-                f"at_most = {self.at_most_parameters})")
+                f"pop_size = {self.population_size},"
+                f"generations = {self.generations})")
 
-    def get_initial_features(self, ppi: PrecomputedPopulationInformation) -> list[Feature]:
-        return [Feature.empty_feature(self.search_space)]
+    def get_initial_features(self) -> Population:
+        return super().get_empty_feature_population()
 
-    def modifications_of_feature(self, feature: Feature) -> list[Feature]:
-        return feature.get_specialisations(self.search_space)
+    def get_children(self, parents: EvaluatedPopulation) -> list[Feature]:
+        return super().get_complected_children(parents)
 
-    def should_terminate(self, next_iteration: int):
-        next_amount_of_parameters = next_iteration
-        return next_amount_of_parameters > self.at_most_parameters
+
+    def select(self, population: EvaluatedPopulation) -> EvaluatedPopulation:
+        amount_to_select = self.population_size // 3
+        if self.stochastic:
+            return super().tournament_selection(population, amount_to_select)
+        else:
+            return super().truncation_selection(population, amount_to_select)

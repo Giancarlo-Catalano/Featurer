@@ -1,4 +1,8 @@
+from typing import Optional
+
 import numpy as np
+from bitarray import bitarray, frozenbitarray
+
 from Version_E.Feature import Feature
 import SearchSpace
 import utils
@@ -23,3 +27,26 @@ def hot_encode_candidate(candidate: SearchSpace.Candidate, search_space: SearchS
 def hot_encode_candidate_population(population: list[SearchSpace.Candidate],
                                     search_space: SearchSpace.SearchSpace) -> np.ndarray:
     return np.array([hot_encode_candidate(c, search_space) for c in population])
+
+
+def feature_from_hot_encoding(hot_encoded: np.ndarray, search_space: SearchSpace.SearchSpace) -> Feature:
+    def deconcat_hot_encoding(hot_encoded_input: np.ndarray) -> list[np.ndarray]:
+        return [hot_encoded_input[begin:end]
+                for (begin, end) in utils.adjacent_pairs(search_space.precomputed_offsets)]
+
+    def from_hot_encoding(hot_encoded_int: np.ndarray) -> Optional[int]:
+        for index, value in enumerate(hot_encoded_int):
+            if value == 1.0:
+                return index
+        return None
+
+    def tuple_to_feature(tuple_input: tuple) -> Feature:
+        var_mask = bitarray(value is not None for value in tuple_input)
+        val_mask = np.array([0 if value is None else value for value in tuple_input])
+
+        return Feature(frozenbitarray(var_mask), val_mask)
+
+    deconcatted = deconcat_hot_encoding(hot_encoded)
+    values_tuple = tuple(from_hot_encoding(item) for item in deconcatted)
+    return tuple_to_feature(values_tuple)
+

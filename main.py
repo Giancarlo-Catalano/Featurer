@@ -33,12 +33,19 @@ def aggregate_files(directory: str, output_name: str, for_time):
 
 
 def test_new_miner():
-    problem = {"which": "artificial",
+    artificial_problem = {"which": "artificial",
                "size": 25,
                "size_of_partials": 5,
                "amount_of_features": 5,
                "allow_overlaps": False}
 
+
+    checkerboard_problem = {"which": "checkerboard",
+               "rows": 1,
+               "cols": 8}
+
+
+    problem =  artificial_problem
 
     criterion = {"which": "balance",
                  "arguments": [

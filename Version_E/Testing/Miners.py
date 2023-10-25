@@ -21,7 +21,7 @@ def decode_miner(properties: dict, selector: FeatureSelector) -> FeatureMiner:
         return ConstructiveMiner(selector,
                                  stochastic=properties["stochastic"],
                                  at_most_parameters=properties["at_most"],
-                                 amount_to_keep_in_each_layer=properties["population_size"])
+                                 population_size=properties["population_size"])
     elif kind == "destructive":
         return DestructiveMiner(selector,
                                 stochastic=properties["stochastic"],

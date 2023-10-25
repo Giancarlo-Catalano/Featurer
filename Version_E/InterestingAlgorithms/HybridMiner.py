@@ -5,6 +5,7 @@ from enum import auto, Enum
 import numpy as np
 
 import utils
+from Version_E import HotEncoding
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import LayeredFeatureMiner, FeatureSelector, FeatureMiner
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
@@ -64,7 +65,6 @@ class HybridMiner(FeatureMiner):
             current_population = self.get_next_population(current_population)
 
         return utils.unzip(current_population)[0]
-
 
 class ArchiveMiner(FeatureMiner):
     population_size: int
@@ -163,8 +163,29 @@ class ArchiveMiner(FeatureMiner):
         return self.without_scores(evaluated_winners)
 
 
+    def get_initial_population(self) -> Population:
+        result = []
+        result.append(Feature.empty_feature(self.search_space))
+        return result
+
+        # todo add good individuals from ppi
+
+        fitnesses_and_indexes = list(enumerate(self.feature_selector.ppi.fitness_array))
+        fitnesses_and_indexes = sorted(fitnesses_and_indexes, key=utils.second, reverse=True)
+        amount_of_individuals_to_keep = self.population_size - len(result)
+        good_individuals = fitnesses_and_indexes[:amount_of_individuals_to_keep]
+        indexes_of_good_individuals = utils.unzip(good_individuals)[0]
+
+        def get_individual(index: int):
+            hot_encoded_feature = self.feature_selector.ppi.candidate_matrix[index]
+            return HotEncoding.feature_from_hot_encoding(hot_encoded_feature, self.search_space)
+
+        result.extend(get_individual(index) for index in indexes_of_good_individuals)
+        return result
+
+
     def mine_features(self) -> Population:
-        population = [Feature.empty_feature(self.search_space)]
+        population = self.get_initial_population()
         archive = set()
 
         for iteration in range(self.generations):
@@ -185,5 +206,6 @@ class ArchiveMiner(FeatureMiner):
         evaluated_winners = self.with_scores(winning_features)
         evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
         return self.without_scores(evaluated_winners)
+
 
 

@@ -97,7 +97,8 @@ class All(MeasurableCriterion):
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         atomic_scores = np.array([criterion.get_score_array(pfi) for criterion in self.criteria])
-        return np.min(atomic_scores, axis=0)
+        minimums = np.min(atomic_scores, axis=0)
+        return minimums
 
     def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
         return ", ".join(criterion.describe_feature(feature, ppi) for criterion in self.criteria)
