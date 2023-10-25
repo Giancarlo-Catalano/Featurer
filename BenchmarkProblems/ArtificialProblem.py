@@ -72,7 +72,7 @@ class ArtificialProblem(TestableCombinatorialProblem):
         amount_needed = len(self.important_features)
         scores = list(range(1, amount_needed + 1))
         random.shuffle(scores)
-        return [1 for f in self.important_features] # scores
+        return [1 for _ in self.important_features]  # scores
 
     def __init__(self, amount_of_bits, amount_of_features, size_of_partials, allow_overlaps):
         self.amount_of_bits = amount_of_bits

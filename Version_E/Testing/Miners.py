@@ -20,13 +20,13 @@ def decode_miner(properties: dict, selector: FeatureSelector) -> FeatureMiner:
     if kind in "constructive":
         return ConstructiveMiner(selector,
                                  stochastic=properties["stochastic"],
-                                 at_most_parameters=properties["at_most"],
-                                 population_size=properties["population_size"])
+                                 population_size=properties["population_size"],
+                                 generations = properties["generations"])
     elif kind == "destructive":
         return DestructiveMiner(selector,
                                 stochastic=properties["stochastic"],
-                                at_least_parameters=properties["at_least"],
-                                amount_to_keep_in_each_layer=properties["population_size"])
+                                population_size=properties["population_size"],
+                                generations = properties["generations"])
     elif kind == "ga":
         return GAMiner(selector,
                        population_size=properties["population_size"],

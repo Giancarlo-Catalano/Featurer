@@ -11,8 +11,8 @@ from Version_E.Testing import Miners, Criteria, Problems, Tests
 JSON = dict
 
 
-def to_json_object(input) -> JSON:
-    return json.loads(input)
+def to_json_object(input_string: str) -> JSON:
+    return json.loads(input_string)
 
 
 def get_random_candidates_and_fitnesses(problem: CombinatorialProblem,

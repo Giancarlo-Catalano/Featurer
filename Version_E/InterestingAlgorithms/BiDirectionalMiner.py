@@ -1,7 +1,6 @@
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.ArchiveMiner import ArchiveMiner
-from Version_E.InterestingAlgorithms.Miner import LayeredFeatureMiner, FeatureSelector
-from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 
 
 class BiDirectionalMiner(ArchiveMiner):

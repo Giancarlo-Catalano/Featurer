@@ -14,6 +14,8 @@ from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformatio
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 Score = float
+
+
 class ArchiveMiner(FeatureMiner):
     population_size: int
     generations: int
@@ -65,6 +67,7 @@ class ArchiveMiner(FeatureMiner):
         batch_size = 256
         scores = utils.unzip(evaluated_features)[1]
         cumulative_probabilities = np.cumsum(scores)
+
         def get_batch():
             return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=batch_size)
 
