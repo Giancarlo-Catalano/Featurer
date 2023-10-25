@@ -70,6 +70,7 @@ def test_new_miner():
     miner = BiDirectionalMiner(selector=selector,
                                population_size=60,
                                stochastic=True,
+                               uses_archive=True,
                                termination_criteria_met=run_for_fixed_amount_of_iterations(30))
 
     print(f"The problem is {problem.long_repr()}")

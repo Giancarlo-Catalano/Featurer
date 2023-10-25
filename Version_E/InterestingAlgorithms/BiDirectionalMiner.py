@@ -13,8 +13,12 @@ class BiDirectionalMiner(GCMiner):
     def __init__(self, selector: FeatureSelector,
                  population_size: int,
                  stochastic: bool,
+                 uses_archive: bool,
                  termination_criteria_met: Callable):
-        super().__init__(selector, population_size, termination_criteria_met)
+        super().__init__(selector=selector,
+                         population_size=population_size,
+                         uses_archive=uses_archive,
+                         termination_criteria_met=termination_criteria_met)
         self.stochastic = stochastic
 
     def __repr__(self):

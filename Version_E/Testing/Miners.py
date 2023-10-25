@@ -8,6 +8,7 @@ from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
+from Version_E.InterestingAlgorithms.GCMiner import run_for_fixed_amount_of_iterations
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 
@@ -16,17 +17,20 @@ def decode_miner(properties: dict, selector: FeatureSelector) -> FeatureMiner:
     """ converts a json string into an instance of a FeatureMiner object"""
 
     kind = properties["which"]
+    termination_criteria = run_for_fixed_amount_of_iterations(30)
 
     if kind in "constructive":
         return ConstructiveMiner(selector,
                                  stochastic=properties["stochastic"],
                                  population_size=properties["population_size"],
-                                 generations = properties["generations"])
+                                 uses_archive=properties["uses_archive"],
+                                 termination_criteria_met=termination_criteria)
     elif kind == "destructive":
         return DestructiveMiner(selector,
-                                stochastic=properties["stochastic"],
-                                population_size=properties["population_size"],
-                                generations = properties["generations"])
+                                 stochastic=properties["stochastic"],
+                                 population_size=properties["population_size"],
+                                 uses_archive=properties["uses_archive"],
+                                 termination_criteria_met=termination_criteria)
     elif kind == "ga":
         return GAMiner(selector,
                        population_size=properties["population_size"],

@@ -207,7 +207,6 @@ class BTProblem(CombinatorialProblem):
         # now we can convert them into tuples
         return [tuple(params) for params in result]
 
-
     def get_ranges_for_rotas(self, rotas: list[WorkerRota]) -> list[float]:
         counts_for_each_day = self.get_counts_for_overlapped_rotas(rotas)
         counts_for_each_day = counts_for_each_day.reshape((-1, 7))
@@ -221,7 +220,6 @@ class BTProblem(CombinatorialProblem):
                 return (max_value - min_value) / max_value
 
         return [range_score(min_val, max_val) for min_val, max_val in zip(minimums, maximums)]
-
 
     def get_ranges_for_candidate(self, candidate: SearchSpace.Candidate) -> list[float]:
         return self.get_ranges_for_rotas(self.get_rotas_in_candidate(candidate))
@@ -254,7 +252,6 @@ class BTProblem(CombinatorialProblem):
 
         worker_parameters = self.break_feature_by_worker(feature)
 
-
         def repr_ranges():
             usable_rotas = [get_usable_rota_from_worker_parameters(worker, rota_index, starting_day)
                             for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)]
@@ -273,10 +270,10 @@ class BTProblem(CombinatorialProblem):
                     f"Su:{ranges[6]:.2f}")
 
         parameters = "\n".join(repr_worker_parameters(worker, rota_index, starting_day)
-                         for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)
-                         if is_worth_showing(rota_index, starting_day))
+                               for (worker, (rota_index, starting_day)) in zip(self.workers, worker_parameters)
+                               if is_worth_showing(rota_index, starting_day))
 
-        return parameters # + "\nThe ranges are " + repr_ranges()
+        return parameters  # + "\nThe ranges are " + repr_ranges()
 
     def extend_rota_to_total_roster(self, rota: WorkerRota) -> list[bool]:
         result = []
@@ -467,7 +464,7 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
 
     def get_complexity_of_partial_solution(self, partial_solution: SearchSpace.UserFeature):
         def get_amount_of_workers_involved(feature: SearchSpace.UserFeature):
-            which_workers_are_present: list[bool] = [False]*self.original_problem.total_workers
+            which_workers_are_present: list[bool] = [False] * self.original_problem.total_workers
             for var, val in partial_solution.var_vals:
                 which_workers_are_present[var // 2] = True
 
