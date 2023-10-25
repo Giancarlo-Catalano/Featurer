@@ -1,7 +1,5 @@
-import math
 import random
-import time
-from typing import Iterable
+from typing import Iterable, Callable
 
 import numpy as np
 
@@ -9,28 +7,24 @@ import utils
 from Version_E import HotEncoding
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
-from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
-from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
-from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 Score = float
 
 
 class ArchiveMiner(FeatureMiner):
     population_size: int
-    generations: int
+    termination_criteria_met: Callable
 
     Population = list[Feature]
     EvaluatedPopulation = list[(Feature, float)]
 
-    def __init__(self, selector: FeatureSelector, population_size: int, generations: int):
+    def __init__(self, selector: FeatureSelector, population_size: int, termination_criteria_met: Callable):
         super().__init__(selector)
         self.population_size = population_size
-        self.generations = generations
+        self.termination_criteria_met = termination_criteria_met
 
     def __repr__(self):
-        return (f"ArchiveMiner(population = {self.population_size}, "
-                f"generations = {self.generations})")
+        return f"ArchiveMiner(population = {self.population_size})"
 
     def with_scores(self, feature_list: Population) -> EvaluatedPopulation:
         scores = self.feature_selector.get_scores(feature_list)
@@ -113,10 +107,16 @@ class ArchiveMiner(FeatureMiner):
     def mine_features(self) -> Population:
         population = self.get_initial_population()
         archive = set()
+        iteration = 0
 
-        for iteration in range(self.generations):
-            if len(population) == 0:
-                break
+        def should_continue():
+            return (not self.termination_criteria_met(iteration = iteration,
+                                                      population = population,
+                                                      archive = archive,
+                                                      used_budget = self.feature_selector.used_budget)) and len(population) > 0
+
+        while should_continue():
+            iteration += 1
             print(f"In iteration {iteration}")
             population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
@@ -134,3 +134,19 @@ class ArchiveMiner(FeatureMiner):
         evaluated_winners = self.with_scores(winning_features)
         evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
         return self.without_scores(evaluated_winners)
+
+
+
+def run_for_fixed_amount_of_iterations(amount_of_iterations: int) -> Callable:
+    return lambda iteration, population, archive, used_budget: iteration >= amount_of_iterations
+
+
+def run_for_fixed_budget(budget_limit: int) -> Callable:
+    return lambda iteration, population, archive, used_budget: used_budget >= budget_limit
+
+
+def found_features(features_to_find: Iterable[Feature]) -> Callable:
+    def found_all_features(input_archive):
+        return all(feature in input_archive for feature in features_to_find)
+
+    return lambda iteration, population, archive, used_budget: found_all_features(archive)

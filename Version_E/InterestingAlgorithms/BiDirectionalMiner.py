@@ -1,3 +1,5 @@
+from typing import Callable
+
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.ArchiveMiner import ArchiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
@@ -8,8 +10,11 @@ class BiDirectionalMiner(ArchiveMiner):
     Population = list[Feature]
     EvaluatedPopulation = list[(Feature, float)]
 
-    def __init__(self, selector: FeatureSelector, population_size: int, generations: int, stochastic: bool):
-        super().__init__(selector, population_size, generations)
+    def __init__(self, selector: FeatureSelector,
+                 population_size: int,
+                 stochastic: bool,
+                 termination_criteria_met: Callable):
+        super().__init__(selector, population_size, termination_criteria_met)
         self.stochastic = stochastic
 
     def __repr__(self):

@@ -4,6 +4,7 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
+from Version_E.InterestingAlgorithms.ArchiveMiner import run_for_fixed_amount_of_iterations
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
@@ -63,7 +64,10 @@ def test_new_miner():
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = DestructiveMiner(selector, population_size=60, generations=60, stochastic=False)
+    miner = DestructiveMiner(selector=selector,
+                             population_size=60,
+                             stochastic=False,
+                             termination_criteria_met=run_for_fixed_amount_of_iterations(30))
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
