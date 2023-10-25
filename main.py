@@ -10,6 +10,7 @@ from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.SimpleSampler import SimpleSampler
 from Version_E.Testing import TestingUtilities, Problems, Criteria
 from Version_E.Testing.Miners import aggregate_algorithm_jsons_into_csv
 
@@ -84,6 +85,17 @@ def test_new_miner():
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
+
+
+    scored_good_features = miner.with_scores(good_features)
+    sampler = SimpleSampler(problem.search_space, scored_good_features)
+
+
+    for _ in range(12):
+        sampled_candidate = sampler.sample_candidate()
+        fitness = problem.score_of_candidate(sampled_candidate)
+        print(problem.candidate_repr(sampled_candidate))
+        print(f"And the fitness is {fitness}\n")
 
 
 if __name__ == '__main__':
