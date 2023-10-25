@@ -37,18 +37,16 @@ def aggregate_files(directory: str, output_name: str, for_time):
 
 def test_new_miner():
     artificial_problem = {"which": "artificial",
-               "size": 25,
-               "size_of_partials": 5,
-               "amount_of_features": 5,
-               "allow_overlaps": False}
-
+                          "size": 25,
+                          "size_of_partials": 5,
+                          "amount_of_features": 5,
+                          "allow_overlaps": False}
 
     checkerboard_problem = {"which": "checkerboard",
-               "rows": 8,
-               "cols": 8}
+                            "rows": 8,
+                            "cols": 8}
 
-
-    problem =  checkerboard_problem
+    problem = checkerboard_problem
 
     criterion = {"which": "balance",
                  "arguments": [
@@ -64,21 +62,19 @@ def test_new_miner():
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = DestructiveMiner(selector=selector,
-                             population_size=60,
-                             stochastic=False,
-                             termination_criteria_met=run_for_fixed_amount_of_iterations(30))
+    miner = BiDirectionalMiner(selector=selector,
+                               population_size=60,
+                               stochastic=True,
+                               termination_criteria_met=run_for_fixed_amount_of_iterations(30))
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
-
 
     good_features = miner.get_meaningful_features(60)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))
         print(criterion.describe_feature(feature, training_ppi))
-
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")

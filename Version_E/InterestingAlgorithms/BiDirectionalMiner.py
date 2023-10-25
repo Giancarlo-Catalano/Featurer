@@ -20,8 +20,7 @@ class BiDirectionalMiner(ArchiveMiner):
     def __repr__(self):
         return (f"BiDidirectional(population = {self.population_size}, "
                 f"stochastic = {self.stochastic}, "
-                f"pop_size = {self.population_size},"
-                f"generations = {self.generations})")
+                f"pop_size = {self.population_size})")
 
     def get_initial_population(self) -> Population:
         return super().get_empty_feature_population() + super().get_complex_feature_population(self.population_size - 1)

@@ -54,7 +54,8 @@ class ArchiveMiner(FeatureMiner):
         def pick_winner(tournament_pool: list[Feature, float]) -> (Feature, float):
             return max(tournament_pool, key=utils.second)
 
-        return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))
+        #return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))   if you want them distinct
+        return [pick_winner(get_tournament_pool()) for _ in range(how_many_to_keep)]
 
     def fitness_proportionate_selection(self, evaluated_features: EvaluatedPopulation,
                                         how_many_to_keep: int) -> EvaluatedPopulation:
@@ -62,14 +63,16 @@ class ArchiveMiner(FeatureMiner):
         scores = utils.unzip(evaluated_features)[1]
         cumulative_probabilities = np.cumsum(scores)
 
-        def get_batch():
-            return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=batch_size)
+        # def get_batch():
+        #     return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=batch_size)
+        #
+        # accumulator = set()
+        # while len(accumulator) < how_many_to_keep:
+        #     accumulator.update(get_batch())
 
-        accumulator = set()
-        while len(accumulator) < how_many_to_keep:
-            accumulator.update(get_batch())
+        #return list(accumulator)[:how_many_to_keep]    if you want them distinct
 
-        return list(accumulator)[:how_many_to_keep]
+        return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=how_many_to_keep)
 
     def without_features_in_archive(self, population: Population, archive: set[Feature]) -> Population:
         return [feature for feature in population if feature not in archive]
