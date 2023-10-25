@@ -19,9 +19,12 @@ class FeatureSelector:
     ppi: PrecomputedPopulationInformation
     criterion: MeasurableCriterion
 
+    used_budget: int
+
     def __init__(self, ppi: PrecomputedPopulationInformation, criterion: MeasurableCriterion):
         self.ppi = ppi
         self.criterion = criterion
+        self.used_budget = 0
 
     def __repr__(self):
         return "FeatureSelector"
@@ -29,6 +32,7 @@ class FeatureSelector:
     def get_scores(self, features: list[Feature]) -> np.ndarray:
         if len(features) == 0:
             raise Exception("Not enough features to give a relative score")
+        self.used_budget += len(features)
         pfi = PrecomputedFeatureInformation(self.ppi, features)
         return self.criterion.get_score_array(pfi)
 

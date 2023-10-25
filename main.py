@@ -43,8 +43,8 @@ def test_new_miner():
 
 
     checkerboard_problem = {"which": "checkerboard",
-               "rows": 4,
-               "cols": 4}
+               "rows": 8,
+               "cols": 8}
 
 
     problem =  checkerboard_problem
@@ -68,11 +68,16 @@ def test_new_miner():
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
 
+
     good_features = miner.get_meaningful_features(60)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))
         print(criterion.describe_feature(feature, training_ppi))
+
+
+    evaluations = miner.feature_selector.used_budget
+    print(f"The used budget is {evaluations}")
 
 
 if __name__ == '__main__':
