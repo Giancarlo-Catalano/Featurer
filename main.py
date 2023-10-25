@@ -5,6 +5,8 @@ from os import listdir
 from os.path import isfile, join
 
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
+from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
+from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import TestingUtilities, Problems, Criteria
@@ -41,8 +43,8 @@ def test_new_miner():
 
 
     checkerboard_problem = {"which": "checkerboard",
-               "rows": 8,
-               "cols": 8}
+               "rows": 4,
+               "cols": 4}
 
 
     problem =  checkerboard_problem
@@ -61,7 +63,7 @@ def test_new_miner():
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = BiDirectionalMiner(selector, population_size=60, generations=60, stochastic=False)
+    miner = DestructiveMiner(selector, population_size=60, generations=60, stochastic=False)
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")

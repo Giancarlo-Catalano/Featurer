@@ -96,7 +96,7 @@ class ArchiveMiner(FeatureMiner):
         return [child for parent, score in parents for child in Feature.get_specialisations(parent, self.search_space)]
 
     def get_simplified_children(self, parents: EvaluatedPopulation) -> list[Feature]:
-        return [child for parent, score in parents for child in Feature.get_specialisations(parent, self.search_space)]
+        return [child for parent, score in parents for child in Feature.get_generalisations(parent)]
 
     def get_initial_population(self) -> Population:
         raise Exception("An implementation of ArchiveMiner does not implement get_initial_population")
