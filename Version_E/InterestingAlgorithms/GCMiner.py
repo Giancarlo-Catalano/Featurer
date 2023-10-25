@@ -11,16 +11,22 @@ from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
 Score = float
 
 
-class ArchiveMiner(FeatureMiner):
+class GCMiner(FeatureMiner):
     population_size: int
     termination_criteria_met: Callable
+    uses_archive: bool
 
     Population = list[Feature]
     EvaluatedPopulation = list[(Feature, float)]
 
-    def __init__(self, selector: FeatureSelector, population_size: int, termination_criteria_met: Callable):
+    def __init__(self,
+                 selector: FeatureSelector,
+                 population_size: int,
+                 uses_archive: bool,
+                 termination_criteria_met: Callable,):
         super().__init__(selector)
         self.population_size = population_size
+        self.uses_archive = uses_archive
         self.termination_criteria_met = termination_criteria_met
 
     def __repr__(self):
@@ -54,7 +60,7 @@ class ArchiveMiner(FeatureMiner):
         def pick_winner(tournament_pool: list[Feature, float]) -> (Feature, float):
             return max(tournament_pool, key=utils.second)
 
-        #return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))   if you want them distinct
+        # return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))   if you want them distinct
         return [pick_winner(get_tournament_pool()) for _ in range(how_many_to_keep)]
 
     def fitness_proportionate_selection(self, evaluated_features: EvaluatedPopulation,
@@ -70,7 +76,7 @@ class ArchiveMiner(FeatureMiner):
         # while len(accumulator) < how_many_to_keep:
         #     accumulator.update(get_batch())
 
-        #return list(accumulator)[:how_many_to_keep]    if you want them distinct
+        # return list(accumulator)[:how_many_to_keep]    if you want them distinct
 
         return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=how_many_to_keep)
 
@@ -107,16 +113,17 @@ class ArchiveMiner(FeatureMiner):
     def select(self, population: EvaluatedPopulation) -> EvaluatedPopulation:
         raise Exception("An implementation of ArchiveMiner does not implement select")
 
-    def mine_features(self) -> Population:
+    def mine_features_with_archive(self) -> Population:
         population = self.get_initial_population()
         archive = set()
         iteration = 0
 
         def should_continue():
-            return (not self.termination_criteria_met(iteration = iteration,
-                                                      population = population,
-                                                      archive = archive,
-                                                      used_budget = self.feature_selector.used_budget)) and len(population) > 0
+            return (not self.termination_criteria_met(iteration=iteration,
+                                                      population=population,
+                                                      archive=archive,
+                                                      used_budget=self.feature_selector.used_budget)) and len(
+                population) > 0
 
         while should_continue():
             iteration += 1
@@ -138,18 +145,65 @@ class ArchiveMiner(FeatureMiner):
         evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
         return self.without_scores(evaluated_winners)
 
+    def mine_features_without_archive(self) -> Population:
+        population = self.get_initial_population()
+        iteration = 0
+
+        def should_continue():
+            return (not self.termination_criteria_met(iteration=iteration,
+                                                      population=population,
+                                                      used_budget=self.feature_selector.used_budget)) and len(
+                population) > 0
+
+        while should_continue():
+            iteration += 1
+            print(f"In iteration {iteration}")
+            evaluated_population = self.with_scores(population)
+            evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
+
+            parents = self.select(evaluated_population)
+            children = self.get_children(parents)
+
+            population = self.without_scores(evaluated_population)  # to add the effect of limit_population_size
+            population.extend(children)
+
+        evaluated_winners = self.with_scores(population)
+        evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
+        return self.without_scores(evaluated_winners)
+
+
+    def mine_features(self) -> list[Feature]:
+        if self.uses_archive:
+            return self.mine_features_with_archive()
+        else:
+            return self.mine_features_without_archive()
+
+
+
 
 
 def run_for_fixed_amount_of_iterations(amount_of_iterations: int) -> Callable:
-    return lambda iteration, population, archive, used_budget: iteration >= amount_of_iterations
+    def should_terminate(**kwargs):
+        return kwargs["iteration"] >= amount_of_iterations
+
+    return should_terminate
 
 
 def run_for_fixed_budget(budget_limit: int) -> Callable:
-    return lambda iteration, population, archive, used_budget: used_budget >= budget_limit
+    def should_terminate(**kwargs):
+        return kwargs["used_budget"] >= budget_limit
+
+    return should_terminate
 
 
-def found_features(features_to_find: Iterable[Feature]) -> Callable:
-    def found_all_features(input_archive):
-        return all(feature in input_archive for feature in features_to_find)
+def found_features(features_to_find: Iterable[Feature], in_archive: bool) -> Callable:
+    def should_terminate_archive(**kwargs):
+        return all(feature in kwargs["archive"] for feature in features_to_find)
 
-    return lambda iteration, population, archive, used_budget: found_all_features(archive)
+    def should_terminate_population(**kwargs):
+        return all(feature in kwargs["population"] for feature in features_to_find)
+
+    if in_archive:
+        return should_terminate_archive
+    else:
+        return should_terminate_population

@@ -4,7 +4,7 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
-from Version_E.InterestingAlgorithms.ArchiveMiner import run_for_fixed_amount_of_iterations
+from Version_E.InterestingAlgorithms.GCMiner import run_for_fixed_amount_of_iterations
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
@@ -45,6 +45,11 @@ def test_new_miner():
     checkerboard_problem = {"which": "checkerboard",
                             "rows": 8,
                             "cols": 8}
+
+
+    trapk = {"which": "trapk",
+             "amount_of_groups": 3,
+             "k": 5}
 
     problem = checkerboard_problem
 

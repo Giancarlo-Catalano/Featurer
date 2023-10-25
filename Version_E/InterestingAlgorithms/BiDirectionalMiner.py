@@ -1,11 +1,11 @@
 from typing import Callable
 
 from Version_E.Feature import Feature
-from Version_E.InterestingAlgorithms.ArchiveMiner import ArchiveMiner
+from Version_E.InterestingAlgorithms.GCMiner import GCMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 
 
-class BiDirectionalMiner(ArchiveMiner):
+class BiDirectionalMiner(GCMiner):
     stochastic: bool
     Population = list[Feature]
     EvaluatedPopulation = list[(Feature, float)]
