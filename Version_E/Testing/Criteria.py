@@ -1,6 +1,7 @@
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance, Extreme
 from Version_E.MeasurableCriterion.Explainability import Explainability
+from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
@@ -42,25 +43,15 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         parsed_arguments = [decode_criterion(criterion, problem) for criterion in properties["arguments"]]
         weights = properties["weights"]
         return Balance(parsed_arguments, weights=weights)
+    elif criterion_string == "completeness":
+        return Completeness()
+    elif criterion_string == "expected_fitness":
+        raise Exception("Not implemented yet")
+    else:
+        raise Exception(f"The criterion string {criterion_string} was not recognised")
 
 
 high_fitness = {"which": "high_fitness"}
 low_fitness = {"which": "low_fitness"}
 consistency = {"which": "consistent_fitness"}
 explainability = {"which": "explainability"}
-
-consistently_high_fitness = {"which": "balance",
-                             "arguments": [high_fitness, consistency],
-                             "weights": [2, 1]}
-
-consistently_low_fitness = {"which": "balance",
-                            "arguments": [low_fitness, consistency],
-                            "weights": [2, 1]}
-
-low_fitness_and_explainable = {"which": "balance",
-                               "arguments": [consistently_low_fitness, explainability],
-                               "weights": [2, 1]}
-
-high_fitness_and_explainable = {"which": "balance",
-                               "arguments": [consistently_high_fitness, explainability],
-                               "weights": [2, 1]}
