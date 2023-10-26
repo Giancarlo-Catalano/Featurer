@@ -4,7 +4,8 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
-from Version_E.InterestingAlgorithms.GCMiner import run_for_fixed_amount_of_iterations
+from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
+from Version_E.InterestingAlgorithms.GCMiner import run_for_fixed_amount_of_iterations, run_for_fixed_budget
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
@@ -59,8 +60,7 @@ def test_new_miner():
 
     criterion = {"which": "balance",
                  "arguments": [
-                     {"which": "extreme",
-                      "argument": {"which": "high_fitness"}},
+                     {"which": "high_fitness"},
                      {"which": "consistent_fitness"},
                      {"which": "explainability"}
                  ],
@@ -72,11 +72,16 @@ def test_new_miner():
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = BiDirectionalMiner(selector=selector,
+    biminer = BiDirectionalMiner(selector=selector,
                                population_size=60,
                                stochastic=True,
                                uses_archive=True,
                                termination_criteria_met=run_for_fixed_amount_of_iterations(30))
+
+    random_miner = RandomSearch(selector = selector,
+                                termination_criteria_met=run_for_fixed_budget(100**2))
+
+    miner = random_miner
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
@@ -90,34 +95,34 @@ def test_new_miner():
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
 
-    scored_good_features = miner.with_scores(good_features)
-    sampler = SimpleSampler(problem.search_space, scored_good_features)
-
-    print("Running the traditional sampler yields")
-    for _ in range(12):
-        sampled_candidate = sampler.sample_candidate()
-        fitness = problem.score_of_candidate(sampled_candidate)
-        print(problem.candidate_repr(sampled_candidate))
-        print(f"And the fitness is {fitness}\n")
-
-    pfi = PrecomputedFeatureInformation(training_ppi, good_features)
-    sampling_sub_criterion = Balance([HighFitness(), ConsistentFitness()])
-    sampling_criteria = All([Completeness(),
-                             ExpectedFitness(criterion = sampling_sub_criterion, pfi=pfi)])
-    sampling_selector = FeatureSelector(training_ppi, sampling_criteria)
-    sampling_miner = BiDirectionalMiner(sampling_selector,
-                                        population_size=60,
-                                        stochastic=True,
-                                        uses_archive=True,
-                                        termination_criteria_met=run_for_fixed_amount_of_iterations(30))
-
-    sampled_from_miner = sampling_miner.get_meaningful_features(12)
-    sampled_from_miner = [feature.to_candidate() for feature in sampled_from_miner]
-    print("Running the ouroboros sampler yields")
-    for feature_sampled_from_miner in sampled_from_miner:
-        fitness = problem.score_of_candidate(feature_sampled_from_miner)
-        print(problem.candidate_repr(feature_sampled_from_miner))
-        print(f"And the fitness is {fitness}\n")
+    # scored_good_features = miner.with_scores(good_features)
+    # sampler = SimpleSampler(problem.search_space, scored_good_features)
+    #
+    # print("Running the traditional sampler yields")
+    # for _ in range(12):
+    #     sampled_candidate = sampler.sample_candidate()
+    #     fitness = problem.score_of_candidate(sampled_candidate)
+    #     print(problem.candidate_repr(sampled_candidate))
+    #     print(f"And the fitness is {fitness}\n")
+    #
+    # pfi = PrecomputedFeatureInformation(training_ppi, good_features)
+    # sampling_sub_criterion = Balance([HighFitness(), ConsistentFitness()])
+    # sampling_criteria = All([Completeness(),
+    #                          ExpectedFitness(criterion = sampling_sub_criterion, pfi=pfi)])
+    # sampling_selector = FeatureSelector(training_ppi, sampling_criteria)
+    # sampling_miner = BiDirectionalMiner(sampling_selector,
+    #                                     population_size=60,
+    #                                     stochastic=True,
+    #                                     uses_archive=True,
+    #                                     termination_criteria_met=run_for_fixed_amount_of_iterations(30))
+    #
+    # sampled_from_miner = sampling_miner.get_meaningful_features(12)
+    # sampled_from_miner = [feature.to_candidate() for feature in sampled_from_miner]
+    # print("Running the ouroboros sampler yields")
+    # for feature_sampled_from_miner in sampled_from_miner:
+    #     fitness = problem.score_of_candidate(feature_sampled_from_miner)
+    #     print(problem.candidate_repr(feature_sampled_from_miner))
+    #     print(f"And the fitness is {fitness}\n")
 
 
 if __name__ == '__main__':

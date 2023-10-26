@@ -26,13 +26,33 @@ class RandomSearch(FeatureMiner):
 
     def __init__(self, selector: FeatureSelector, termination_criteria_met: Callable):
         super().__init__(selector, termination_criteria_met)
-        self.amount_to_generate = amount_to_generate
 
     def __repr__(self):
-        return f"RandomSearch(population = {self.amount_to_generate}"
+        return f"RandomSearch()"
 
     def get_random_feature(self) -> Feature:
         return random_feature_in_search_space(self.search_space)
 
-    def mine_features(self) -> list[Feature]:
-        return list(utils.generate_distinct(self.get_random_feature, self.amount_to_generate))
+    def get_meaningful_features(self, amount_to_return: int) -> list[Feature]:
+        batch_size = amount_to_return
+
+        def generate_batch_of_random_features() -> list[Feature]:
+            return [self.get_random_feature() for _ in range(batch_size)]
+
+        population = []
+        iteration = 0
+
+        def should_continue():
+            return not self.termination_criteria_met(iteration=iteration,
+                                                     population=population,
+                                                     archive=set(),
+                                                     used_budget=self.feature_selector.used_budget)
+
+        while should_continue():
+            population.extend(generate_batch_of_random_features())
+            evaluated_population = self.with_scores(population)
+            evaluated_population = self.truncation_selection(evaluated_population, amount_to_return)
+            population = self.without_scores(evaluated_population)
+            iteration += 1
+
+        return population

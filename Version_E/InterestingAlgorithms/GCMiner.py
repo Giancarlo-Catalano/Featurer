@@ -33,43 +33,7 @@ class GCMiner(FeatureMiner):
 
 
 
-    def truncation_selection(self, evaluated_features: EvaluatedPopulation,
-                             how_many_to_keep: int) -> EvaluatedPopulation:
-        evaluated_features.sort(key=utils.second, reverse=True)
-        return evaluated_features[:how_many_to_keep]
 
-    def tournament_selection(self, evaluated_features: EvaluatedPopulation,
-                             how_many_to_keep: int) -> EvaluatedPopulation:
-        tournament_size = 12
-
-        scores = utils.unzip(evaluated_features)[1]
-        cumulative_probabilities = np.cumsum(scores)
-
-        def get_tournament_pool() -> list[(Feature, float)]:
-            return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=tournament_size)
-
-        def pick_winner(tournament_pool: list[Feature, float]) -> (Feature, float):
-            return max(tournament_pool, key=utils.second)
-
-        # return list(utils.generate_distinct(lambda: pick_winner(get_tournament_pool()), how_many_to_keep))   if you want them distinct
-        return [pick_winner(get_tournament_pool()) for _ in range(how_many_to_keep)]
-
-    def fitness_proportionate_selection(self, evaluated_features: EvaluatedPopulation,
-                                        how_many_to_keep: int) -> EvaluatedPopulation:
-        batch_size = 256
-        scores = utils.unzip(evaluated_features)[1]
-        cumulative_probabilities = np.cumsum(scores)
-
-        # def get_batch():
-        #     return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=batch_size)
-        #
-        # accumulator = set()
-        # while len(accumulator) < how_many_to_keep:
-        #     accumulator.update(get_batch())
-
-        # return list(accumulator)[:how_many_to_keep]    if you want them distinct
-
-        return random.choices(evaluated_features, cum_weights=cumulative_probabilities, k=how_many_to_keep)
 
     def without_features_in_archive(self, population: Population, archive: set[Feature]) -> Population:
         return [feature for feature in population if feature not in archive]
