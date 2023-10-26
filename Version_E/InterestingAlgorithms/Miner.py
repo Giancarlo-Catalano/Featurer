@@ -139,3 +139,31 @@ class FeatureMiner:
 
 
 
+
+def run_for_fixed_amount_of_iterations(amount_of_iterations: int) -> Callable:
+    def should_terminate(**kwargs):
+        return kwargs["iteration"] >= amount_of_iterations
+
+    return should_terminate
+
+
+def run_for_fixed_budget(budget_limit: int) -> Callable:
+    def should_terminate(**kwargs):
+        return kwargs["used_budget"] >= budget_limit
+
+    return should_terminate
+
+
+def found_features(features_to_find: Iterable[Feature], in_archive: bool) -> Callable:
+    def should_terminate_archive(**kwargs):
+        return all(feature in kwargs["archive"] for feature in features_to_find)
+
+    def should_terminate_population(**kwargs):
+        return all(feature in kwargs["population"] for feature in features_to_find)
+
+    if in_archive:
+        return should_terminate_archive
+    else:
+        return should_terminate_population
+
+

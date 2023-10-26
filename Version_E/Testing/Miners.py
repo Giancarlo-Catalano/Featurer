@@ -1,14 +1,11 @@
 import json
 
-import utils
 from Version_E.BaselineAlgorithms import RandomSearch, HillClimber
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.BaselineAlgorithms.HillClimber import HillClimber
 from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
-from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
-from Version_E.InterestingAlgorithms.GCMiner import run_for_fixed_amount_of_iterations
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 
