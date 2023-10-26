@@ -1,6 +1,7 @@
 import SearchSpace
 import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+from Version_E.Feature import Feature
 
 
 class TrapK(TestableCombinatorialProblem):
@@ -59,22 +60,24 @@ class TrapK(TestableCombinatorialProblem):
         groups = self.divide_candidate_in_groups(SearchSpace.Candidate(super().get_positional_values(feature)))
         return "\n".join([group_repr(group) for group in groups])
 
-
-    def get_all_ones_ideals(self) -> list[SearchSpace.UserFeature]:
-        def all_ones_in_group(group_index) -> SearchSpace.UserFeature:
-            start = group_index*self.k
-            end = start+self.k
-            return SearchSpace.UserFeature([(var, 1) for var in range(start, end)])
+    def get_all_ones_ideals(self) -> list[Feature]:
+        def all_ones_in_group(group_index) -> Feature:
+            start = group_index * self.k
+            end = start + self.k
+            return Feature.from_legacy_feature(SearchSpace.UserFeature([(var, 1) for var in range(start, end)]),
+                                               search_space=self.search_space)
 
         return [all_ones_in_group(group_index) for group_index in range(self.amount_of_groups)]
 
-    def get_all_zero_ideals(self):
-        def feature_with_a_single_zero(var_index):
-            return SearchSpace.UserFeature([(var_index, 0)])
+    def get_all_zero_ideals(self) -> list[Feature]:
+        empty_feature = Feature.empty_feature(self.search_space)
+
+        def feature_with_a_single_zero(var_index) -> Feature:
+            return empty_feature.with_value(var_index, 0)
 
         return [feature_with_a_single_zero(var_index) for var_index in range(self.amount_of_bits)]
 
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+    def get_ideal_features(self) -> list[Feature]:
         deceptive_groups = self.get_all_ones_ideals()
         zeros = self.get_all_zero_ideals()
-        return deceptive_groups # + zeros
+        return deceptive_groups  # + zeros

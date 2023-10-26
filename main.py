@@ -5,21 +5,11 @@ from os import listdir
 from os.path import isfile, join
 
 from Version_E.BaselineAlgorithms.GA import GAMiner
-from Version_E.BaselineAlgorithms.HillClimber import HillClimber
-from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
-from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_for_fixed_budget
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
-from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
-from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
-from Version_E.MeasurableCriterion.CriterionUtilities import All, Balance
-from Version_E.MeasurableCriterion.ForSampling import ExpectedFitness, Completeness
-from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
-from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
+from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.SimpleSampler import SimpleSampler
 from Version_E.Testing import TestingUtilities, Problems, Criteria
-from Version_E.Testing.Miners import aggregate_algorithm_jsons_into_csv
 
 
 def execute_command_line():
@@ -40,7 +30,7 @@ def aggregate_files(directory: str, output_name: str, for_time):
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     # aggregate
-    aggregate_algorithm_jsons_into_csv(files_in_directory, output_name, for_time=for_time)
+    #aggregate_algorithm_jsons_into_csv(files_in_directory, output_name, for_time=for_time)
 
 
 def test_new_miner():
@@ -82,7 +72,7 @@ def test_new_miner():
 
     ga_miner = GAMiner(selector = selector,
                        population_size = 60,
-                       termination_criteria_met=run_for_fixed_budget(100**2))
+                       termination_criteria_met=run_with_limited_budget(100 ** 2))
 
     miner = biminer
 

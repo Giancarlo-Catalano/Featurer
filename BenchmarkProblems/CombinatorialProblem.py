@@ -74,24 +74,11 @@ class CombinatorialProblem:
         return self.feature_repr(candidate.as_feature())
 
 
+Ideal = Feature
+Ideals = list[Ideal]
+
 
 class TestableCombinatorialProblem(CombinatorialProblem):
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+
+    def get_ideal_features(self) -> Ideals:
         raise Exception("An implementation of TestableCombinatorialProblem does not implement get_ideal_features")
-
-
-
-def which_ideals_are_present(problem: TestableCombinatorialProblem,
-                             function_which_obtains_features,
-                             truncate_at: int) -> dict[SearchSpace.UserFeature, bool]:
-    """returns the amount of ideal features that were found by the algorithm"""
-    found_features, scores = function_which_obtains_features(problem)
-    # assumes that the features are ordered
-    found_features = found_features[:truncate_at]
-    ideal_features = problem.get_ideal_features()
-
-    return {wanted_feature: (wanted_feature in found_features) for wanted_feature in ideal_features}
-
-
-
-

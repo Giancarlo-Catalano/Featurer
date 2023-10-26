@@ -1,6 +1,7 @@
 import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+from Version_E.Feature import Feature
 
 
 class OneMaxProblem(TestableCombinatorialProblem):
@@ -33,7 +34,7 @@ class OneMaxProblem(TestableCombinatorialProblem):
 
         return " ".join([cell_repr(cell) for cell in super().get_positional_values(feature)])
 
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+    def get_ideal_features(self) -> list[Feature]:
         def feature_with_a_single_one(var_index):
             return SearchSpace.UserFeature([(var_index, 1)])
 

@@ -147,23 +147,22 @@ def run_for_fixed_amount_of_iterations(amount_of_iterations: int) -> Callable:
     return should_terminate
 
 
-def run_for_fixed_budget(budget_limit: int) -> Callable:
+def run_with_limited_budget(budget_limit: int) -> Callable:
     def should_terminate(**kwargs):
         return kwargs["used_budget"] >= budget_limit
 
     return should_terminate
 
 
-def found_features(features_to_find: Iterable[Feature], in_archive: bool) -> Callable:
-    def should_terminate_archive(**kwargs):
-        return all(feature in kwargs["archive"] for feature in features_to_find)
+def run_until_found_features(features_to_find: Iterable[Feature], max_budget: int) -> Callable:
 
-    def should_terminate_population(**kwargs):
-        return all(feature in kwargs["population"] for feature in features_to_find)
+    def all_are_found_in(collection: Iterable[Feature]):
+        return all(feature in collection for feature in features_to_find)
+    def should_terminate(**kwargs):
+        if (kwargs["used_budget"] >= max_budget):
+            return True
+        return all_are_found_in(kwargs["archive"]) or all_are_found_in(kwargs["population"])
 
-    if in_archive:
-        return should_terminate_archive
-    else:
-        return should_terminate_population
+    return should_terminate
 
 

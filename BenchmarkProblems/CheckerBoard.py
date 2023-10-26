@@ -2,9 +2,10 @@ import SearchSpace
 import utils
 import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+from Version_E.Feature import Feature
 
 
-class CheckerBoardProblem(TestableCombinatorialProblem):
+class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem):
     rows: int
     cols: int
 
@@ -86,9 +87,9 @@ class CheckerBoardProblem(TestableCombinatorialProblem):
         other_cell_position = coords_to_index(input_row, input_col+1) if horizontal else coords_to_index(input_row+1, input_col)
         other_cell = (other_cell_position, 1-ul_most_value)
 
-        return SearchSpace.UserFeature([main_cell, other_cell])
+        return Feature.from_legacy_feature(SearchSpace.UserFeature([main_cell, other_cell]), self.search_space)
 
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+    def get_ideal_features(self) -> list[Feature]:
         horizontals = [self.get_ideal_feature(row, col, value, horizontal=True) for row in range(self.rows)
                        for col in range(self.cols-1)
                        for value in range(2)]

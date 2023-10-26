@@ -33,8 +33,9 @@ class BinValProblem(TestableCombinatorialProblem):
     def feature_repr(self, feature):
         return f"{Feature.from_legacy_feature(feature, self.search_space)}"
 
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
+    def get_ideal_features(self) -> list[Feature]:
+        empty_feature = Feature.empty_feature(self.search_space)
         def feature_with_a_single_one(var_index):
-            return SearchSpace.UserFeature([(var_index, 1)])
+            return empty_feature.with_value(var_index, 1)
 
         return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]

@@ -89,8 +89,8 @@ class ArtificialProblem(TestableCombinatorialProblem):
                 f"size_of_features = {self.size_of_features},"
                 f"allow_overlap = {self.allow_overlaps}")
 
-    def get_ideal_features(self) -> list[SearchSpace.UserFeature]:
-        return [f.to_legacy_feature() for f in self.important_features]
+    def get_ideal_features(self) -> list[Feature]:
+        return self.important_features
 
     def long_repr(self):
         features_with_weight = sorted(zip(self.important_features, self.score_for_each_feature),
