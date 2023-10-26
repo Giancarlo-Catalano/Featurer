@@ -1,13 +1,8 @@
 import numpy as np
-from typing import Iterable, Any
 
-import SearchSpace
-import utils
-from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
-from SearchSpace import SearchSpace
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 
@@ -25,13 +20,11 @@ class Completeness(MeasurableCriterion):
         return f"Has {given_score} variables set"
 
 
-
 class ExpectedFitness(MeasurableCriterion):
     reference_features: list[Feature]
     criterion: MeasurableCriterion
 
     reference_feature_scores: list[float]
-
 
     pseudo_ppi: PrecomputedPopulationInformation
 
@@ -39,12 +32,11 @@ class ExpectedFitness(MeasurableCriterion):
         self.reference_features = pfi.features
         self.criterion = criterion
         self.reference_feature_scores = list(criterion.get_score_array(pfi))
-        # note that we don't use the given pfi, ie we don't use the population anymore!!
 
         self.pseudo_ppi = PrecomputedPopulationInformation(search_space=pfi.search_space,
-                                                          population_sample=self.reference_features,
-                                                          fitness_list=self.reference_feature_scores,
-                                                          population_is_full_solutions=False)
+                                                           population_sample=self.reference_features,
+                                                           fitness_list=self.reference_feature_scores,
+                                                           population_is_full_solutions=False)
 
     def __repr__(self):
         return "ExpectedFitness"
@@ -52,5 +44,3 @@ class ExpectedFitness(MeasurableCriterion):
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         pseudo_pfi = PrecomputedFeatureInformation(self.pseudo_ppi, pfi.features)
         return pseudo_pfi.mean_fitness_for_each_feature
-
-

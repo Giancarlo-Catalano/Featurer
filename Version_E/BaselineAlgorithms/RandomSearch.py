@@ -1,4 +1,5 @@
 import random
+from typing import Callable
 
 import numpy as np
 from bitarray import frozenbitarray
@@ -23,8 +24,8 @@ def random_feature_in_search_space(search_space: SearchSpace) -> Feature:
 class RandomSearch(FeatureMiner):
     amount_to_generate: int
 
-    def __init__(self, selector: FeatureSelector, amount_to_generate):
-        super().__init__(selector)
+    def __init__(self, selector: FeatureSelector, termination_criteria_met: Callable):
+        super().__init__(selector, termination_criteria_met)
         self.amount_to_generate = amount_to_generate
 
     def __repr__(self):

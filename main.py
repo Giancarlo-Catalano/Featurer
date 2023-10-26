@@ -55,7 +55,7 @@ def test_new_miner():
              "amount_of_groups": 3,
              "k": 5}
 
-    problem = trapk
+    problem = checkerboard_problem
 
     criterion = {"which": "balance",
                  "arguments": [

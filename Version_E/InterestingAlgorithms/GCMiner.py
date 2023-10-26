@@ -13,7 +13,6 @@ Score = float
 
 class GCMiner(FeatureMiner):
     population_size: int
-    termination_criteria_met: Callable
     uses_archive: bool
 
     Population = list[Feature]
@@ -23,8 +22,8 @@ class GCMiner(FeatureMiner):
                  selector: FeatureSelector,
                  population_size: int,
                  uses_archive: bool,
-                 termination_criteria_met: Callable,):
-        super().__init__(selector)
+                 termination_criteria_met: Callable):
+        super().__init__(selector, termination_criteria_met)
         self.population_size = population_size
         self.uses_archive = uses_archive
         self.termination_criteria_met = termination_criteria_met
@@ -32,15 +31,7 @@ class GCMiner(FeatureMiner):
     def __repr__(self):
         return f"ArchiveMiner(population = {self.population_size})"
 
-    def with_scores(self, feature_list: Population) -> EvaluatedPopulation:
-        scores = self.feature_selector.get_scores(feature_list)
-        return list(zip(feature_list, scores))
 
-    def without_scores(self, feature_list: EvaluatedPopulation) -> Population:
-        return utils.unzip(feature_list)[0]
-
-    def remove_duplicate_features(self, features: Population) -> Population:
-        return list(set(features))
 
     def truncation_selection(self, evaluated_features: EvaluatedPopulation,
                              how_many_to_keep: int) -> EvaluatedPopulation:

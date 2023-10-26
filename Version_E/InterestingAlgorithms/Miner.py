@@ -1,7 +1,7 @@
 import math
 import random
 import time
-from typing import Iterable
+from typing import Iterable, Callable
 
 import numpy as np
 
@@ -66,9 +66,14 @@ class FeatureSelector:
 
 class FeatureMiner:
     feature_selector: FeatureSelector
+    termination_criteria_met: Callable
 
-    def __init__(self, feature_selector: FeatureSelector):
+    Population = list[Feature]
+    EvaluatedPopulation = list[(Feature, float)]
+
+    def __init__(self, feature_selector: FeatureSelector, termination_criteria_met: Callable):
         self.feature_selector = feature_selector
+        self.termination_criteria_met = termination_criteria_met
 
     @property
     def search_space(self):
@@ -77,35 +82,22 @@ class FeatureMiner:
     def mine_features(self) -> list[Feature]:
         raise Exception("An implementation of FeatureMiner does not implement mine_features")
 
-    def cull_subsets(self, features: list[Feature]) -> list[(Feature, Score)]:
-        # TODO this is not working as intended, some subsets are still present at the end!!!
-        features_with_scores = list(zip(features, self.feature_selector.get_scores(features)))
-        features_with_scores.sort(key=utils.second, reverse=True)
-        kept = []
+    def with_scores(self, feature_list: Population) -> EvaluatedPopulation:
+        scores = self.feature_selector.get_scores(feature_list)
+        return list(zip(feature_list, scores))
 
-        def consider_feature(feature: Feature, score: Score):
-            for index, (other_feature, other_score) in enumerate(kept):
-                if feature.is_subset_of(other_feature) or other_feature.is_subset_of(feature):
-                    if score > other_score:
-                        kept[index] = feature, score
-                    return
-            kept.append((feature, score))
+    def without_scores(self, feature_list: EvaluatedPopulation) -> Population:
+        return utils.unzip(feature_list)[0]
 
-        for feature, score in features_with_scores:
-            consider_feature(feature, score)
+    def remove_duplicate_features(self, features: Population) -> Population:
+        return list(set(features))
 
-        return kept
-
-    def get_meaningful_features(self, amount_to_return: int, cull_subsets=False) -> list[Feature]:
+    def get_meaningful_features(self, amount_to_return: int) -> list[Feature]:
         mined_features = self.mine_features()
-        if cull_subsets:
-            culled_features = self.cull_subsets(mined_features)
-        else:
-            culled_features = zip(mined_features, self.feature_selector.get_scores(mined_features))
 
-        kept_features_with_scores = sorted(culled_features, key=utils.second, reverse=True)[:amount_to_return]
-        return [feature
-                for feature, score in kept_features_with_scores]
+        kept_features_with_scores = sorted(self.with_scores(mined_features), key=utils.second, reverse=True)
+        kept_features_with_scores = kept_features_with_scores[:amount_to_return]
+        return [feature for feature, score in kept_features_with_scores]
 
 
 
