@@ -1,4 +1,5 @@
 import copy
+from typing import Callable
 
 import utils
 from Version_E.Feature import Feature
@@ -7,21 +8,19 @@ from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_s
 
 
 class HillClimber(FeatureMiner):
-    amount_to_generate: int
 
-    def __init__(self, selector: FeatureSelector, amount_to_generate):
-        super().__init__(selector)
-        self.amount_to_generate = amount_to_generate
+    def __init__(self, selector: FeatureSelector, termination_criteria_met: Callable):
+        super().__init__(selector, termination_criteria_met)
 
     def __repr__(self):
-        return f"RandomSearch(population = {self.amount_to_generate}"
+        return f"HillClimber()"
 
     def get_mutations_of_feature(self, feature: Feature) -> list[Feature]:
         return (feature.get_generalisations() +
                 feature.get_specialisations(self.search_space) +
                 feature.get_variations(self.search_space))
 
-    def get_best_mutation_of_feature(self, feature: Feature) -> (Feature, float):
+    def get_improved_feature(self, feature: Feature) -> (Feature, float):
         mutations = self.get_mutations_of_feature(feature)
         return self.feature_selector.keep_best_features(mutations, 1)[0]
 
@@ -30,7 +29,7 @@ class HillClimber(FeatureMiner):
         current_best_score = self.feature_selector.get_scores([current_best_feature])[0]
 
         while True:
-            new_feature, new_score = self.get_best_mutation_of_feature(current_best_feature)
+            new_feature, new_score = self.get_improved_feature(current_best_feature)
             if new_score > current_best_score:
                 current_best_feature = new_feature
                 current_best_score = new_score
@@ -39,9 +38,19 @@ class HillClimber(FeatureMiner):
 
         return current_best_feature
 
-    def mine_features(self) -> list[Feature]:
-        def mine_feature():
-            start = random_feature_in_search_space(self.search_space)
-            return self.improve_feature_until_stationary(start)
+    def get_meaningful_features(self, amount_to_return: int) -> list[Feature]:
+        population = [random_feature_in_search_space(self.search_space) for _ in range(amount_to_return)]
 
-        return list(utils.generate_distinct(mine_feature, self.amount_to_generate))
+        iteration = 0
+
+        def should_continue():
+            return not self.termination_criteria_met(iteration=iteration,
+                                                     population=population,
+                                                     archive=set(),
+                                                     used_budget=self.feature_selector.used_budget)
+
+        while should_continue():
+            population = [self.get_improved_feature(individual) for individual in population]
+            iteration +=1
+
+        return population

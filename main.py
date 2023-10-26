@@ -4,6 +4,8 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
+from Version_E.BaselineAlgorithms.GA import GAMiner
+from Version_E.BaselineAlgorithms.HillClimber import HillClimber
 from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_for_fixed_budget
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
@@ -78,10 +80,11 @@ def test_new_miner():
                                uses_archive=True,
                                termination_criteria_met=run_for_fixed_amount_of_iterations(30))
 
-    random_miner = RandomSearch(selector = selector,
-                                termination_criteria_met=run_for_fixed_budget(100**2))
+    ga_miner = GAMiner(selector = selector,
+                       population_size = 60,
+                       termination_criteria_met=run_for_fixed_budget(100**2))
 
-    miner = random_miner
+    miner = biminer
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
