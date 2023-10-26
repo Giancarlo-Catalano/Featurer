@@ -10,10 +10,15 @@ class PrecomputedPopulationInformation:
     sample_size: int
 
     def __init__(self, search_space: SearchSpace.SearchSpace,
-                 population_sample: list[SearchSpace.Candidate],
-                 fitness_list: list[float]):
+                 population_sample,  # : list[SearchSpace.Candidate],
+                 fitness_list: list[float],
+                 population_is_full_solutions = True):
         self.search_space = search_space
-        self.candidate_matrix = HotEncoding.hot_encode_candidate_population(population_sample, self.search_space)
+        if population_is_full_solutions:  # this is the most common behaviour
+            self.candidate_matrix = HotEncoding.hot_encode_candidate_population(population_sample, self.search_space)
+        else:  # this is just a shortcut for sampling
+            self.candidate_matrix = np.array([HotEncoding.get_hot_encoded_feature(feature, self.search_space)
+                                              for feature in population_sample])
         self.fitness_array = np.array(fitness_list)
         self.sample_size = len(population_sample)
 
