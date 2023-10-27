@@ -3,18 +3,23 @@ import json
 import math
 import random
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Iterable
 
 import numpy as np
 
+import SearchSpace
 import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
 from BenchmarkProblems.GraphColouring import GraphColouringProblem
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
-    run_until_found_features
-from Version_E.Testing import TestingUtilities
+    run_until_found_features, FeatureSelector
+from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Sampling.RegurgitationSampler import get_reference_features_for_regurgitation_sampling, \
+    regurgitation_sample
+from Version_E.Testing import TestingUtilities, Criteria
 from Version_E.Testing.TestingUtilities import execute_and_time
+from Version_E.Sampling.SimpleSampler import SimpleSampler, get_reference_features_for_simple_sampling
 
 Settings = dict
 TestResults = dict
@@ -240,6 +245,78 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
                for miner, miner_parameters in zip(miners, miner_settings_list)]
     # results.append(test_simulated_miner())
     return {"results_for_each_miner": results}
+
+
+
+def test_compare_samplers(problem_parameters: dict,
+                          fitness_criterion_parameters: dict,
+                          reference_miner_parameters: dict,
+                          sampling_miner_settings: dict,
+                          test_parameters: dict,
+                          max_budget: int) -> TestResults:
+    problem: CombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
+    termination_predicate = run_with_limited_budget(max_budget)
+    amount_of_reference_features = test_parameters["amount_of_reference_features"]
+    amount_of_sampled_candidates = test_parameters["amount_of_sampled_candidates"]
+    fitness_criterion = Criteria.decode_criterion(fitness_criterion_parameters, problem)
+    importance_of_explainability = test_parameters["importance_of_explainability"]
+
+    termination_predicate = run_with_limited_budget(10000)
+    sample_size = 2400
+    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+
+    def sample_using_simple_sampler() -> list[SearchSpace.Candidate]:
+        reference_features_for_simple_sampler = get_reference_features_for_simple_sampling(fitness_criterion=fitness_criterion,
+                                                                                           problem = problem,
+                                                                                           termination_predicate=termination_predicate,
+                                                                                           ppi = training_ppi,
+                                                                                           reference_miner_parameters = reference_miner_parameters,
+                                                                                           amount_to_return=amount_of_reference_features,
+                                                                                           importance_of_explainability=importance_of_explainability)
+        temp_selector = FeatureSelector(training_ppi, fitness_criterion)
+        scores_of_reference_features_for_simple_sampler = temp_selector.get_scores(
+            reference_features_for_simple_sampler)
+        simple_sampler = SimpleSampler(problem.search_space,
+                                       list(zip(reference_features_for_simple_sampler,
+                                                scores_of_reference_features_for_simple_sampler)))
+
+        return [simple_sampler.sample_candidate() for _ in
+                                                  range(amount_of_sampled_candidates)]
+
+
+    def sample_using_regurgitation() -> list[SearchSpace.Candidate]:
+
+        reference_features_for_regurgitation_sampler = get_reference_features_for_regurgitation_sampling(
+            fitness_criterion=fitness_criterion,
+            problem=problem,
+            termination_predicate=termination_predicate,
+            ppi=training_ppi,
+            reference_miner_parameters=reference_miner_parameters,
+            amount_to_return=amount_of_reference_features,
+            importance_of_explainability=importance_of_explainability)
+
+
+
+        return regurgitation_sample(reference_features=reference_features_for_regurgitation_sampler,
+                                                                    fitness_criterion=fitness_criterion,
+                                                                    termination_predicate=termination_predicate,  # might change in the future, could be faster!
+                                                                    original_ppi=training_ppi,
+                                                                    sampling_miner_parameters=sampling_miner_settings,
+                                                                    amount_to_return=amount_of_sampled_candidates)
+
+    sampled_from_simple = sample_using_simple_sampler()
+    sampled_from_regurgitation = sample_using_regurgitation()
+
+    def fitnesses_from(samples: Iterable[SearchSpace.Candidate]) -> list[float]:
+        return [problem.score_of_candidate(candidate) for candidate in samples]
+
+    return {"from_simple": fitnesses_from(sampled_from_simple),
+            "from_regurgitation": fitnesses_from(sampled_from_regurgitation)  # perhaps in the future there will be a normal GA?
+            }
+
+
+
+
 
 
 def apply_test_once(arguments: Settings) -> TestResults:

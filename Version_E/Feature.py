@@ -34,6 +34,9 @@ class Feature:
             values[var] = val
         return SearchSpace.Candidate(values)
 
+    def is_convertible_to_candidate(self) -> bool:
+        return all(self.variable_mask)
+
 
 
 

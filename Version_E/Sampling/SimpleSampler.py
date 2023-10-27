@@ -1,17 +1,47 @@
 import random
 from copy import copy
+from typing import Callable
 
 import numpy as np
 
 import SearchSpace
 import utils
+from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.Feature import Feature
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector
+from Version_E.MeasurableCriterion.CriterionUtilities import Balance
+from Version_E.MeasurableCriterion.Explainability import Explainability
+from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
+from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Testing import Miners
+
+
+def get_reference_features_for_simple_sampling(fitness_criterion: MeasurableCriterion,
+                                               problem: CombinatorialProblem,
+                                               termination_predicate: Callable,
+                                               ppi: PrecomputedPopulationInformation,
+                                               reference_miner_parameters: dict,
+                                               amount_to_return: int,
+                                               importance_of_explainability: float) -> list[Feature]:
+    search_criterion = Balance([
+        Explainability(problem),
+        fitness_criterion],
+        weights=[importance_of_explainability, 1 - importance_of_explainability])
+
+    selector = FeatureSelector(ppi, search_criterion)
+
+    miner = Miners.decode_miner(reference_miner_parameters,
+                                selector=selector,
+                                termination_predicate=termination_predicate)
+
+    mined_features = miner.get_meaningful_features(amount_to_return)
+
+    return mined_features
 
 
 class SimpleSampler:
     search_space: SearchSpace.SearchSpace
     features_with_scores: list[(Feature, float)]
-
 
     def __init__(self, search_space: SearchSpace.SearchSpace, features_with_scores: list[(Feature, float)]):
         self.search_space = search_space
@@ -32,10 +62,6 @@ class SimpleSampler:
                 return False
 
         return True
-
-
-    def feature_is_complete(self, feature: Feature) -> bool:
-        return all(feature.variable_mask)
 
     def sample_feature_unsafe(self) -> Feature:
         """ this is unsafe in the sense that the result might not be complete"""
@@ -61,13 +87,12 @@ class SimpleSampler:
                 return False
             return True
 
-        while can_still_sample() and not self.feature_is_complete(accumulated_feature):
+        while can_still_sample() and not accumulated_feature.is_convertible_to_candidate():
             feature_to_add = pick_a_feature()
             if self.can_be_merged(accumulated_feature, feature_to_add):
                 accumulated_feature = Feature.merge(accumulated_feature, feature_to_add)
 
         return accumulated_feature  # it might be incomplete!!
-
 
     def fill_in_the_gaps(self, incomplete_feature: Feature):
         result = copy(incomplete_feature)
@@ -82,8 +107,3 @@ class SimpleSampler:
         produced_feature = self.sample_feature_unsafe()
         filled_feature = self.fill_in_the_gaps(produced_feature)
         return filled_feature.to_candidate()
-
-
-
-
-
