@@ -29,7 +29,7 @@
     "which": "budget_needed_to_find_ideals",
     "sample_size": 2400,
     "features_per_run": 100,
-    "budget": 100000,
+    "budget": 200000,
     "runs": 2,
     "miners": [
       {

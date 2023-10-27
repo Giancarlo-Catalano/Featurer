@@ -25,7 +25,7 @@ class GAMiner(FeatureMiner):
         self.population_size = population_size
 
     def __repr__(self):
-        return f"RandomSearch(population = {self.population_size})"
+        return f"GA(population = {self.population_size})"
 
     def mutate(self, feature: Feature) -> Feature:
 

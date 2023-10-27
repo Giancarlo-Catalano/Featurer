@@ -135,6 +135,7 @@ def test_run_with_limited_budget(problem_parameters: dict,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
+        print(f"Testing {miner}")
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         mined_features = utils.remove_duplicates(mined_features, hashable=True)
         ideals = problem.get_ideal_features()
@@ -159,6 +160,7 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
+        print(f"Testing {miner}")
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         mined_features = utils.remove_duplicates(mined_features, hashable=True)
         ideals = problem.get_ideal_features()
@@ -186,6 +188,8 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
 
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
+        print(f"Testing {miner}")
+
         def are_connected(node_index_a: int, node_index_b) -> bool:
             return bool(problem.adjacency_matrix[node_index_a, node_index_b])
 
