@@ -24,6 +24,10 @@ class FeatureSelector:
         self.criterion = criterion
         self.used_budget = 0
 
+
+    def reset_budget(self):
+        self.used_budget = 0
+
     def __repr__(self):
         return "FeatureSelector"
 

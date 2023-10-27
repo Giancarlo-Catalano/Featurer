@@ -19,9 +19,9 @@ class HillClimber(FeatureMiner):
                 feature.get_specialisations(self.search_space) +
                 feature.get_variations(self.search_space))
 
-    def get_improved_feature(self, feature: Feature) -> (Feature, float):
+    def get_improved_feature(self, feature: Feature) -> Feature:
         mutations = self.get_mutations_of_feature(feature)
-        return self.feature_selector.keep_best_features(mutations, 1)[0]
+        return self.feature_selector.keep_best_features(mutations, 1)[0][0]
 
     def improve_feature_until_stationary(self, feature: Feature) -> Feature:
         current_best_feature = copy.copy(feature)
@@ -38,7 +38,8 @@ class HillClimber(FeatureMiner):
         return current_best_feature
 
     def get_meaningful_features(self, amount_to_return: int) -> list[Feature]:
-        population = [random_feature_in_search_space(self.search_space) for _ in range(amount_to_return)]
+        population: list[Feature] = [random_feature_in_search_space(self.search_space)
+                                     for _ in range(amount_to_return)]
 
         iteration = 0
 

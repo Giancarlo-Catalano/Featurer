@@ -41,8 +41,8 @@
       {
         "which": "destructive",
         "stochastic": false,
-        "population_size": 48,
-        "uses_archive": false
+        "population_size": 60,
+        "uses_archive": true
       },
       {
         "which": "bidirectional",

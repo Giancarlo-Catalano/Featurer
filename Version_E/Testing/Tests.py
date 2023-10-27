@@ -7,6 +7,7 @@ from typing import Callable
 
 import numpy as np
 
+import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
 from BenchmarkProblems.GraphColouring import GraphColouringProblem
 from Version_E.Feature import Feature
@@ -135,8 +136,10 @@ def test_run_with_limited_budget(problem_parameters: dict,
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
+        mined_features = utils.remove_duplicates(mined_features, hashable=True)
         ideals = problem.get_ideal_features()
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
+        miner.feature_selector.reset_budget()
         return {"miner": miner_parameters, "found": amount_of_found_ideals, "total": len(ideals), "time": execution_time}
 
     return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
@@ -157,10 +160,12 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
+        mined_features = utils.remove_duplicates(mined_features, hashable=True)
         ideals = problem.get_ideal_features()
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
         successfull = amount_of_found_ideals == len(ideals)
         used_budget = miner.feature_selector.used_budget
+        miner.feature_selector.reset_budget()
         return {"miner": miner_parameters, "successfull": successfull, used_budget: "used_budget", "time": execution_time}
 
     return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
@@ -198,6 +203,8 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         for feature in mined_features:
             register_feature(feature, edge_counts)
+
+        miner.feature_selector.reset_budget()
 
         return {"miner": miner_parameters,
                 "edge_counts": edge_counts,
