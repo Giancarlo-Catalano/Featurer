@@ -141,7 +141,10 @@ def test_run_with_limited_budget(problem_parameters: dict,
         ideals = problem.get_ideal_features()
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
         miner.feature_selector.reset_budget()
-        return {"miner": miner_parameters, "found": amount_of_found_ideals, "total": len(ideals), "time": execution_time}
+        return {"miner": miner_parameters,
+                "found": amount_of_found_ideals,
+                "total": len(ideals),
+                "time": execution_time}
 
     return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
                                        for miner, miner_parameters in zip(miners, miner_settings_list)]}
@@ -168,7 +171,12 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
         successfull = amount_of_found_ideals == len(ideals)
         used_budget = miner.feature_selector.used_budget
         miner.feature_selector.reset_budget()
-        return {"miner": miner_parameters, "successfull": successfull, "used_budget": used_budget, "time": execution_time}
+        return {"miner": miner_parameters,
+                "successfull": successfull,
+                "found": amount_of_found_ideals,
+                "total": len(ideals),
+                "used_budget": used_budget,
+                "time": execution_time}
 
     return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
                                        for miner, miner_parameters in zip(miners, miner_settings_list)]}
@@ -212,7 +220,7 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
 
         return {"miner": miner_parameters,
                 "edge_counts": edge_counts,
-                "runtime": execution_time}
+                "time": execution_time}
 
     def sample_from_binomial_distribution(n: int, chance_of_success: float, samples: int) -> list[int]:
         def single_sample():
