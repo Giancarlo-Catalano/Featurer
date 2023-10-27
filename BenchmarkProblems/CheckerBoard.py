@@ -1,11 +1,10 @@
 import SearchSpace
 import utils
-import BenchmarkProblems.CombinatorialProblem
-from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.Feature import Feature
 
 
-class CheckerBoardProblem(BenchmarkProblems.CombinatorialProblem):
+class CheckerBoardProblem(CombinatorialProblem):
     rows: int
     cols: int
 

@@ -1,5 +1,4 @@
 import SearchSpace
-import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 from Version_E.Feature import Feature
 
@@ -36,6 +35,6 @@ class OneMaxProblem(TestableCombinatorialProblem):
 
     def get_ideal_features(self) -> list[Feature]:
         def feature_with_a_single_one(var_index):
-            return SearchSpace.UserFeature([(var_index, 1)])
+            return Feature.from_legacy_feature(SearchSpace.UserFeature([(var_index, 1)]),self.search_space)
 
         return [feature_with_a_single_one(var_index) for var_index in range(self.amount_of_bits)]

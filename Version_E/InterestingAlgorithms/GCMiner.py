@@ -1,7 +1,4 @@
-import random
-from typing import Iterable, Callable
-
-import numpy as np
+from typing import Callable
 
 import utils
 from Version_E import HotEncoding
@@ -82,7 +79,7 @@ class GCMiner(FeatureMiner):
 
         while should_continue():
             iteration += 1
-            print(f"In iteration {iteration}")
+            #print(f"In iteration {iteration}")
             population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
@@ -112,7 +109,7 @@ class GCMiner(FeatureMiner):
 
         while should_continue():
             iteration += 1
-            print(f"In iteration {iteration}")
+            # print(f"In iteration {iteration}")
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
 

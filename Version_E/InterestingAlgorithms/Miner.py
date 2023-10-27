@@ -1,4 +1,3 @@
-import math
 import random
 import time
 from typing import Iterable, Callable
@@ -6,7 +5,6 @@ from typing import Iterable, Callable
 import numpy as np
 
 import utils
-from Version_E import HotEncoding
 from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
@@ -83,10 +81,14 @@ class FeatureMiner:
         raise Exception("An implementation of FeatureMiner does not implement mine_features")
 
     def with_scores(self, feature_list: Population) -> EvaluatedPopulation:
+        if len(feature_list) == 0:
+            return []
         scores = self.feature_selector.get_scores(feature_list)
         return list(zip(feature_list, scores))
 
     def without_scores(self, feature_list: EvaluatedPopulation) -> Population:
+        if len(feature_list) == 0:
+            return []
         return utils.unzip(feature_list)[0]
 
     def remove_duplicate_features(self, features: Population) -> Population:

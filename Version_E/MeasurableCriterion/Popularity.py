@@ -1,12 +1,10 @@
 import numpy as np
-from typing import Iterable, Any
 
-import SearchSpace
 import utils
-from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
+from SearchSpace import SearchSpace
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
-from SearchSpace import SearchSpace
+
 
 class Commonality(MeasurableCriterion):
     def __init__(self):

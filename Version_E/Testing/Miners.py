@@ -8,7 +8,7 @@ from Version_E.BaselineAlgorithms.RandomSearch import RandomSearch
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
-from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_for_fixed_amount_of_iterations
+from Version_E.InterestingAlgorithms.Miner import FeatureMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 
 TerminationPredicate = Callable

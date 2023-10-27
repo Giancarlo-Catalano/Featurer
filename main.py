@@ -9,7 +9,7 @@ from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMine
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.Testing import TestingUtilities, Problems, Criteria
+from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests
 
 
 def execute_command_line():
@@ -20,7 +20,7 @@ def execute_command_line():
     first_argument = command_line_arguments[1]
     with open(first_argument) as settings_file:
         settings = json.load(settings_file)
-        TestingUtilities.run_test(settings)
+        Tests.run_test(settings)
 
 
 def aggregate_files(directory: str, output_name: str, for_time):
@@ -119,9 +119,9 @@ def test_new_miner():
 
 
 if __name__ == '__main__':
-    # execute_command_line()
+    execute_command_line()
     # input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
     # aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 
-    test_new_miner()
+    #test_new_miner()

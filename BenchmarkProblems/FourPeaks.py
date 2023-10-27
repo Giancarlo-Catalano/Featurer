@@ -1,6 +1,5 @@
-import SearchSpace
 import BenchmarkProblems.CombinatorialProblem
-from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
+import SearchSpace
 
 
 class FourPeaksProblem(BenchmarkProblems.CombinatorialProblem.CombinatorialProblem):

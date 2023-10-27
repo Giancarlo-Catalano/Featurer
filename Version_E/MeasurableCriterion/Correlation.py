@@ -1,10 +1,8 @@
-from typing import Any
 import numpy as np
+
 import utils
-from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
-from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
 
 def compute_phi_scores(pfi: PrecomputedFeatureInformation):

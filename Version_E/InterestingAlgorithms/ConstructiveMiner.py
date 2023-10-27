@@ -25,7 +25,8 @@ class ConstructiveMiner(GCMiner):
     def __repr__(self):
         return (f"Constructive(population = {self.population_size}, "
                 f"stochastic = {self.stochastic}, "
-                f"pop_size = {self.population_size})")
+                f"pop_size = {self.population_size},"
+                f"uses_archive = {self.uses_archive})")
 
     def get_initial_population(self) -> Population:
         return super().get_empty_feature_population()

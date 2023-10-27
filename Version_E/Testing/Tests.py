@@ -1,23 +1,18 @@
 import itertools
 import json
 import math
-import time
 import random
-from typing import Callable, Iterable
+from collections import defaultdict
+from typing import Callable
 
 import numpy as np
 
-from BenchmarkProblems.GraphColouring import GraphColouringProblem
-import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
+from BenchmarkProblems.GraphColouring import GraphColouringProblem
 from Version_E.Feature import Feature
-from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector, run_with_limited_budget, \
+from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
     run_until_found_features
-from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
-from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.Testing import Problems, Criteria, Miners, TestingUtilities
-from collections import defaultdict
-
+from Version_E.Testing import TestingUtilities
 from Version_E.Testing.TestingUtilities import execute_and_time
 
 Settings = dict
@@ -39,55 +34,7 @@ TerminationPredicate = Callable
 """
 
 
-def decode_termination_predicate(problem: CombinatorialProblem, test_settings: Settings) -> TerminationPredicate:
-    test_kind = test_settings["which"]
 
-    if test_kind == "run_with_limited_budget":
-        budget: int = test_settings["budget"]
-        return run_with_limited_budget(budget)
-    elif test_kind == "run_until_success":
-        budget: int = test_settings["budget"]
-        problem: TestableCombinatorialProblem = problem  # we assume that it is a TestableCombinatorialProblem
-        target_individuals = problem.get_ideal_features()
-        return run_until_found_features(target_individuals, max_budget=budget)
-    else:
-        raise Exception(f"Could not generate a termination function for the following test settings: {test_settings}")
-
-
-def decode_problem(arguments: Settings) -> CombinatorialProblem:
-    return Problems.decode_problem(arguments["problem"])
-
-
-def decode_criterion(arguments: Settings, problem: CombinatorialProblem) -> MeasurableCriterion:
-    return Criteria.decode_criterion(arguments["criterion"], problem)
-
-
-def decode_sample_size(arguments: Settings) -> int:
-    return arguments["test"]["sample_size"]
-
-
-def make_selector(problem: CombinatorialProblem, sample_size: int, criterion: MeasurableCriterion) -> FeatureSelector:
-    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-    selector = FeatureSelector(training_ppi, criterion)
-    return selector
-
-
-def decode_miner(miner_arguments: Settings, selector, termination_predicate: TerminationPredicate) -> FeatureMiner:
-    return Miners.decode_miner(miner_arguments, selector, termination_predicate)
-
-
-def generate_problem_miner(arguments: Settings, overloading_miner_arguments=None) -> (
-        CombinatorialProblem, FeatureMiner):
-    problem = Problems.decode_problem(arguments["problem"])
-    criterion = Criteria.decode_criterion(arguments["criterion"], problem)
-    sample_size = arguments["test"]["sample_size"]
-    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-    selector = FeatureSelector(training_ppi, criterion)
-
-    if overloading_miner_arguments is None:
-        overloading_miner_arguments = arguments["miner"]
-    miner = Miners.decode_miner(overloading_miner_arguments, selector)
-    return problem, miner
 
 
 
@@ -98,7 +45,7 @@ def test_get_distribution(arguments: Settings, runs: int,
         accumulator += mask_array
 
     def single_run():
-        problem, miner = generate_problem_miner(arguments)
+        problem, miner = TestingUtilities.generate_problem_miner(arguments)
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         cell_coverings = np.zeros(problem.search_space.dimensions, dtype=int)
         for feature in mined_features:
@@ -161,27 +108,39 @@ def no_test(problem: TestableCombinatorialProblem,
     return {"test_results": "you get to have lunch early!"}
 
 
+def get_miners_from_parameters(termination_predicate: TerminationPredicate,
+                                problem: CombinatorialProblem,
+                                 criterion_parameters: dict,
+                                 miner_settings_list: list[dict],
+                                 test_parameters: dict) -> list[FeatureMiner]:
+    criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
+    sample_size = test_parameters["sample_size"]
+    selector = TestingUtilities.make_selector(problem, sample_size, criterion)
+    miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
+              for miner_args in miner_settings_list]
+    return miners
+
+
 def test_run_with_limited_budget(problem_parameters: dict,
                                  criterion_parameters: dict,
                                  miner_settings_list: list[dict],
                                  test_parameters: dict,
                                  budget: int) -> TestResults:
     problem: TestableCombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
-    criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
     termination_predicate = run_with_limited_budget(budget)
-    sample_size = test_parameters["sample_size"]
     features_per_run = test_parameters["features_per_run"]
-    selector = TestingUtilities.make_selector(problem, sample_size, criterion)
-    miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
-              for miner_args in miner_settings_list]
 
-    def test_a_single_miner(miner: FeatureMiner) -> TestResults:
+    miners = get_miners_from_parameters(termination_predicate, problem,
+                                        criterion_parameters, miner_settings_list, test_parameters)
+
+    def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         ideals = problem.get_ideal_features()
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
-        return {"miner": miner, "found": amount_of_found_ideals, "total": len(ideals), "time": execution_time}
+        return {"miner": miner_parameters, "found": amount_of_found_ideals, "total": len(ideals), "time": execution_time}
 
-    return {"results_for_each_miner": [test_a_single_miner(miner) for miner in miners]}
+    return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
+                                       for miner, miner_parameters in zip(miners, miner_settings_list)]}
 
 
 def test_budget_needed_to_find_ideals(problem_parameters: dict,
@@ -190,23 +149,22 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
                                       test_parameters: dict,
                                       max_budget: int) -> TestResults:
     problem: TestableCombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
-    criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
     termination_predicate = run_until_found_features(problem.get_ideal_features(), max_budget=max_budget)
-    sample_size = test_parameters["sample_size"]
     features_per_run = test_parameters["features_per_run"]
-    selector = TestingUtilities.make_selector(problem, sample_size, criterion)
-    miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
-              for miner_args in miner_settings_list]
 
-    def test_a_single_miner(miner: FeatureMiner) -> TestResults:
+    miners = get_miners_from_parameters(termination_predicate, problem,
+                                        criterion_parameters, miner_settings_list, test_parameters)
+
+    def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         ideals = problem.get_ideal_features()
         amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
         successfull = amount_of_found_ideals == len(ideals)
         used_budget = miner.feature_selector.used_budget
-        return {"miner": miner, "successfull": successfull, used_budget: "used_budget", "time": execution_time}
+        return {"miner": miner_parameters, "successfull": successfull, used_budget: "used_budget", "time": execution_time}
 
-    return {"results_for_each_miner": [test_a_single_miner(miner) for miner in miners]}
+    return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
+                                       for miner, miner_parameters in zip(miners, miner_settings_list)]}
 
 
 def test_compare_connectedness_of_results(problem_parameters: dict,
@@ -215,16 +173,14 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
                                           test_parameters: dict,
                                           budget: int) -> TestResults:
     problem: GraphColouringProblem = TestingUtilities.decode_problem(problem_parameters)
-    criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
     termination_predicate = run_with_limited_budget(budget)
-    sample_size = test_parameters["sample_size"]
     features_per_run = test_parameters["features_per_run"]
-    selector = TestingUtilities.make_selector(problem, sample_size, criterion)
-    miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
-              for miner_args in miner_settings_list]
+
+    miners = get_miners_from_parameters(termination_predicate, problem,
+                                        criterion_parameters, miner_settings_list, test_parameters)
 
 
-    def test_a_single_miner(miner: FeatureMiner) -> TestResults:
+    def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         def are_connected(node_index_a: int, node_index_b) -> bool:
             return bool(problem.adjacency_matrix[node_index_a, node_index_b])
 
@@ -243,7 +199,7 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
         for feature in mined_features:
             register_feature(feature, edge_counts)
 
-        return {"miner": miner,
+        return {"miner": miner_parameters,
                 "edge_counts": edge_counts,
                 "runtime": execution_time}
 
@@ -267,13 +223,14 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
                 "edge_counts": edge_counts,
                 "runtime": 0}  # just in case
 
-    results = [test_a_single_miner(miner) for miner in miners]
+    results = [test_a_single_miner(miner, miner_parameters)
+               for miner, miner_parameters in zip(miners, miner_settings_list)]
     results.append(test_simulated_miner())
     return {"results_for_each_miner": results}
 
 
 
-def apply_test_once(arguments: dict) -> dict:
+def apply_test_once(arguments: Settings) -> TestResults:
     test_parameters = arguments["test"]
     test_kind = test_parameters["which"]
 
@@ -301,10 +258,23 @@ def apply_test_once(arguments: dict) -> dict:
                                      runs=test_parameters["runs"],
                                      features_per_run=test_parameters["features_per_run"])
     elif test_kind == "no_test":
-        problem, miner = generate_problem_miner(arguments)
+        problem, miner = TestingUtilities.generate_problem_miner(arguments)
         return no_test(problem=problem,
                        miner=miner,
                        runs=test_parameters["runs"],
                        features_per_run=test_parameters["features_per_run"])
     else:
         raise Exception("Test was not recognised")
+
+
+
+def apply_test(arguments: Settings) -> list[TestResults]:
+    runs: int = arguments["test"]["runs"]
+    return [apply_test_once(arguments) for _ in range(runs)]
+
+
+def run_test(arguments: dict):
+    result_json = apply_test(arguments)  # important part
+    output_json = {"parameters": arguments, "result": result_json}
+    print(json.dumps(output_json))
+

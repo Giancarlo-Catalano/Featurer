@@ -1,5 +1,4 @@
 import SearchSpace
-import BenchmarkProblems.CombinatorialProblem
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 from Version_E.Feature import Feature
 
@@ -35,6 +34,7 @@ class BinValProblem(TestableCombinatorialProblem):
 
     def get_ideal_features(self) -> list[Feature]:
         empty_feature = Feature.empty_feature(self.search_space)
+
         def feature_with_a_single_one(var_index):
             return empty_feature.with_value(var_index, 1)
 

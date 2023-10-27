@@ -25,7 +25,9 @@ class DestructiveMiner(GCMiner):
     def __repr__(self):
         return (f"Destructive(population = {self.population_size}, "
                 f"stochastic = {self.stochastic}, "
-                f"pop_size = {self.population_size})")
+                f"pop_size = {self.population_size},"
+                f"uses_archive = {self.uses_archive})")
+
 
     def get_initial_population(self) -> Population:
         return super().get_complex_feature_population(self.population_size)

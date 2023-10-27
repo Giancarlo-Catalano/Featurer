@@ -1,7 +1,5 @@
-import datetime
 import json
 import time
-from json import JSONDecodeError
 from typing import Callable
 
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem, TestableCombinatorialProblem
@@ -10,7 +8,7 @@ from Version_E.InterestingAlgorithms.Miner import FeatureSelector, run_with_limi
     FeatureMiner
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.Testing import Miners, Criteria, Problems, Tests
+from Version_E.Testing import Miners, Criteria, Problems
 
 JSON = dict
 Settings = dict
@@ -46,16 +44,29 @@ def run_multiple_times(func, runs, *args, **kwargs):
     return [func(*args, **kwargs) for _ in range(runs)]
 
 
-def decode_problem(problem_parameters: Settings) -> CombinatorialProblem:
-    return Problems.decode_problem(problem_parameters)
+def decode_termination_predicate(problem: CombinatorialProblem, test_settings: Settings) -> TerminationPredicate:
+    test_kind = test_settings["which"]
+
+    if test_kind == "run_with_limited_budget":
+        budget: int = test_settings["budget"]
+        return run_with_limited_budget(budget)
+    elif test_kind == "run_until_success":
+        budget: int = test_settings["budget"]
+        problem: TestableCombinatorialProblem = problem  # we assume that it is a TestableCombinatorialProblem
+        target_individuals = problem.get_ideal_features()
+        return run_until_found_features(target_individuals, max_budget=budget)
+    else:
+        raise Exception(f"Could not generate a termination function for the following test settings: {test_settings}")
 
 
-def decode_criterion(criterion_parameters: Settings, problem: CombinatorialProblem) -> MeasurableCriterion:
-    return Criteria.decode_criterion(criterion_parameters, problem)
+def decode_problem(problem_arguments: Settings) -> CombinatorialProblem:
+    return Problems.decode_problem(problem_arguments)
 
 
-def decode_sample_size(arguments: Settings) -> int:
-    return arguments["test"]["sample_size"]
+def decode_criterion(criterion_arguments: Settings, problem: CombinatorialProblem) -> MeasurableCriterion:
+    return Criteria.decode_criterion(criterion_arguments, problem)
+
+
 
 
 def make_selector(problem: CombinatorialProblem, sample_size: int, criterion: MeasurableCriterion) -> FeatureSelector:
@@ -78,14 +89,10 @@ def generate_problem_miner(arguments: Settings, overloading_miner_arguments=None
 
     if overloading_miner_arguments is None:
         overloading_miner_arguments = arguments["miner"]
-    miner = Miners.decode_miner(overloading_miner_arguments, selector)
+    miner = Miners.decode_miner(overloading_miner_arguments, selector, decode_termination_predicate(problem, arguments["test"]))
     return problem, miner
 
 
-def run_test(arguments: dict):
-    result_json = Tests.apply_test(arguments)  # important part
-    output_json = {"parameters": arguments, "result": result_json}
-    print(json.dumps(output_json))
 
 
 

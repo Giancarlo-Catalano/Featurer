@@ -1,15 +1,13 @@
 import itertools
 import random
+from typing import Iterable
 
 import numpy as np
 from bitarray import bitarray, frozenbitarray
 
 import SearchSpace
-import BenchmarkProblems.CombinatorialProblem
 import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
-from typing import List, Optional, Iterable
-
 from Version_E.Feature import Feature
 
 
