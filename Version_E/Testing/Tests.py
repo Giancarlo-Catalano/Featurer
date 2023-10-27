@@ -15,6 +15,7 @@ from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
     run_until_found_features, FeatureSelector
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Sampling.GASampler import GASampler
 from Version_E.Sampling.RegurgitationSampler import get_reference_features_for_regurgitation_sampling, \
     regurgitation_sample
 from Version_E.Testing import TestingUtilities, Criteria
@@ -252,6 +253,7 @@ def test_compare_samplers(problem_parameters: dict,
                           fitness_criterion_parameters: dict,
                           reference_miner_parameters: dict,
                           sampling_miner_settings: dict,
+                          ga_sampler_settings: dict,
                           test_parameters: dict,
                           max_budget: int) -> TestResults:
     problem: CombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
@@ -304,14 +306,26 @@ def test_compare_samplers(problem_parameters: dict,
                                                                     sampling_miner_parameters=sampling_miner_settings,
                                                                     amount_to_return=amount_of_sampled_candidates)
 
+
+    def sample_using_ga() -> list[SearchSpace.Candidate]:
+
+        ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
+                               search_space= problem.search_space,
+                               population_size= ga_sampler_settings["population_size"],
+                               generations= ga_sampler_settings["generations"])
+
+        return ga_sampler.get_evolved_individuals(amount_of_sampled_candidates)
+
     sampled_from_simple = sample_using_simple_sampler()
     sampled_from_regurgitation = sample_using_regurgitation()
+    sampled_using_ga = sample_using_ga()
 
     def fitnesses_from(samples: Iterable[SearchSpace.Candidate]) -> list[float]:
         return [problem.score_of_candidate(candidate) for candidate in samples]
 
     return {"from_simple": fitnesses_from(sampled_from_simple),
-            "from_regurgitation": fitnesses_from(sampled_from_regurgitation)  # perhaps in the future there will be a normal GA?
+            "from_regurgitation": fitnesses_from(sampled_from_regurgitation),  # perhaps in the future there will be a normal GA?
+            "from_ga": fitnesses_from(sampled_using_ga)
             }
 
 
