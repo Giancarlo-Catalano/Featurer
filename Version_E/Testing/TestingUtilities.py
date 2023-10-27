@@ -1,4 +1,5 @@
 import json
+import sys
 import time
 from typing import Callable
 
@@ -92,6 +93,21 @@ def generate_problem_miner(arguments: Settings, overloading_miner_arguments=None
     miner = Miners.decode_miner(overloading_miner_arguments, selector, decode_termination_predicate(problem, arguments["test"]))
     return problem, miner
 
+
+
+
+def load_miner_settings_list_from_external_file(file_name: str) -> list[dict]:
+    try:
+        with open(file_name, 'r') as file:
+            return json.load(file)
+
+    except IOError:
+        print(f"Could not read file: {file_name}")
+
+
+def load_miners_from_second_command_line_argument():
+    second_argument = sys.argv[2]
+    return load_miner_settings_list_from_external_file(second_argument)
 
 
 

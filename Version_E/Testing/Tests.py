@@ -35,10 +35,6 @@ TerminationPredicate = Callable
 """
 
 
-
-
-
-
 def test_get_distribution(arguments: Settings, runs: int,
                           features_per_run: int) -> TestResults:
     def register_feature(feature: Feature, accumulator):
@@ -79,9 +75,6 @@ def test_get_distribution(arguments: Settings, runs: int,
     return result
 
 
-
-
-
 def no_test(problem: TestableCombinatorialProblem,
             miner: FeatureMiner,
             runs: int,
@@ -110,10 +103,10 @@ def no_test(problem: TestableCombinatorialProblem,
 
 
 def get_miners_from_parameters(termination_predicate: TerminationPredicate,
-                                problem: CombinatorialProblem,
-                                 criterion_parameters: dict,
-                                 miner_settings_list: list[dict],
-                                 test_parameters: dict) -> list[FeatureMiner]:
+                               problem: CombinatorialProblem,
+                               criterion_parameters: dict,
+                               miner_settings_list: list[dict],
+                               test_parameters: dict) -> list[FeatureMiner]:
     criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
     sample_size = test_parameters["sample_size"]
     selector = TestingUtilities.make_selector(problem, sample_size, criterion)
@@ -194,7 +187,6 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
     miners = get_miners_from_parameters(termination_predicate, problem,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
-
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         print(f"Testing {miner}")
 
@@ -227,9 +219,11 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
             return sum([random.random() < chance_of_success for _ in range(n)])
 
         return [single_sample() for _ in range(samples)]
+
     def test_simulated_miner() -> TestResults:
         samples_for_each_amount_of_nodes = 1000
-        subgraph_sizes_to_simulate = range(problem.amount_of_nodes+1)
+        subgraph_sizes_to_simulate = range(problem.amount_of_nodes + 1)
+
         def simulated_connections_for_subgraph_size(subgraph_size) -> list[int]:
             return sample_from_binomial_distribution(subgraph_size,
                                                      problem.chance_of_connection,
@@ -248,29 +242,31 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
     return {"results_for_each_miner": results}
 
 
-
 def apply_test_once(arguments: Settings) -> TestResults:
     test_parameters = arguments["test"]
     test_kind = test_parameters["which"]
 
     if test_kind == "results_given_budget":
+        miners = TestingUtilities.load_miners_from_second_command_line_argument()
         return test_run_with_limited_budget(problem_parameters=arguments["problem"],
                                             criterion_parameters=arguments["criterion"],
-                                            miner_settings_list=test_parameters["miners"],
+                                            miner_settings_list=miners,
                                             test_parameters=test_parameters,
                                             budget=test_parameters["budget"])
     elif test_kind == "budget_needed_to_find_ideals":
+        miners = TestingUtilities.load_miners_from_second_command_line_argument()
         return test_budget_needed_to_find_ideals(problem_parameters=arguments["problem"],
                                                  criterion_parameters=arguments["criterion"],
-                                                 miner_settings_list=test_parameters["miners"],
+                                                 miner_settings_list=miners,
                                                  test_parameters=test_parameters,
                                                  max_budget=test_parameters["budget"])
     elif test_kind == "compare_connectedness_of_results":
+        miners = TestingUtilities.load_miners_from_second_command_line_argument()
         return test_compare_connectedness_of_results(problem_parameters=arguments["problem"],
-                                                 criterion_parameters=arguments["criterion"],
-                                                 miner_settings_list=test_parameters["miners"],
-                                                 test_parameters=test_parameters,
-                                                 max_budget=test_parameters["budget"])
+                                                     criterion_parameters=arguments["criterion"],
+                                                     miner_settings_list=miners,
+                                                     test_parameters=test_parameters,
+                                                     max_budget=test_parameters["budget"])
 
     if test_kind == "get_distribution":
         return test_get_distribution(arguments=arguments,
@@ -286,7 +282,6 @@ def apply_test_once(arguments: Settings) -> TestResults:
         raise Exception("Test was not recognised")
 
 
-
 def apply_test(arguments: Settings) -> list[TestResults]:
     runs: int = arguments["test"]["runs"]
     return [apply_test_once(arguments) for _ in range(runs)]
@@ -296,4 +291,3 @@ def run_test(arguments: dict):
     result_json = apply_test(arguments)  # important part
     output_json = {"parameters": arguments, "result": result_json}
     print(json.dumps(output_json))
-
