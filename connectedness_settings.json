@@ -28,36 +28,6 @@
     "sample_size": 2400,
     "features_per_run": 100,
     "budget": 10000,
-    "runs": 2,
-    "miners": [
-      {
-        "which": "constructive",
-        "stochastic": true,
-        "population_size": 120,
-        "uses_archive": true
-      },
-      {
-        "which": "destructive",
-        "stochastic": false,
-        "population_size": 120,
-        "uses_archive": true
-      },
-      {
-        "which": "bidirectional",
-        "stochastic": false,
-        "population_size": 120,
-        "uses_archive": true
-      },
-      {
-        "which": "ga",
-        "population_size": 120
-      },
-      {
-        "which": "hill_climber"
-      },
-      {
-        "which": "random"
-      }
-    ]
+    "runs": 2
   }
 }
