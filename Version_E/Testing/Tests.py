@@ -166,7 +166,7 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
         successfull = amount_of_found_ideals == len(ideals)
         used_budget = miner.feature_selector.used_budget
         miner.feature_selector.reset_budget()
-        return {"miner": miner_parameters, "successfull": successfull, used_budget: "used_budget", "time": execution_time}
+        return {"miner": miner_parameters, "successfull": successfull, "used_budget": used_budget, "time": execution_time}
 
     return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)
                                        for miner, miner_parameters in zip(miners, miner_settings_list)]}

@@ -85,6 +85,7 @@ class GCMiner(FeatureMiner):
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
 
             parents = self.select(evaluated_population)
+            parents = self.remove_duplicate_features(parents)
             children = self.get_children(parents)
 
             archive.update(self.without_scores(parents))
