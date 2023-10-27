@@ -1,10 +1,7 @@
 import random
 from _typeshed import SupportsNext
-from copy import copy
-from typing import Callable, Iterable
-
+from typing import Callable
 import numpy as np
-
 import SearchSpace
 import utils
 from SearchSpace import Candidate
