@@ -1,0 +1,236 @@
+[
+  {
+    "which": "constructive",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "constructive",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "constructive",
+    "population_size": 50,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "constructive",
+    "population_size": 50,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "constructive",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "constructive",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "constructive",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "constructive",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "constructive",
+    "population_size": 150,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "constructive",
+    "population_size": 150,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "constructive",
+    "population_size": 150,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "constructive",
+    "population_size": 150,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "destructive",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "destructive",
+    "population_size": 50,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 50,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "destructive",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "destructive",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "destructive",
+    "population_size": 150,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 150,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "destructive",
+    "population_size": 150,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 150,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 50,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 50,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 150,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 150,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 150,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 150,
+    "uses_archive": false,
+    "stochastic": false
+  },
+  {
+    "which": "ga",
+    "population_size": 50
+  },
+  {
+    "which": "ga",
+    "population_size": 100
+  },
+  {
+    "which": "ga",
+    "population_size": 150
+  },
+  {
+    "which": "hill_climber"
+  },
+  {
+    "which": "random"
+  }
+]

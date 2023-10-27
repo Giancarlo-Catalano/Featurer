@@ -186,9 +186,9 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
                                           criterion_parameters: dict,
                                           miner_settings_list: list[dict],
                                           test_parameters: dict,
-                                          budget: int) -> TestResults:
+                                          max_budget: int) -> TestResults:
     problem: GraphColouringProblem = TestingUtilities.decode_problem(problem_parameters)
-    termination_predicate = run_with_limited_budget(budget)
+    termination_predicate = run_with_limited_budget(max_budget)
     features_per_run = test_parameters["features_per_run"]
 
     miners = get_miners_from_parameters(termination_predicate, problem,
@@ -244,7 +244,7 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
 
     results = [test_a_single_miner(miner, miner_parameters)
                for miner, miner_parameters in zip(miners, miner_settings_list)]
-    results.append(test_simulated_miner())
+    # results.append(test_simulated_miner())
     return {"results_for_each_miner": results}
 
 
@@ -265,8 +265,8 @@ def apply_test_once(arguments: Settings) -> TestResults:
                                                  miner_settings_list=test_parameters["miners"],
                                                  test_parameters=test_parameters,
                                                  max_budget=test_parameters["budget"])
-    elif test_kind == "budget_needed_to_find_ideals":
-        return test_budget_needed_to_find_ideals(problem_parameters=arguments["problem"],
+    elif test_kind == "compare_connectedness_of_results":
+        return test_compare_connectedness_of_results(problem_parameters=arguments["problem"],
                                                  criterion_parameters=arguments["criterion"],
                                                  miner_settings_list=test_parameters["miners"],
                                                  test_parameters=test_parameters,

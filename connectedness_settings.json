@@ -1,0 +1,63 @@
+{
+  "problem": {
+    "which": "graph",
+    "amount_of_colours": 4,
+    "chance_of_connection": 0.3
+  },
+  "criterion": {
+    "which": "balance",
+    "arguments": [
+      {
+        "which": "fitness_higher_than_average"
+      },
+      {
+        "which": "consistent_fitness"
+      },
+      {
+        "which": "explainability"
+      }
+    ],
+    "weights": [
+      1,
+      1,
+      1
+    ]
+  },
+  "test": {
+    "which": "compare_connectedness_of_results",
+    "sample_size": 2400,
+    "features_per_run": 100,
+    "budget": 10000,
+    "runs": 2,
+    "miners": [
+      {
+        "which": "constructive",
+        "stochastic": true,
+        "population_size": 120,
+        "uses_archive": true
+      },
+      {
+        "which": "destructive",
+        "stochastic": false,
+        "population_size": 120,
+        "uses_archive": true
+      },
+      {
+        "which": "bidirectional",
+        "stochastic": false,
+        "population_size": 120,
+        "uses_archive": true
+      },
+      {
+        "which": "ga",
+        "population_size": 120
+      },
+      {
+        "which": "hill_climber"
+      },
+      {
+        "which": "random"
+      }
+    ]
+  }
+}
