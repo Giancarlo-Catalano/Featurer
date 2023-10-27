@@ -90,29 +90,9 @@ def generate_problem_miner(arguments: Settings, overloading_miner_arguments=None
     return problem, miner
 
 
-def check_successfullness(arguments: Settings, runs: int, features_per_run: int, miner_arguments=None,
-                          debug=False) -> TestResults:
-    def single_run() -> (int, int):
-        problem, miner = generate_problem_miner(arguments, overloading_miner_arguments=miner_arguments)
-        mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
-        ideals = problem.get_ideal_features()
-        amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
-        return {"found": amount_of_found_ideals, "total": len(ideals), "time": execution_time}
 
-    def print_count_pairs(counts_json: dict):
-        pairs = [(item["found"], item["total"]) for item in counts_json["test_results"]]
-        for found, total in pairs:
-            print(f"{found}\t{total}")
-
-    result = {"test_results": [single_run() for _ in range(runs)]}
-    if debug:
-        print_count_pairs(result)
-
-    return result
-
-
-def check_distribution_test(arguments: Settings, runs: int,
-                            features_per_run: int) -> TestResults:
+def test_get_distribution(arguments: Settings, runs: int,
+                          features_per_run: int) -> TestResults:
     def register_feature(feature: Feature, accumulator):
         mask_array = np.array(feature.variable_mask.tolist())
         accumulator += mask_array
@@ -151,55 +131,7 @@ def check_distribution_test(arguments: Settings, runs: int,
     return result
 
 
-def check_connectedness(arguments: Settings, runs: int, features_per_run: int) -> TestResults:
-    def single_run():
-        problem, miner = generate_problem_miner(arguments)
 
-        def are_connected(node_index_a: int, node_index_b) -> bool:
-            return bool(problem.adjacency_matrix[node_index_a, node_index_b])
-
-        def count_edges(node_list: list[int]) -> int:
-            return len([(node_a, node_b) for node_a, node_b in itertools.combinations(node_list, 2)
-                        if are_connected(node_a, node_b)])
-
-        def register_feature(feature_to_register: Feature, accumulator: defaultdict[int, list]):
-            present_nodes = [var for var, val in feature_to_register.to_var_val_pairs()]
-            amount_of_nodes = len(present_nodes)
-            accumulator[amount_of_nodes].append(count_edges(present_nodes))
-
-        edge_counts = defaultdict(list)
-
-        mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
-        for feature in mined_features:
-            register_feature(feature, edge_counts)
-
-        return {"edge_counts": edge_counts,
-                "chance_of_connection": problem.chance_of_connection,
-                "runtime": execution_time}
-
-    return {"test_results": [single_run() for _ in range(runs)]}
-
-
-def sample_from_binomial_distribution(n: int, chance_of_success: float, samples: int) -> list[int]:
-    def single_sample():
-        return sum([random.random() < chance_of_success for _ in range(n)])
-
-    return [single_sample() for _ in range(samples)]
-
-
-def check_miners(arguments: Settings, features_per_run: int, runs_per_miner: int,
-                 miners_settings_list: list[Settings]) -> TestResults:
-    def single_run(miner_arguments) -> dict:
-        # print(f"executing {miner_arguments}")
-        results = check_successfullness(arguments,
-                                        runs=runs_per_miner,
-                                        features_per_run=features_per_run,
-                                        miner_arguments=miner_arguments)
-
-        return {"miner": miner_arguments,
-                "result": results["test_results"]}
-
-    return {"test_results": [single_run(miner_arguments) for miner_arguments in miners_settings_list]}
 
 
 def no_test(problem: TestableCombinatorialProblem,
@@ -291,6 +223,7 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
     miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
               for miner_args in miner_settings_list]
 
+
     def test_a_single_miner(miner: FeatureMiner) -> TestResults:
         def are_connected(node_index_a: int, node_index_b) -> bool:
             return bool(problem.adjacency_matrix[node_index_a, node_index_b])
@@ -314,7 +247,11 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
                 "edge_counts": edge_counts,
                 "runtime": execution_time}
 
+    def sample_from_binomial_distribution(n: int, chance_of_success: float, samples: int) -> list[int]:
+        def single_sample():
+            return sum([random.random() < chance_of_success for _ in range(n)])
 
+        return [single_sample() for _ in range(samples)]
     def test_simulated_miner() -> TestResults:
         samples_for_each_amount_of_nodes = 1000
         subgraph_sizes_to_simulate = range(problem.amount_of_nodes+1)
@@ -359,23 +296,10 @@ def apply_test_once(arguments: dict) -> dict:
                                                  test_parameters=test_parameters,
                                                  max_budget=test_parameters["budget"])
 
-    if test_kind == "check_distribution":
-        return check_distribution_test(arguments=arguments,
-                                       runs=test_parameters["runs"],
-                                       features_per_run=test_parameters["features_per_run"])
-    elif test_kind == "check_connectedness":
-        return check_connectedness(arguments=arguments,
-                                   runs=test_parameters["runs"],
-                                   features_per_run=test_parameters["features_per_run"])
-    elif test_kind == "check_successfullness":
-        return check_successfullness(arguments=arguments,
+    if test_kind == "get_distribution":
+        return test_get_distribution(arguments=arguments,
                                      runs=test_parameters["runs"],
                                      features_per_run=test_parameters["features_per_run"])
-    elif test_kind == "check_miners":
-        return check_miners(arguments,
-                            runs_per_miner=test_parameters["runs"],
-                            features_per_run=test_parameters["features_per_run"],
-                            miners_settings_list=test_parameters["miners"])
     elif test_kind == "no_test":
         problem, miner = generate_problem_miner(arguments)
         return no_test(problem=problem,
