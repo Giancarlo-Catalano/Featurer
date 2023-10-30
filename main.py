@@ -129,18 +129,18 @@ def test_new_criterion():
                           "allow_overlaps": False}
 
     checkerboard_problem = {"which": "checkerboard",
-                            "rows": 4,
-                            "cols": 4}
+                            "rows": 3,
+                            "cols": 3}
 
     trapk = {"which": "trapk",
              "amount_of_groups": 3,
              "k": 5}
 
-    problem = artificial_problem
+    problem = checkerboard_problem
 
     problem = Problems.decode_problem(problem)
-    criterion = SHAPValue(sample_size = 600)
     sample_size = 2400
+    criterion = SHAPValue(sample_size = 60)
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 

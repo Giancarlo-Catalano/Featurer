@@ -64,10 +64,17 @@ class PrecomputedFeatureInformation:
         return utils.divide_arrays_safely(sum_of_fitnesses, self.count_for_each_feature)
 
     def compute_sd_for_each_feature(self) -> np.ndarray:
-        numerators = utils.weighted_sum_of_rows(self.feature_presence_matrix,
-                                                np.square(self.fitness_array - self.population_mean))
+        # NOTE: the rows of a feature presence matrix represent candidates, the columns represent features
 
-        return np.sqrt(utils.divide_arrays_safely(numerators, (self.count_for_each_feature - 1)))
+        fitness_of_candidate_minus_feature_mean = np.subtract.outer(self.fitness_array,
+                                                                    self.mean_fitness_for_each_feature)
+
+        fitness_of_candidate_minus_feature_mean *= self.feature_presence_matrix
+        fitness_of_candidate_minus_feature_mean = np.square(fitness_of_candidate_minus_feature_mean)
+
+        numerators = np.sum(fitness_of_candidate_minus_feature_mean, axis=0)
+
+        return np.sqrt(utils.divide_arrays_safely(numerators, self.count_for_each_feature))  # should this count-1
 
     def compute_marginal_probabilities(self) -> np.ndarray:
         sum_in_hot_encoding_order: np.ndarray[float] = np.sum(self.candidate_matrix, axis=0)
@@ -76,6 +83,7 @@ class PrecomputedFeatureInformation:
     @property
     def amount_of_features(self):
         return len(self.features)
+
     @property
     def count_for_each_feature(self) -> np.ndarray:
         if self.precomputed_count_for_each_feature is None:
@@ -106,7 +114,6 @@ class PrecomputedFeatureInformation:
             self.precomputed_marginal_probabilities = self.compute_marginal_probabilities()
         return self.precomputed_marginal_probabilities
 
-
     def __init__(self, population_precomputed: PrecomputedPopulationInformation,
                  features: Iterable[Feature]):
         self.precomputed_population_information = population_precomputed
@@ -121,23 +128,20 @@ class PrecomputedFeatureInformation:
         self.precomputed_sd_for_each_feature = None
         self.precomputed_marginal_probabilities = None
 
-
     @classmethod
     def get_dummy_pfi(cls, ppi: PrecomputedPopulationInformation):
         dummy_features = [Feature.empty_feature(ppi.search_space)]
         return cls(ppi, dummy_features)
-
 
     @classmethod
     def get_from_hot_encoded_features(cls, ppi: PrecomputedPopulationInformation, hot_encoded_features: np.ndarray):
         result_pfi = cls.get_dummy_pfi(ppi)
         amount_of_features, amount_of_columns = hot_encoded_features.shape
 
-        #note that result_pfi.features will be invalid
+        # note that result_pfi.features will be invalid
 
         result_pfi.feature_matrix = hot_encoded_features.T
         result_pfi.feature_presence_error_matrix = result_pfi.compute_feature_presence_error_matrix()
         result_pfi.feature_presence_matrix = result_pfi.compute_feature_presence_matrix()
         result_pfi.amount_of_features = amount_of_features
         return result_pfi
-
