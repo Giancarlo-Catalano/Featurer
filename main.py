@@ -5,9 +5,11 @@ from os import listdir
 from os.path import isfile, join
 
 from Version_E.BaselineAlgorithms.GA import GAMiner
+from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
+from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests
 
@@ -118,10 +120,51 @@ def test_new_miner():
     #     print(f"And the fitness is {fitness}\n")
 
 
+
+def test_new_criterion():
+    artificial_problem = {"which": "artificial",
+                          "size": 25,
+                          "size_of_partials": 5,
+                          "amount_of_features": 5,
+                          "allow_overlaps": False}
+
+    checkerboard_problem = {"which": "checkerboard",
+                            "rows": 4,
+                            "cols": 4}
+
+    trapk = {"which": "trapk",
+             "amount_of_groups": 3,
+             "k": 5}
+
+    problem = artificial_problem
+
+    problem = Problems.decode_problem(problem)
+    criterion = SHAPValue(sample_size = 600)
+    sample_size = 2400
+    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+    selector = FeatureSelector(training_ppi, criterion)
+
+    print("Generated the selector and the criterion successfully")
+    def feature_with_set_zero_at(index: int) -> Feature:
+        empty_feature = Feature.empty_feature(problem.search_space)
+        return empty_feature.with_value(var_index=index, val = 0)
+
+    features_to_assess = [feature_with_set_zero_at(index) for index in range(problem.search_space.dimensions)]
+
+    scores = selector.get_scores(features_to_assess)
+    for feature, score in zip(features_to_assess, scores):
+        print(f"{feature}\n{score}")
+        print(criterion.describe_feature(feature, training_ppi))
+
+
+
+
 if __name__ == '__main__':
-    execute_command_line()
+    #execute_command_line()
     # input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
     # aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 
     #test_new_miner()
+
+    test_new_criterion()

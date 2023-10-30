@@ -1,5 +1,5 @@
 import numpy as np
-import Version_E.PrecomputedPopulationInformation as PPI
+from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Feature import Feature
 from typing import Iterable, Optional
 from Version_E.HotEncoding import get_hot_encoded_feature
@@ -8,7 +8,7 @@ import utils
 
 class PrecomputedFeatureInformation:
     """this data structures stores matrices that are used around the other classes"""
-    precomputed_population_information: PPI
+    precomputed_population_information: PrecomputedPopulationInformation
     features: list[Feature]
     feature_matrix: np.ndarray
     feature_presence_error_matrix: np.ndarray
@@ -106,7 +106,8 @@ class PrecomputedFeatureInformation:
             self.precomputed_marginal_probabilities = self.compute_marginal_probabilities()
         return self.precomputed_marginal_probabilities
 
-    def __init__(self, population_precomputed: PPI,
+
+    def __init__(self, population_precomputed: PrecomputedPopulationInformation,
                  features: Iterable[Feature]):
         self.precomputed_population_information = population_precomputed
         self.features = list(features)
@@ -119,4 +120,24 @@ class PrecomputedFeatureInformation:
         self.precomputed_mean_fitness_for_each_feature = None
         self.precomputed_sd_for_each_feature = None
         self.precomputed_marginal_probabilities = None
+
+
+    @classmethod
+    def get_dummy_pfi(cls, ppi: PrecomputedPopulationInformation):
+        dummy_features = [Feature.empty_feature(ppi.search_space)]
+        return cls(ppi, dummy_features)
+
+
+    @classmethod
+    def get_from_hot_encoded_features(cls, ppi: PrecomputedPopulationInformation, hot_encoded_features: np.ndarray):
+        result_pfi = cls.get_dummy_pfi(ppi)
+        amount_of_features, amount_of_columns = hot_encoded_features.shape
+
+        #note that result_pfi.features will be invalid
+
+        result_pfi.feature_matrix = hot_encoded_features.T
+        result_pfi.feature_presence_error_matrix = result_pfi.compute_feature_presence_error_matrix()
+        result_pfi.feature_presence_matrix = result_pfi.compute_feature_presence_matrix()
+        result_pfi.amount_of_features = amount_of_features
+        return result_pfi
 

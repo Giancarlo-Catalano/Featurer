@@ -1,5 +1,4 @@
 import random
-from _typeshed import SupportsNext
 from typing import Callable
 import numpy as np
 import SearchSpace
@@ -30,7 +29,7 @@ class GASampler:
         return [(candidate, self.fitness_function(candidate)) for candidate in population]
 
 
-    def generate_selector(self, evaluated_population: EvaluatedPopulation) -> SupportsNext[Candidate]:
+    def generate_selector(self, evaluated_population: EvaluatedPopulation): #  -> SupportsNext[Candidate]:
         population, scores = utils.unzip(evaluated_population)
         cumulative_weights = np.cumsum(scores)
 
@@ -78,7 +77,7 @@ class GASampler:
 
     def get_new_generation(self, population: Population) -> Population:
         evaluated_population = self.with_scores(population)
-        selector: SupportsNext[Candidate] = self.generate_selector(evaluated_population)
+        selector= self.generate_selector(evaluated_population)
         def make_new_child():
             return self.mutated(self.crossover(next(selector), next(selector)))
 

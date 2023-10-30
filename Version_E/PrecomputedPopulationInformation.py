@@ -1,3 +1,5 @@
+from copy import copy
+
 import SearchSpace
 import numpy as np
 from Version_E import HotEncoding
@@ -32,6 +34,17 @@ class PrecomputedPopulationInformation:
         population = [problem.get_random_candidate_solution() for _ in range(amount_of_samples)]
         fitnesses = [problem.score_of_candidate(candidate) for candidate in population]
         return cls(search_space, population, fitnesses)
+
+
+    def get_reduced_version(self, new_sample_size: int):
+        # perhaps this should be randomised?
+        result = copy(self)
+        if self.sample_size <= new_sample_size:
+            return result  #no cutting required
+        result.sample_size = new_sample_size
+        result.candidate_matrix = result.candidate_matrix[:new_sample_size]
+        result.fitness_array = result.fitness_array[:new_sample_size]
+        return result
 
     def count_for_each_var_val(self) -> list[list[float]]:
         sum_in_hot_encoding_order: list[float] = np.sum(self.candidate_matrix, axis=0).tolist()
