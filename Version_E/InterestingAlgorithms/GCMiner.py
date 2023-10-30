@@ -111,6 +111,7 @@ class GCMiner(FeatureMiner):
         while should_continue():
             iteration += 1
             # print(f"In iteration {iteration}")
+            population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
 

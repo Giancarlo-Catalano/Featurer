@@ -11,22 +11,25 @@ from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.MeasurableCriterion.CriterionUtilities import Balance
 from Version_E.MeasurableCriterion.Explainability import Explainability
+from Version_E.MeasurableCriterion.GoodFitness import ConsistentFitness, HighFitness
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import Miners
 
 
-def get_reference_features_for_simple_sampling(fitness_criterion: MeasurableCriterion,
-                                               problem: CombinatorialProblem,
+def get_reference_features_for_simple_sampling(problem: CombinatorialProblem,
                                                termination_predicate: Callable,
                                                ppi: PrecomputedPopulationInformation,
                                                reference_miner_parameters: dict,
                                                amount_to_return: int,
                                                importance_of_explainability: float) -> list[Feature]:
     search_criterion = Balance([
-        Explainability(problem),
-        fitness_criterion],
-        weights=[importance_of_explainability, 1 - importance_of_explainability])
+                            Explainability(problem),
+                            Balance([
+                                HighFitness(),
+                                ConsistentFitness()],
+                                weights = [1, 1])],
+                            weights=[importance_of_explainability, 1 - importance_of_explainability])
 
     selector = FeatureSelector(ppi, search_criterion)
 

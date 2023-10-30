@@ -93,6 +93,7 @@ class GASampler:
         return population
 
 
+
     def get_evolved_individuals(self, amount_requested: int) -> Population:
         result = []
         while len(result) < amount_requested:

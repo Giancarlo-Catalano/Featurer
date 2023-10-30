@@ -129,18 +129,18 @@ def test_new_criterion():
                           "allow_overlaps": False}
 
     checkerboard_problem = {"which": "checkerboard",
-                            "rows": 3,
-                            "cols": 3}
+                            "rows": 4,
+                            "cols": 4}
 
     trapk = {"which": "trapk",
              "amount_of_groups": 3,
              "k": 5}
 
-    problem = checkerboard_problem
+    problem = artificial_problem
 
     problem = Problems.decode_problem(problem)
     sample_size = 2400
-    criterion = SHAPValue(sample_size = 60)
+    criterion = SHAPValue(sample_size = 600)
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
@@ -160,11 +160,11 @@ def test_new_criterion():
 
 
 if __name__ == '__main__':
-    #execute_command_line()
+    execute_command_line()
     # input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
     # aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 
-    #test_new_miner()
+    # test_new_miner()
 
-    test_new_criterion()
+    #test_new_criterion()

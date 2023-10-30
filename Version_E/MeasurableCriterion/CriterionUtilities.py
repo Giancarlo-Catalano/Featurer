@@ -32,11 +32,12 @@ class Extreme(MeasurableCriterion):
         self.criterion = criterion
 
     def __repr__(self):
-        return "Extreme"
+        return f"Extreme({self.criterion})"
 
     def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         untreated = self.criterion.get_score_array(pfi)
-        return np.abs(2*untreated - 1)
+        result =  np.abs(2*untreated - 1)
+        return result
 
     def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
         return self.criterion.describe_feature(feature, ppi)

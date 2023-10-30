@@ -1,0 +1,34 @@
+{
+
+  "problem": {
+    "which": "checkerboard",
+    "rows": 3,
+    "cols": 3
+  },
+  "reference_miner": {
+    "which": "bidirectional",
+    "population_size": 60,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  "sampling_miner": {
+    "which": "bidirectional",
+    "population_size": 60,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  "ga_sampler": {
+    "population_size": 60,
+    "generations": 30
+  },
+  "test": {
+    "which": "compare_samplers",
+    "sample_size": 2400,
+    "features_per_run": 100,
+    "budget": 10000,
+    "runs": 2,
+    "amount_of_reference_features": 60,
+    "amount_of_sampled_candidates": 60,
+    "importance_of_explainability": 0.5
+  }
+}

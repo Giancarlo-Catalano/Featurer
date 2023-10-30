@@ -14,6 +14,8 @@ from BenchmarkProblems.GraphColouring import GraphColouringProblem
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
     run_until_found_features, FeatureSelector
+from Version_E.MeasurableCriterion.CriterionUtilities import Balance, Extreme
+from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Sampling.GASampler import GASampler
 from Version_E.Sampling.RegurgitationSampler import get_reference_features_for_regurgitation_sampling, \
@@ -248,34 +250,32 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
     return {"results_for_each_miner": results}
 
 
-
 def test_compare_samplers(problem_parameters: dict,
-                          fitness_criterion_parameters: dict,
                           reference_miner_parameters: dict,
-                          sampling_miner_settings: dict,
-                          ga_sampler_settings: dict,
+                          sampling_miner_parameters: dict,
+                          ga_sampler_parameters: dict,
                           test_parameters: dict,
                           max_budget: int) -> TestResults:
     problem: CombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
     termination_predicate = run_with_limited_budget(max_budget)
     amount_of_reference_features = test_parameters["amount_of_reference_features"]
     amount_of_sampled_candidates = test_parameters["amount_of_sampled_candidates"]
-    fitness_criterion = Criteria.decode_criterion(fitness_criterion_parameters, problem)
+    good_fitness_criterion = Balance([HighFitness(), ConsistentFitness()], weights = [1, 1])
     importance_of_explainability = test_parameters["importance_of_explainability"]
 
-    termination_predicate = run_with_limited_budget(10000)
+    termination_predicate = run_with_limited_budget(12000)
     sample_size = 2400
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
 
     def sample_using_simple_sampler() -> list[SearchSpace.Candidate]:
-        reference_features_for_simple_sampler = get_reference_features_for_simple_sampling(fitness_criterion=fitness_criterion,
-                                                                                           problem = problem,
-                                                                                           termination_predicate=termination_predicate,
-                                                                                           ppi = training_ppi,
-                                                                                           reference_miner_parameters = reference_miner_parameters,
-                                                                                           amount_to_return=amount_of_reference_features,
-                                                                                           importance_of_explainability=importance_of_explainability)
-        temp_selector = FeatureSelector(training_ppi, fitness_criterion)
+        reference_features_for_simple_sampler = get_reference_features_for_simple_sampling(
+            problem=problem,
+            termination_predicate=termination_predicate,
+            ppi=training_ppi,
+            reference_miner_parameters=reference_miner_parameters,
+            amount_to_return=amount_of_reference_features,
+            importance_of_explainability=importance_of_explainability)
+        temp_selector = FeatureSelector(training_ppi, good_fitness_criterion)
         scores_of_reference_features_for_simple_sampler = temp_selector.get_scores(
             reference_features_for_simple_sampler)
         simple_sampler = SimpleSampler(problem.search_space,
@@ -283,13 +283,10 @@ def test_compare_samplers(problem_parameters: dict,
                                                 scores_of_reference_features_for_simple_sampler)))
 
         return [simple_sampler.sample_candidate() for _ in
-                                                  range(amount_of_sampled_candidates)]
-
+                range(amount_of_sampled_candidates)]
 
     def sample_using_regurgitation() -> list[SearchSpace.Candidate]:
-
         reference_features_for_regurgitation_sampler = get_reference_features_for_regurgitation_sampling(
-            fitness_criterion=fitness_criterion,
             problem=problem,
             termination_predicate=termination_predicate,
             ppi=training_ppi,
@@ -297,22 +294,18 @@ def test_compare_samplers(problem_parameters: dict,
             amount_to_return=amount_of_reference_features,
             importance_of_explainability=importance_of_explainability)
 
-
-
         return regurgitation_sample(reference_features=reference_features_for_regurgitation_sampler,
-                                                                    fitness_criterion=fitness_criterion,
-                                                                    termination_predicate=termination_predicate,  # might change in the future, could be faster!
-                                                                    original_ppi=training_ppi,
-                                                                    sampling_miner_parameters=sampling_miner_settings,
-                                                                    amount_to_return=amount_of_sampled_candidates)
-
+                                    termination_predicate=termination_predicate,
+                                    # might change in the future, could be faster!
+                                    original_ppi=training_ppi,
+                                    sampling_miner_parameters=sampling_miner_parameters,
+                                    amount_to_return=amount_of_sampled_candidates)
 
     def sample_using_ga() -> list[SearchSpace.Candidate]:
-
         ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
-                               search_space= problem.search_space,
-                               population_size= ga_sampler_settings["population_size"],
-                               generations= ga_sampler_settings["generations"])
+                               search_space=problem.search_space,
+                               population_size=ga_sampler_parameters["population_size"],
+                               generations=ga_sampler_parameters["generations"])
 
         return ga_sampler.get_evolved_individuals(amount_of_sampled_candidates)
 
@@ -324,13 +317,10 @@ def test_compare_samplers(problem_parameters: dict,
         return [problem.score_of_candidate(candidate) for candidate in samples]
 
     return {"from_simple": fitnesses_from(sampled_from_simple),
-            "from_regurgitation": fitnesses_from(sampled_from_regurgitation),  # perhaps in the future there will be a normal GA?
+            "from_regurgitation": fitnesses_from(sampled_from_regurgitation),
+            # perhaps in the future there will be a normal GA?
             "from_ga": fitnesses_from(sampled_using_ga)
             }
-
-
-
-
 
 
 def apply_test_once(arguments: Settings) -> TestResults:
@@ -358,6 +348,13 @@ def apply_test_once(arguments: Settings) -> TestResults:
                                                      miner_settings_list=miners,
                                                      test_parameters=test_parameters,
                                                      max_budget=test_parameters["budget"])
+    elif test_kind == "compare_samplers":
+        return test_compare_samplers(problem_parameters=arguments["problem"],
+                                     reference_miner_parameters=arguments["reference_miner"],
+                                     sampling_miner_parameters=arguments["sampling_miner"],
+                                     ga_sampler_parameters=arguments["ga_sampler"],
+                                     test_parameters=test_parameters,
+                                     max_budget=test_parameters["budget"])
 
     if test_kind == "get_distribution":
         return test_get_distribution(arguments=arguments,
