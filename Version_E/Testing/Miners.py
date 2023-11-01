@@ -57,11 +57,10 @@ def generate_miner_name(miner_json: dict) -> str:
         pop_size = miner_json["population_size"]
         uses_archive = "A" if miner_json["uses_archive"] else "nA"
         return f"{miner_name}_{stochastic}_{pop_size}_{uses_archive}"
-    elif miner_name in {"hill_climber", "random"}:
-        pop_size = miner_json["population_size"]
-        return f"{miner_name}_{pop_size}"
     elif miner_name == "ga":
         pop_size = miner_json["population_size"]
         return f"{miner_name}_{pop_size}"
+    elif miner_name in {"hill_climber", "random"}:
+        return f"{miner_name}"
 
 

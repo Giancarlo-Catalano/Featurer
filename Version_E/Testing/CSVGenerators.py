@@ -4,6 +4,46 @@ import utils
 from Version_E.Testing.Miners import generate_miner_name
 
 
+def merge_results_by_keys(results: list[dict]) -> dict:
+    def get_aggregated_by_key(key) -> list[int]:
+        return [item for single_result in results for item in single_result.setdefault(key, [])]
+
+    all_keys = {key for single_result in results for key in single_result.keys()}
+
+    return {key: get_aggregated_by_key(key) for key in all_keys}
+
+
+
+def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
+    MinerFoundAndTime = (str, int, float)
+
+    def parse_miner_run_item(miner_run: dict) -> MinerFoundAndTime:
+        miner_str = generate_miner_name(miner_run["miner"])
+        amount_of_found = miner_run["found"]
+        runtime = miner_run["time"]
+        return miner_str, amount_of_found, runtime
+
+    def parse_contents_of_file(file_name: str) -> list[MinerFoundAndTime]:
+        with open(file_name, "r") as file:
+            contents_of_file = json.load(file)
+            miner_runs: list[dict] = [miner_run
+                                      for program_run in contents_of_file["result"]
+                                      for miner_run in program_run["results_for_each_miner"]]
+            return [parse_miner_run_item(miner_run) for miner_run in miner_runs]
+
+    rows = utils.concat_lists([parse_contents_of_file(single_file) for single_file in file_names])
+
+    with open(output_name, "w") as output_file:
+        output_file.write(f"Miner,FoundFeatures,RunTime\n")
+        for miner, found, time in rows:
+            output_file.write(f"{miner},{found},{time}\n")
+
+
+    print(f"{len(rows)} datapoints were written onto the file")
+
+
+
+
 def make_csv_for_successes(input_name, output_name: str):
     with open(input_name, "r") as input_file:
         data = json.load(input_file)
@@ -70,13 +110,7 @@ def aggregate_algorithm_jsons_into_csv(json_file_list: list[str], output_file_na
                        for item in miner_runs}
             return as_dict
 
-    def merge_results_by_keys(results: list[dict]) -> dict:
-        def get_aggregated_by_key(key) -> list[int]:
-            return [item for single_result in results for item in single_result.setdefault(key, [])]
 
-        all_keys = {key for single_result in results for key in single_result.keys()}
-
-        return {key: get_aggregated_by_key(key) for key in all_keys}
 
     miner_result_dicts: list[dict] = [get_miner_result_dict_from_file(input_file) for input_file in json_file_list]
     aggregated = merge_results_by_keys(miner_result_dicts)

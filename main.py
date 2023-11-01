@@ -11,7 +11,7 @@ from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
 from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests
+from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests, CSVGenerators
 
 
 def execute_command_line():
@@ -25,14 +25,14 @@ def execute_command_line():
         Tests.run_test(settings)
 
 
-def aggregate_files(directory: str, output_name: str, for_time):
+def aggregate_files(directory: str, output_name: str):
     # get files in directory, with absolute path
     files_in_directory = [join(directory, file) for file in listdir(directory)]
     # remove non-files
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     # aggregate
-    #aggregate_algorithm_jsons_into_csv(files_in_directory, output_name, for_time=for_time)
+    CSVGenerators.make_csv_for_limited_budget_run(files_in_directory, output_name)
 
 
 def test_new_miner():
@@ -159,10 +159,11 @@ def test_new_criterion():
 
 
 
+
 if __name__ == '__main__':
     execute_command_line()
-    # input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_7"
-    # aggregate_files(input_directory, "all_runs_times_smaller_problem.csv", for_time=True)
+    #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_3"
+    #aggregate_files(input_directory, "run_3_rgb.csv")
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 
     # test_new_miner()
