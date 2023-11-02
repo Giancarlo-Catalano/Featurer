@@ -14,7 +14,7 @@ from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_s
 class GAMiner(FeatureMiner):
     population_size: int
 
-    tournament_size = 30
+    tournament_size = 2
     chance_of_mutation = 0.05
 
     Population = list[Feature]

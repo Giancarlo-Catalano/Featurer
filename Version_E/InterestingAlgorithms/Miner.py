@@ -46,17 +46,18 @@ class FeatureSelector:
 
     def select_features_stochastically(self, features_with_scores: list[(Feature, Score)],
                                        amount_to_return: int) -> list[Feature]:
-        """
-        This function selects features using tournament selection, returning a distinct set of features
-        :param features_with_scores: layer to select from
-        :param amount_to_return: Res Ipsa Loquitur
-        :return:
-        """
-        features, weights = utils.unzip(features_with_scores)
-        random.seed(int(time.time()))  # to prevent predictable randomness
-        selected = random.choices(features, weights=weights, k=amount_to_return)
+        def fitness_proportionate_selection() -> list[Feature]:
+            features, weights = utils.unzip(features_with_scores)
+            return random.choices(features, weights=weights, k=amount_to_return)
 
-        return list(selected)
+        def tournament_selection() -> list[Feature]:
+            def single_selection() -> Feature:
+                tournament_size = 2
+                tournament = random.choices(features_with_scores, k=tournament_size)
+                return max(tournament, key=utils.second)[0]
+            return [single_selection() for _ in range(amount_to_return)]
+
+        return tournament_selection()
 
     def select_features_heuristically(self, features_with_scores: list[(Feature, Score)], amount_to_return: int) -> \
     list[Feature]:
