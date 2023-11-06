@@ -43,8 +43,8 @@ def test_new_miner():
                           "allow_overlaps": False}
 
     checkerboard_problem = {"which": "checkerboard",
-                            "rows": 8,
-                            "cols": 8}
+                            "rows": 4,
+                            "cols": 4}
 
     trapk = {"which": "trapk",
              "amount_of_groups": 3,
@@ -58,7 +58,7 @@ def test_new_miner():
                      {"which": "consistent_fitness"},
                      {"which": "explainability"}
                  ],
-                 "weights": [3, 1, 1]}
+                 "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -162,8 +162,8 @@ def test_new_criterion():
 
 if __name__ == '__main__':
     #execute_command_line()
-    input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_5"
-    #input_directory = "C:\\Users\\gac8\\PycharmProjects\\Featurer_Semester\\Version_E\\Testing\\AggregationTests"
+    #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_5"
+    input_directory = "C:\\Users\\gac8\\PycharmProjects\\Featurer_Semester\\Version_E\\Testing\\AggregationTests"
     aggregate_files(input_directory, "sampler_comparison.csv")
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 

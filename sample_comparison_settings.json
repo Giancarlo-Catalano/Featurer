@@ -29,6 +29,6 @@
     "runs": 2,
     "amount_of_reference_features": 60,
     "amount_of_sampled_candidates": 60,
-    "importance_of_explainability": 0.5
+    "importance_of_explainability": [0, 0.1, 0.2, 1]
   }
 }

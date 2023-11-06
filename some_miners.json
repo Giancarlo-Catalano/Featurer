@@ -1,0 +1,14 @@
+[
+  {
+    "which": "constructive",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": true
+  },
+  {
+    "which": "destructive",
+    "population_size": 50,
+    "uses_archive": true,
+    "stochastic": true
+  }
+]

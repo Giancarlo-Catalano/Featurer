@@ -1,3 +1,4 @@
+import csv
 import json
 from typing import Iterable
 
@@ -44,39 +45,20 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
 
 
 def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
-    SamplerIOEAndFitness = (str, float, float)
-
-    ga_name = "GA"
-    simple_sampler_name = "SimpleSampler"
-    regurgitation_name = "RegurgitationSampler"
-
-
-
-
-
-    def parse_single_run(run: dict, importance_of_explainability: float) -> list[SamplerIOEAndFitness]:
-        def wrap_fitnesses(fitness_collection: Iterable[float], sampler_name: str) -> list[
-            SamplerIOEAndFitness]:
-            return [(sampler_name, importance_of_explainability, fitness_item) for fitness_item in fitness_collection]
-        fitnesses_from_ss = run["from_simple"]
-        fitnesses_from_re = run["from_regurgitation"]
-        fitnesses_from_ga = run["from_ga"]
-        return wrap_fitnesses(fitnesses_from_ss, simple_sampler_name)+wrap_fitnesses(fitnesses_from_ga, ga_name) + wrap_fitnesses(fitnesses_from_re, regurgitation_name)
+    with open(output_name, "w", newline="", encoding="utf-8") as output_file:
+        csv_writer = csv.writer(output_file, delimiter=",")
+        csv_writer.writerow(["sampler", "ioe", "fitness"])
+        for input_file in file_names:
+            with open(input_file, "r") as input_file:
+                data = json.load(input_file)
+                runs = utils.concat_lists([run["for_each_ioe"] for run in data["result"]])
+                rows = [(run["sampler"], run["ioe"], fitness)
+                        for run in runs
+                        for fitness in run["fitnesses"]]
+                csv_writer.writerows(rows)
 
 
-    def parse_single_file(file_name) -> list[SamplerIOEAndFitness]:
-        with open(file_name, "r") as file:
-            data = json.load(file)
-            importance_of_explainability = data["parameters"]["test"]["importance_of_explainability"]
-            runs = data["result"]
-            return utils.concat_lists([parse_single_run(run, importance_of_explainability) for run in runs])
 
-    final_data = utils.concat_lists([parse_single_file(file_name) for file_name in file_names])
-
-    with open(output_name, "w") as file:
-        file.write("Sampler,ioe,fitness\n")
-        for sampler, ioe, fitness in final_data:
-            file.write(f"{sampler},{ioe},{fitness}\n")
 
 
 

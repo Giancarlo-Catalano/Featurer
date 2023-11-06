@@ -261,13 +261,14 @@ def test_compare_samplers(problem_parameters: dict,
     amount_of_reference_features = test_parameters["amount_of_reference_features"]
     amount_of_sampled_candidates = test_parameters["amount_of_sampled_candidates"]
     good_fitness_criterion = Balance([HighFitness(), ConsistentFitness()], weights = [1, 1])
-    importance_of_explainability = test_parameters["importance_of_explainability"]
+    importance_of_explainability_list = test_parameters["importance_of_explainability"]
 
     termination_predicate = run_with_limited_budget(12000)
     sample_size = 2400
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
 
-    def sample_using_simple_sampler() -> list[SearchSpace.Candidate]:
+
+    def sample_using_simple_sampler(importance_of_explainability: float) -> list[SearchSpace.Candidate]:
         reference_features_for_simple_sampler = get_reference_features_for_simple_sampling(
             problem=problem,
             termination_predicate=termination_predicate,
@@ -285,7 +286,7 @@ def test_compare_samplers(problem_parameters: dict,
         return [simple_sampler.sample_candidate() for _ in
                 range(amount_of_sampled_candidates)]
 
-    def sample_using_regurgitation() -> list[SearchSpace.Candidate]:
+    def sample_using_regurgitation(importance_of_explainability: float) -> list[SearchSpace.Candidate]:
         reference_features_for_regurgitation_sampler = get_reference_features_for_regurgitation_sampling(
             problem=problem,
             termination_predicate=termination_predicate,
@@ -309,18 +310,28 @@ def test_compare_samplers(problem_parameters: dict,
 
         return ga_sampler.get_evolved_individuals(amount_of_sampled_candidates)
 
-    sampled_from_simple = sample_using_simple_sampler()
-    sampled_from_regurgitation = sample_using_regurgitation()
+    def get_result_item(samples: Iterable[SearchSpace.Candidate],
+                        sampler_name: str,
+                        ioe: float) -> dict:
+        return {"sampler": sampler_name,
+                "ioe": ioe,
+                "fitnesses": [problem.score_of_candidate(candidate) for candidate in samples]}
+
+
+    results = []
+    for ioe in importance_of_explainability_list:
+        print(f"single run for {ioe = }")
+        sampled_from_simple = sample_using_simple_sampler(ioe)
+        sampled_from_regurgitation = sample_using_regurgitation(ioe)
+
+        results.append(get_result_item(sampled_from_simple, "SimpleSampler", ioe))
+        results.append(get_result_item(sampled_from_regurgitation, "RegurgitationSampler", ioe))
+
     sampled_using_ga = sample_using_ga()
+    results.append(get_result_item(sampled_using_ga, "GA", 0))
 
-    def fitnesses_from(samples: Iterable[SearchSpace.Candidate]) -> list[float]:
-        return [problem.score_of_candidate(candidate) for candidate in samples]
 
-    return {"from_simple": fitnesses_from(sampled_from_simple),
-            "from_regurgitation": fitnesses_from(sampled_from_regurgitation),
-            # perhaps in the future there will be a normal GA?
-            "from_ga": fitnesses_from(sampled_using_ga)
-            }
+    return {"for_each_ioe": results}
 
 
 def apply_test_once(arguments: Settings) -> TestResults:
