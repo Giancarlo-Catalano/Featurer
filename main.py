@@ -161,10 +161,10 @@ def test_new_criterion():
 
 
 if __name__ == '__main__':
-    #execute_command_line()
+    execute_command_line()
     #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_5"
-    input_directory = "C:\\Users\\gac8\\PycharmProjects\\Featurer_Semester\\Version_E\\Testing\\AggregationTests"
-    aggregate_files(input_directory, "sampler_comparison.csv")
+    #input_directory = "C:\\Users\\gac8\\PycharmProjects\\Featurer_Semester\\Version_E\\Testing\\AggregationTests"
+    #aggregate_files(input_directory, "sampler_comparison.csv")
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 
     # test_new_miner()

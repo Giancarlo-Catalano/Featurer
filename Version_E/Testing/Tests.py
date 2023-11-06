@@ -320,7 +320,6 @@ def test_compare_samplers(problem_parameters: dict,
 
     results = []
     for ioe in importance_of_explainability_list:
-        print(f"single run for {ioe = }")
         sampled_from_simple = sample_using_simple_sampler(ioe)
         sampled_from_regurgitation = sample_using_regurgitation(ioe)
 
