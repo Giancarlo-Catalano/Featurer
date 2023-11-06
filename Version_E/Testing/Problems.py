@@ -5,7 +5,7 @@ from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 from BenchmarkProblems.BinVal import BinValProblem
 from BenchmarkProblems.CheckerBoard import CheckerBoardProblem
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem, TestableCombinatorialProblem
-from BenchmarkProblems.GraphColouring import GraphColouringProblem
+from BenchmarkProblems.GraphColouring import GraphColouringProblem, InsularGraphColouringProblem
 from BenchmarkProblems.Knapsack import KnapsackProblem
 from BenchmarkProblems.OneMax import OneMaxProblem
 from BenchmarkProblems.TrapK import TrapK
@@ -38,6 +38,8 @@ def decode_problem(properties: dict) -> CombinatorialProblem:
         return GraphColouringProblem(amount_of_colours=properties["amount_of_colours"],
                                      amount_of_nodes=random.randrange(10, 30),
                                      chance_of_connection=properties["chance_of_connection"])
+    elif problem_string == "insular":
+        return InsularGraphColouringProblem(amount_of_islets = properties["amount_of_islets"])
     else:
         raise Exception("The problem was not recognised")
 

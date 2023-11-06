@@ -20,3 +20,31 @@ class Explainability(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Complexity = {-given_score:.2f}"
+
+
+class TrivialComplexity(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "(Trivial) Complexity"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return np.ndarray([feature.variable_mask.count() for feature in pfi.features])
+
+    def describe_score(self, given_score) -> str:
+        return f"Trivial complexity = {given_score}"
+
+
+class TrivialExplainability(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "(Trivial) Explainability"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return np.ndarray([-feature.variable_mask.count() for feature in pfi.features])
+
+    def describe_score(self, given_score) -> str:
+        return f"Trivial explainability = {given_score}"

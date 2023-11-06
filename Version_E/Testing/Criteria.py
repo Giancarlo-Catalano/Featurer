@@ -1,6 +1,6 @@
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance, Extreme
-from Version_E.MeasurableCriterion.Explainability import Explainability
+from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
@@ -12,7 +12,7 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
     criterion_string = properties["which"]
 
     if criterion_string == "explainability":
-        return Explainability(problem)
+        return TrivialExplainability()
     elif criterion_string == "high_fitness":
         return HighFitness()
     elif criterion_string == "low_fitness":
