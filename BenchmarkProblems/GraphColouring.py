@@ -147,15 +147,25 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
 
     def is_ideal_feature(self, feature: Feature) -> bool:
         """ a feature is ideal if it's all the nodes of a single islet"""
-        present_nodes = [node for node, is_used in enumerate(feature.variable_mask) if is_used]
 
-        # handle the edge case of no variables being set
-        if len(present_nodes) == 0:
-            return False
 
-        islet = self.get_islet_of_node(present_nodes[0])
+        def is_all_the_nodes_of_a_single_islet():
+            present_nodes = [node for node, is_used in enumerate(feature.variable_mask) if is_used]
 
-        if len(islet) != len(present_nodes):
-            return False  # needs to contain all of the nodes in the islet
+            # handle the edge case of no variables being set
+            if len(present_nodes) == 0:
+                return False
 
-        return all(node in islet for node in present_nodes)
+            islet = self.get_islet_of_node(present_nodes[0])
+
+            if len(islet) != len(present_nodes):
+                return False  # needs to contain all of the nodes in the islet
+
+            return all(node in islet for node in present_nodes)
+
+        def all_nodes_have_different_colours():
+            present_colours = [val for var, val in feature.to_var_val_pairs()]
+            culled_present_colours = set(present_colours)
+            return len(culled_present_colours) == len(present_colours)
+
+        return is_all_the_nodes_of_a_single_islet() and all_nodes_have_different_colours()

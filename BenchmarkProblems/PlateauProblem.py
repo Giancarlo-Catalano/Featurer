@@ -4,11 +4,11 @@ from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem
 from Version_E.Feature import Feature
 
 
-class TrapK(TestableCombinatorialProblem):
+class PlateauProblem(TestableCombinatorialProblem):
     amount_of_groups: int
     k = 3
 
-    def __init__(self, amount_of_groups):
+    def __init__(self, amount_of_groups: int):
         self.amount_of_groups = amount_of_groups
         amount_of_bits = self.k * self.amount_of_groups
         super().__init__(SearchSpace.SearchSpace([2] * amount_of_bits))
