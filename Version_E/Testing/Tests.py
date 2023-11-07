@@ -10,7 +10,7 @@ import numpy as np
 import SearchSpace
 import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
-from BenchmarkProblems.GraphColouring import GraphColouringProblem
+from BenchmarkProblems.GraphColouring import GraphColouringProblem, InsularGraphColouringProblem
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
     run_until_found_features, FeatureSelector
@@ -135,16 +135,26 @@ def test_run_with_limited_budget(problem_parameters: dict,
     miners = get_miners_from_parameters(termination_predicate, problem,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
+
+    def count_results(found_features: Iterable[Feature]) -> (int, int):
+        if isinstance(problem, InsularGraphColouringProblem):
+            amount_of_found = problem.count_how_many_islets_covered(found_features)
+            amount_of_total = problem.amount_of_islets
+            return amount_of_found, amount_of_total
+        else:
+            ideals = problem.get_ideal_features()
+            amount_of_found_ideals = len([ideal for ideal in ideals if ideal in found_features])
+            return amount_of_found_ideals, len(ideals)
+
+
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         # print(f"Testing {miner}")
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
-        mined_features = utils.remove_duplicates(mined_features, hashable=True)
-        ideals = problem.get_ideal_features()
-        amount_of_found_ideals = len([mined for mined in mined_features if mined in ideals])
+        amount_of_found_features, total_possible = count_results(mined_features)
         miner.feature_selector.reset_budget()
         return {"miner": miner_parameters,
-                "found": amount_of_found_ideals,
-                "total": len(ideals),
+                "found": amount_of_found_features,
+                "total": total_possible,
                 "time": execution_time}
 
     return {"results_for_each_miner": [test_a_single_miner(miner, miner_parameters)

@@ -116,6 +116,10 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
     def repr_of_node(self, node_number):
         return f"#{node_number}"
 
+    @property
+    def amount_of_islets(self):
+        return len(self.islets)
+
     def __repr__(self):
         return f"InsularGraphColouring(islets={len(self.islets)}, colours = {self.amount_of_colours})"
 
@@ -145,7 +149,7 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
 
         raise Exception(f"Islet could not be found for node {node}")
 
-    def is_ideal_feature(self, feature: Feature) -> bool:
+    def is_islet_feature(self, feature: Feature) -> bool:
         """ a feature is ideal if it's all the nodes of a single islet"""
 
 
@@ -169,3 +173,21 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
             return len(culled_present_colours) == len(present_colours)
 
         return is_all_the_nodes_of_a_single_islet() and all_nodes_have_different_colours()
+
+
+    def count_how_many_islets_covered(self, features: Iterable[Feature]) -> int:
+        def feature_to_islet(feature: Feature):
+            # assumes at least one value set
+
+            #first we find a used var in the feature
+            first_set_var = 0
+            for index, is_set in enumerate(feature.variable_mask):
+                if is_set:
+                    first_set_var = index
+                    break
+            return self.get_islet_of_node(first_set_var)
+
+        covered_islets = {feature_to_islet(feature) for feature in features if self.is_islet_feature(feature)}
+        amount_of_covered_islets = len(covered_islets)
+
+        return amount_of_covered_islets
