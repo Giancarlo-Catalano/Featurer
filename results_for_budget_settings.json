@@ -1,10 +1,8 @@
 {
   "problem": {
-    "which": "artificial",
-    "size": 25,
-    "size_of_partials": 5,
-    "amount_of_features": 5,
-    "allow_overlaps": false
+    "which": "trapk",
+    "k": 5,
+    "amount_of_groups": 5
   },
   "criterion": {
     "which": "balance",
