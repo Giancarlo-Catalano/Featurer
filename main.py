@@ -32,7 +32,7 @@ def aggregate_files(directory: str, output_name: str):
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     # aggregate
-    CSVGenerators.make_csv_for_sampling_comparison(files_in_directory, output_name)
+    CSVGenerators.make_csv_for_limited_budget_run(files_in_directory, output_name)
 
 
 def test_new_miner():
@@ -162,9 +162,9 @@ def test_new_criterion():
 
 if __name__ == '__main__':
     execute_command_line()
-    #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\run_5"
+    #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\plateau10"
     #input_directory = "C:\\Users\\gac8\\PycharmProjects\\Featurer_Semester\\Version_E\\Testing\\AggregationTests"
-    #aggregate_files(input_directory, "sampler_comparison.csv")
+    #aggregate_files(input_directory, "plateau10_rgb.csv")
     # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
 
     # test_new_miner()

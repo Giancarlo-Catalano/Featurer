@@ -142,10 +142,10 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
         return "\n".join([f"{self.repr_of_node(var)} is {self.repr_of_colour(val)}"
                           for var, val in feature.var_vals])
 
-    def get_islet_of_node(self, node: Node) -> Islet:
-        for islet in self.islets:
+    def get_islet_of_node(self, node: Node) -> (int, Islet):
+        for index, islet in enumerate(self.islets):
             if node in islet:
-                return islet
+                return index, islet
 
         raise Exception(f"Islet could not be found for node {node}")
 
@@ -160,7 +160,7 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
             if len(present_nodes) == 0:
                 return False
 
-            islet = self.get_islet_of_node(present_nodes[0])
+            _, islet = self.get_islet_of_node(present_nodes[0])
 
             if len(islet) != len(present_nodes):
                 return False  # needs to contain all of the nodes in the islet
@@ -176,7 +176,7 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
 
 
     def count_how_many_islets_covered(self, features: Iterable[Feature]) -> int:
-        def feature_to_islet(feature: Feature):
+        def feature_to_islet_index(feature: Feature):
             # assumes at least one value set
 
             #first we find a used var in the feature
@@ -185,9 +185,10 @@ class InsularGraphColouringProblem(BenchmarkProblems.CombinatorialProblem.Combin
                 if is_set:
                     first_set_var = index
                     break
-            return self.get_islet_of_node(first_set_var)
+            index, islet = self.get_islet_of_node(first_set_var)
+            return index
 
-        covered_islets = {feature_to_islet(feature) for feature in features if self.is_islet_feature(feature)}
+        covered_islets = {feature_to_islet_index(feature) for feature in features if self.is_islet_feature(feature)}
         amount_of_covered_islets = len(covered_islets)
 
         return amount_of_covered_islets

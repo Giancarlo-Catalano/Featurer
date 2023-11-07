@@ -33,15 +33,13 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
                                       for miner_run in program_run["results_for_each_miner"]]
             return [parse_miner_run_item(miner_run) for miner_run in miner_runs]
 
-    rows = utils.concat_lists([parse_contents_of_file(single_file) for single_file in file_names])
+    with open(output_name, "w", newline="", encoding="utf-8") as output_file:
+        csv_writer = csv.writer(output_file, delimiter=",")
+        csv_writer.writerow(["Miner", "Quality", "Time"])
+        for input_file in file_names:
+            rows = parse_contents_of_file(input_file)
+            csv_writer.writerows(rows)
 
-    with open(output_name, "w") as output_file:
-        output_file.write(f"Miner,FoundFeatures,RunTime\n")
-        for miner, found, time in rows:
-            output_file.write(f"{miner},{found},{time}\n")
-
-
-    print(f"{len(rows)} datapoints were written onto the file")
 
 
 def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
@@ -62,7 +60,7 @@ def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
 
 
 
-
+# unused
 def make_csv_for_successes(input_name, output_name: str):
     with open(input_name, "r") as input_file:
         data = json.load(input_file)

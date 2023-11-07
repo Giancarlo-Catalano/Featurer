@@ -1,7 +1,7 @@
 [
   {
-    "which": "constructive",
-    "population_size": 50,
+    "which": "bidirectional",
+    "population_size": 100,
     "uses_archive": true,
     "stochastic": true
   },
