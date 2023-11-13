@@ -1,4 +1,6 @@
 import numpy as np
+import scipy
+
 import utils
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
@@ -28,6 +30,12 @@ def compute_t_scores(pfi: PrecomputedFeatureInformation, signed=False) -> np.nda
     return t_scores
 
 
+def compute_p_values(pfi: PrecomputedFeatureInformation, signed=False) -> np.ndarray:
+    t_scores = compute_t_scores(pfi, signed)
+    p_values = scipy.stats.t.sf(t_scores, df = pfi.sample_size)
+    return p_values
+
+
 class ConsistentFitness(MeasurableCriterion):
     signed: bool
     def __init__(self, signed=False):
@@ -37,10 +45,11 @@ class ConsistentFitness(MeasurableCriterion):
         return "Fitness Consistency"
 
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
-        return compute_t_scores(pfi, self.signed)
+        p_values = compute_p_values(pfi, self.signed)
+        return - np.log10(p_values)
 
     def describe_score(self, given_score) -> str:
-        return f"Consistent with t-value = {given_score:.2f}"
+        return f"Consistent with p-value = 1/10^-{int(given_score)}"
 
 
 class FitnessHigherThanAverage(MeasurableCriterion):

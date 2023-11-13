@@ -26,6 +26,7 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
         return miner_str, amount_of_found, runtime
 
     def parse_contents_of_file(file_name: str) -> list[MinerFoundAndTime]:
+        print(f"Will be parsing {file_name}")
         with open(file_name, "r") as file:
             contents_of_file = json.load(file)
             miner_runs: list[dict] = [miner_run
@@ -33,7 +34,7 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
                                       for miner_run in program_run["results_for_each_miner"]]
             return [parse_miner_run_item(miner_run) for miner_run in miner_runs]
 
-    with open(output_name, "w", newline="", encoding="utf-8") as output_file:
+    with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["Miner", "Quality", "Time"])
         for input_file in file_names:
@@ -43,7 +44,7 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
 
 
 def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
-    with open(output_name, "w", newline="", encoding="utf-8") as output_file:
+    with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["sampler", "ioe", "fitness"])
         for input_file in file_names:

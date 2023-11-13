@@ -35,11 +35,11 @@ class TrapK(TestableCombinatorialProblem):
 
     def score_of_candidate(self, candidate: SearchSpace.Candidate):
         def score_of_group(group):
-            amount_of_bits = sum(group)
-            if amount_of_bits == self.k:
+            amount_of_ones = sum(group)
+            if amount_of_ones == self.k:
                 return self.k
             else:
-                return (self.k - 1) - amount_of_bits
+                return (self.k - 1) - amount_of_ones
 
         groups = self.divide_candidate_in_groups(candidate)
         return sum([score_of_group(g) for g in groups])

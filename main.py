@@ -37,32 +37,31 @@ def aggregate_files(directory: str, output_name: str):
 
 def test_new_miner():
     artificial_problem = {"which": "artificial",
-                          "size": 25,
-                          "size_of_partials": 5,
-                          "amount_of_features": 5,
-                          "allow_overlaps": False}
+                          "size": 50,
+                          "size_of_partials": 4,
+                          "amount_of_features": 10,
+                          "allow_overlaps": True}
 
-    checkerboard_problem = {"which": "checkerboard",
-                            "rows": 4,
-                            "cols": 4}
+    insular_problem = {"which": "insular",
+                            "amount_of_islets": 10}
 
     trapk = {"which": "trapk",
              "amount_of_groups": 3,
              "k": 5}
 
-    problem = checkerboard_problem
+    problem = trapk
 
-    criterion = {"which": "balance",
+    criterion = {"which": "all",
                  "arguments": [
                      {"which": "high_fitness"},
-                     {"which": "consistent_fitness"},
+                     #{"which": "consistent_fitness"},
                      {"which": "explainability"}
                  ],
-                 "weights": [1, 1, 1]}
+                 "weights": [1, 0, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 2400
+    sample_size = 2500
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
@@ -70,11 +69,11 @@ def test_new_miner():
                                population_size=60,
                                stochastic=True,
                                uses_archive=True,
-                               termination_criteria_met=run_for_fixed_amount_of_iterations(30))
+                               termination_criteria_met=run_for_fixed_amount_of_iterations(60))
 
     ga_miner = GAMiner(selector = selector,
                        population_size = 60,
-                       termination_criteria_met=run_with_limited_budget(100 ** 2))
+                       termination_criteria_met=run_with_limited_budget(10000))
 
     miner = biminer
 
@@ -89,6 +88,12 @@ def test_new_miner():
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
+
+    print("The ideal features have the following scores")
+    ideals = problem.get_ideal_features()
+    for feature in ideals:
+        print(problem.feature_repr(feature.to_legacy_feature()))
+        print(criterion.describe_feature(feature, training_ppi))
 
     # scored_good_features = miner.with_scores(good_features)
     # sampler = SimpleSampler(problem.search_space, scored_good_features)
@@ -157,16 +162,21 @@ def test_new_criterion():
         print(criterion.describe_feature(feature, training_ppi))
 
 
+def aggregate_folders():
+    folder_names = ["plateau10", "insular10", "trap510", "artificial10"]
+    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Nov-11"
+
+    for folder_name in folder_names:
+        print(f"Aggregating {folder_name}")
+        input_full_path = folder_root + "\\" + folder_name
+        output_full_path = folder_root + "\\csvs\\" + folder_name + ".csv"
+        aggregate_files(input_full_path, output_full_path)
+
 
 
 
 if __name__ == '__main__':
-    execute_command_line()
-    #input_directory = "C:\\Users\\gac8\\Documents\\outputs\\Pss\\algo_comparison\\plateau10"
-    #input_directory = "C:\\Users\\gac8\\PycharmProjects\\Featurer_Semester\\Version_E\\Testing\\AggregationTests"
-    #aggregate_files(input_directory, "plateau10_rgb.csv")
-    # aggregate_files(input_directory, "all_runs_successes_smaller_problem.csv", for_time=False)
-
-    # test_new_miner()
+    #execute_command_line()
+    test_new_miner()
 
     #test_new_criterion()

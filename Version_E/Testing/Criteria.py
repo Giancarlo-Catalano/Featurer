@@ -18,7 +18,7 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
     elif criterion_string == "low_fitness":
         return Not(HighFitness())
     elif criterion_string == "consistent_fitness":
-        return ConsistentFitness()
+        return ConsistentFitness(signed=True)
     elif criterion_string == "overrepresentation":
         return Overrepresentation()
     elif criterion_string == "underrepresentation":
