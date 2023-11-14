@@ -39,9 +39,9 @@ class GCMiner(FeatureMiner):
         return [Feature.empty_feature(self.search_space)]
 
     def get_complex_feature_population(self, amount_to_return) -> Population:
-        fitnesses_and_indexes = list(enumerate(self.feature_selector.ppi.fitness_array))
-        fitnesses_and_indexes = sorted(fitnesses_and_indexes, key=utils.second, reverse=True)
-        good_individuals = fitnesses_and_indexes[:amount_to_return]
+        indexes_and_fitnesses = list(enumerate(self.feature_selector.ppi.fitness_array))
+        indexes_and_fitnesses = sorted(indexes_and_fitnesses, key=utils.second, reverse=True)
+        good_individuals = indexes_and_fitnesses[:amount_to_return]
         indexes_of_good_individuals = utils.unzip(good_individuals)[0]
 
         def get_individual(index: int):

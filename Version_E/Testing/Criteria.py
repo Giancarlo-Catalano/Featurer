@@ -5,7 +5,7 @@ from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
-from Version_E.MeasurableCriterion.Robustness import Robustness
+from Version_E.MeasurableCriterion.Robustness import Robustness, Atomicity
 
 
 def decode_criterion(properties: dict, problem: CombinatorialProblem) -> MeasurableCriterion:
@@ -45,6 +45,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Balance(parsed_arguments, weights=weights)
     elif criterion_string == "completeness":
         return Completeness()
+    elif criterion_string == "atomicity":
+        return Atomicity()
     elif criterion_string == "expected_fitness":
         raise Exception("Not implemented yet")
     else:

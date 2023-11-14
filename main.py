@@ -7,6 +7,7 @@ from os.path import isfile, join
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
+from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
 from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
@@ -37,27 +38,28 @@ def aggregate_files(directory: str, output_name: str):
 
 def test_new_miner():
     artificial_problem = {"which": "artificial",
-                          "size": 50,
+                          "size": 40,
                           "size_of_partials": 4,
                           "amount_of_features": 10,
                           "allow_overlaps": True}
 
     insular_problem = {"which": "insular",
-                            "amount_of_islets": 10}
+                       "amount_of_islets": 4}
 
     trapk = {"which": "trapk",
-             "amount_of_groups": 3,
+             "amount_of_groups": 10,
              "k": 5}
 
-    problem = trapk
 
-    criterion = {"which": "all",
+    problem = artificial_problem
+
+    criterion = {"which": "balance",
                  "arguments": [
                      {"which": "high_fitness"},
-                     #{"which": "consistent_fitness"},
+                     {"which": "atomicity"},
                      {"which": "explainability"}
                  ],
-                 "weights": [1, 0, 1]}
+                 "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -65,14 +67,14 @@ def test_new_miner():
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
-    biminer = BiDirectionalMiner(selector=selector,
-                               population_size=60,
-                               stochastic=True,
-                               uses_archive=True,
-                               termination_criteria_met=run_for_fixed_amount_of_iterations(60))
+    biminer = DestructiveMiner(selector=selector,
+                                 population_size=60,
+                                 stochastic=True,
+                                 uses_archive=True,
+                                 termination_criteria_met=run_with_limited_budget(10000))
 
-    ga_miner = GAMiner(selector = selector,
-                       population_size = 60,
+    ga_miner = GAMiner(selector=selector,
+                       population_size=60,
                        termination_criteria_met=run_with_limited_budget(10000))
 
     miner = biminer
@@ -80,7 +82,7 @@ def test_new_miner():
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
 
-    good_features = miner.get_meaningful_features(60)
+    good_features = miner.get_meaningful_features(120)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))
@@ -125,7 +127,6 @@ def test_new_miner():
     #     print(f"And the fitness is {fitness}\n")
 
 
-
 def test_new_criterion():
     artificial_problem = {"which": "artificial",
                           "size": 25,
@@ -145,14 +146,15 @@ def test_new_criterion():
 
     problem = Problems.decode_problem(problem)
     sample_size = 2400
-    criterion = SHAPValue(sample_size = 600)
+    criterion = SHAPValue(sample_size=600)
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     selector = FeatureSelector(training_ppi, criterion)
 
     print("Generated the selector and the criterion successfully")
+
     def feature_with_set_zero_at(index: int) -> Feature:
         empty_feature = Feature.empty_feature(problem.search_space)
-        return empty_feature.with_value(var_index=index, val = 0)
+        return empty_feature.with_value(var_index=index, val=0)
 
     features_to_assess = [feature_with_set_zero_at(index) for index in range(problem.search_space.dimensions)]
 
@@ -163,7 +165,7 @@ def test_new_criterion():
 
 
 def aggregate_folders():
-    folder_names = ["plateau10", "insular10", "trap510", "artificial10"]
+    folder_names = ["trap510_criterion1"]
     folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Nov-11"
 
     for folder_name in folder_names:
@@ -173,10 +175,8 @@ def aggregate_folders():
         aggregate_files(input_full_path, output_full_path)
 
 
-
-
 if __name__ == '__main__':
-    #execute_command_line()
+    # execute_command_line()
     test_new_miner()
-
-    #test_new_criterion()
+    # aggregate_folders()
+    # test_new_criterion()
