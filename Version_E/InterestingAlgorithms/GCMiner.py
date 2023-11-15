@@ -121,6 +121,7 @@ class GCMiner(FeatureMiner):
             population = self.without_scores(evaluated_population)  # to add the effect of limit_population_size
             population.extend(children)
 
+        population = self.remove_duplicate_features(population)
         evaluated_winners = self.with_scores(population)
         evaluated_winners = self.truncation_selection(evaluated_winners, self.population_size)
         return self.without_scores(evaluated_winners)

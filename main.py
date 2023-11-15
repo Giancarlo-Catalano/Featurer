@@ -4,6 +4,8 @@ import sys
 from os import listdir
 from os.path import isfile, join
 
+import BenchmarkProblems.CombinatorialProblem
+import SearchSpace
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
@@ -13,6 +15,7 @@ from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterat
 from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests, CSVGenerators
+from Version_E.Sampling.GASampler import GASampler
 
 
 def execute_command_line():
@@ -36,6 +39,16 @@ def aggregate_files(directory: str, output_name: str):
     CSVGenerators.make_csv_for_limited_budget_run(files_in_directory, output_name)
 
 
+def get_evolved_population_sample(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
+                           population_size: int,
+                           amount_of_generations: int) -> PrecomputedPopulationInformation:
+    ga = GASampler(problem.score_of_candidate, problem.search_space, population_size, amount_of_generations)
+    population = ga.evolve_population()
+    fitness_list = [problem.score_of_candidate(candidate) for candidate in population]
+
+    return PrecomputedPopulationInformation(problem.search_space, population, fitness_list)
+
+
 def test_new_miner():
     artificial_problem = {"which": "artificial",
                           "size": 40,
@@ -47,13 +60,13 @@ def test_new_miner():
                        "amount_of_islets": 4}
 
     trapk = {"which": "trapk",
-             "amount_of_groups": 10,
+             "amount_of_groups": 3,
              "k": 5}
 
 
-    problem = artificial_problem
+    problem = trapk
 
-    criterion = {"which": "balance",
+    criterion = {"which": "all",
                  "arguments": [
                      {"which": "high_fitness"},
                      {"which": "atomicity"},
@@ -64,13 +77,14 @@ def test_new_miner():
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 2500
-    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+    #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+    training_ppi = get_evolved_population_sample(problem, sample_size, 30)
     selector = FeatureSelector(training_ppi, criterion)
 
-    biminer = DestructiveMiner(selector=selector,
+    biminer = BiDirectionalMiner(selector=selector,
                                  population_size=60,
                                  stochastic=True,
-                                 uses_archive=True,
+                                 uses_archive=False,
                                  termination_criteria_met=run_with_limited_budget(10000))
 
     ga_miner = GAMiner(selector=selector,

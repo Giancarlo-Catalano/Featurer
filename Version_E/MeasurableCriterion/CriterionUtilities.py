@@ -51,6 +51,8 @@ class Balance(MeasurableCriterion):
         if weights is None:
             weights = [1 for criterion in criteria]
 
+        if len(weights) != len(criteria):
+            raise Exception("In Balance Criterion, the amount of provided weights does not match the amount of criteria")
         self.weights = np.array(weights, dtype=float)
 
         self.criteria = criteria
