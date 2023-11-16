@@ -66,19 +66,20 @@ def test_new_miner():
 
     problem = trapk
 
-    criterion = {"which": "all",
+    criterion = {"which": "balance",
                  "arguments": [
                      {"which": "high_fitness"},
+                     {"which": "consistent_fitness"},
                      {"which": "atomicity"},
-                     {"which": "explainability"}
+                     {"which": "explainability"},
                  ],
-                 "weights": [1, 1, 1]}
+                 "weights": [1, 1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 2500
     #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-    training_ppi = get_evolved_population_sample(problem, sample_size, 30)
+    training_ppi = get_evolved_population_sample(problem, sample_size, 1)
     selector = FeatureSelector(training_ppi, criterion)
 
     biminer = BiDirectionalMiner(selector=selector,
@@ -88,7 +89,7 @@ def test_new_miner():
                                  termination_criteria_met=run_with_limited_budget(10000))
 
     ga_miner = GAMiner(selector=selector,
-                       population_size=60,
+                       population_size=120,
                        termination_criteria_met=run_with_limited_budget(10000))
 
     miner = biminer
@@ -96,7 +97,7 @@ def test_new_miner():
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
 
-    good_features = miner.get_meaningful_features(120)
+    good_features = miner.get_meaningful_features(12)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))

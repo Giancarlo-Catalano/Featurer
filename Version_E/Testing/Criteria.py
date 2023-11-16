@@ -6,6 +6,7 @@ from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFit
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Atomicity
+from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 
 
 def decode_criterion(properties: dict, problem: CombinatorialProblem) -> MeasurableCriterion:
@@ -47,6 +48,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Completeness()
     elif criterion_string == "atomicity":
         return Atomicity()
+    elif criterion_string == "shap":
+        return SHAPValue()
     elif criterion_string == "expected_fitness":
         raise Exception("Not implemented yet")
     else:

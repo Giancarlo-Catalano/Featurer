@@ -74,7 +74,35 @@ class TrapK(TestableCombinatorialProblem):
 
         return [feature_with_a_single_zero(var_index) for var_index in range(self.amount_of_bits)]
 
+
     def get_ideal_features(self) -> list[Feature]:
+        """
+        :return: the features we're hoping the miner will find
+        """
         deceptive_groups = self.get_all_ones_ideals()
         zeros = self.get_all_zero_ideals()
         return deceptive_groups  # + zeros
+
+    def get_bounds_of_group(self, group_index: int) -> (int, int):
+        """
+        :param group_index: the group number, starting from the left at 0
+        :return: the start and end indexes of the variables involved in the group
+        """
+        return group_index*self.k, (group_index+1)*self.k
+
+    def contains_which_ideal_features(self, feature: Feature) -> tuple:
+        """
+        Checks which groups in the feature are all ones
+        :param feature: the feature which might contain the deceptive groups
+        :return: a tuple of boolean values, each associated with a group
+        """
+        def is_group_all_ones(group_index: int) -> bool:
+            start, end = self.get_bounds_of_group(group_index)
+            all_values_are_used = all(feature.variable_mask[start:end])
+            if not all_values_are_used:
+                return False
+            all_values_are_ones = all(feature.values_mask[start:end])
+            return all_values_are_ones
+
+        return tuple(is_group_all_ones(group_index) for group_index in range(self.amount_of_groups))
+

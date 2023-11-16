@@ -7,10 +7,10 @@
     "which": "balance",
     "arguments": [
       {
-        "which": "fitness_higher_than_average"
+        "which": "high_fitness"
       },
       {
-        "which": "consistent_fitness"
+        "which": "atomicity"
       },
       {
         "which": "explainability"
@@ -24,8 +24,8 @@
   },
   "test": {
     "which": "results_given_budget",
-    "sample_size": 2400,
-    "features_per_run": 100,
+    "sample_size": 2500,
+    "features_per_run": 30,
     "budget": 10000,
     "runs": 2
   }

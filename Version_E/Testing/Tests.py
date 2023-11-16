@@ -11,6 +11,7 @@ import SearchSpace
 import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
 from BenchmarkProblems.GraphColouring import GraphColouringProblem, InsularGraphColouringProblem
+from BenchmarkProblems.TrapK import TrapK
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
     run_until_found_features, FeatureSelector
@@ -141,6 +142,11 @@ def test_run_with_limited_budget(problem_parameters: dict,
             amount_of_found = problem.count_how_many_islets_covered(found_features)
             amount_of_total = problem.amount_of_islets
             return amount_of_found, amount_of_total
+        elif isinstance(problem, TrapK):
+            ideal_presence_matrix = np.array([problem.contains_which_ideal_features(feature) for feature in found_features])
+            ideal_presence_array = np.any(ideal_presence_matrix, axis=0)
+            amount_of_covered_groups = sum(ideal_presence_array)
+            return amount_of_covered_groups, problem.amount_of_groups
         else:
             ideals = problem.get_ideal_features()
             amount_of_found_ideals = len([ideal for ideal in ideals if ideal in found_features])
