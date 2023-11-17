@@ -28,6 +28,9 @@ class Feature:
                 for (var, is_used) in enumerate(self.variable_mask)
                 if is_used]
 
+    def get_used_vars(self) -> list[int]:
+        return [var for var, is_used in enumerate(self.variable_mask) if is_used]
+
     def to_candidate(self) -> SearchSpace.Candidate:
         values = [0] * self.dimensions
         for var, val in self.to_var_val_pairs():
@@ -168,7 +171,7 @@ class Feature:
         new_mask = frozenbitarray(new_mask)
 
         new_values = self.values_mask.copy()
-        new_values[val] = 0 if val is None else val
+        new_values[var_index] = 0 if val is None else val
         return Feature(new_mask, new_values)
 
     def get_generalisations(self) -> list:
@@ -225,3 +228,5 @@ class Feature:
             if is_set_here and (value_here != value_there):
                 return False
         return True
+
+

@@ -1,6 +1,8 @@
 import numpy as np
 
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
+from SearchSpace import SearchSpace
+from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from typing import Any
@@ -43,8 +45,17 @@ class TrivialExplainability(MeasurableCriterion):
     def __repr__(self):
         return "(Trivial) Explainability"
 
+    def explainability_of_feature(self, feature: Feature, total_amount_of_vars: int) -> float:
+        amount_of_vars = feature.variable_mask.count()
+        if amount_of_vars < 2:
+            return amount_of_vars
+        else:
+            return total_amount_of_vars - amount_of_vars
+
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
-        return np.array([-(feature.variable_mask.count()) for feature in pfi.features])
+        amount_of_vars = pfi.search_space.dimensions
+        return np.array([self.explainability_of_feature(feature, amount_of_vars)
+                         for feature in pfi.features])
 
     def describe_score(self, given_score) -> str:
         return f"Trivial explainability = {given_score}"

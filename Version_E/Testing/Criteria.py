@@ -3,6 +3,7 @@ from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Bala
 from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
+from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Atomicity
@@ -50,6 +51,10 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Atomicity()
     elif criterion_string == "shap":
         return SHAPValue()
+    elif criterion_string == "interaction":
+        return Interaction()
+    elif criterion_string == "divorce":
+        return Divorce()
     elif criterion_string == "expected_fitness":
         raise Exception("Not implemented yet")
     else:

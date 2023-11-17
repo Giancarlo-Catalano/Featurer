@@ -74,7 +74,7 @@ class PrecomputedFeatureInformation:
 
         numerators = np.sum(fitness_of_candidate_minus_feature_mean, axis=0)
 
-        return np.sqrt(utils.divide_arrays_safely(numerators, self.count_for_each_feature-1))  # should this count-1
+        return np.sqrt(utils.divide_arrays_safely(numerators, self.count_for_each_feature-1))
 
     def compute_marginal_probabilities(self) -> np.ndarray:
         sum_in_hot_encoding_order: np.ndarray[float] = np.sum(self.candidate_matrix, axis=0)

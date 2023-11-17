@@ -69,11 +69,11 @@ def test_new_miner():
     criterion = {"which": "balance",
                  "arguments": [
                      {"which": "high_fitness"},
-                     {"which": "consistent_fitness"},
-                     {"which": "atomicity"},
                      {"which": "explainability"},
+                     {"which": "not",
+                      "argument": {"which": "divorce"}}
                  ],
-                 "weights": [1, 1, 1, 1]}
+                 "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -97,7 +97,7 @@ def test_new_miner():
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
 
-    good_features = miner.get_meaningful_features(12)
+    good_features = miner.get_meaningful_features(120)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))
