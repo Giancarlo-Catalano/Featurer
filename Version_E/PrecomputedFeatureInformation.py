@@ -135,6 +135,10 @@ class PrecomputedFeatureInformation:
 
     @classmethod
     def get_from_hot_encoded_features(cls, ppi: PrecomputedPopulationInformation, hot_encoded_features: np.ndarray):
+        """I'm quite ashamed of this method, because it's against everything I believe in
+           ... but it's convenient...
+           Its purpose is to give the ability to get information about features without the requirement
+           of them having to be the fully fledged Feature objects"""
         result_pfi = cls.get_dummy_pfi(ppi)
         amount_of_features, amount_of_columns = hot_encoded_features.shape
 
@@ -143,5 +147,5 @@ class PrecomputedFeatureInformation:
         result_pfi.feature_matrix = hot_encoded_features.T
         result_pfi.feature_presence_error_matrix = result_pfi.compute_feature_presence_error_matrix()
         result_pfi.feature_presence_matrix = result_pfi.compute_feature_presence_matrix()
-        result_pfi.amount_of_features = amount_of_features
+        #result_pfi.amount_of_features = amount_of_features
         return result_pfi
