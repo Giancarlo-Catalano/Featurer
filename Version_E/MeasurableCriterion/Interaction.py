@@ -92,26 +92,11 @@ def get_pseudo_proportions_for_hot_encoded_features(hot_encoded_features: Iterab
     return sum_of_fitnesses
 
 
-def mutual_information_old(p00: float, p01: float, p10: float, p11: float) -> float:
-    p0X = p00 + p01
-    p1X = p10 + p11
-    pX0 = p00 + p10
-    pX1 = p01 + p11
-
-    def aux_mutual_information(pAB, pAX, pXB) -> float:
-        """https://en.wikipedia.org/wiki/Mutual_information"""
-        denominator = pAX * pXB
-        if denominator < 1e-6:
-            return 1  # panic
-        return pAB * np.log2(pAB / denominator)
-
-    return aux_mutual_information(p00, p0X, pX0) + \
-        aux_mutual_information(p01, p0X, pX1) + \
-        aux_mutual_information(p10, p1X, pX0) + \
-        aux_mutual_information(p11, p1X, pX1)
-
-
-def joint_entropy(p00: float, p01: float, p10: float, p11: float) -> float:
+def joint_entropy(p1X: float, pX1: float, p11: float) -> float:
+    pXX = 1
+    p01 = pX1 - p11
+    p10 = p1X - p11
+    p00 = pXX - p1X - p01
     def entropy(pxy: float) -> float:
         if pxy <= 1e-6:
             return 0.0
@@ -120,7 +105,15 @@ def joint_entropy(p00: float, p01: float, p10: float, p11: float) -> float:
     return entropy(p00) + entropy(p01) + entropy(p10) + entropy(p11)
 
 
-def mutual_information(p1X: float, pX1: float, p11: float) -> float:
+def variation_of_information(p1X: float, pX1: float, p11: float) -> float:
+    return p11 * ( np.log2(p11/p1X) + np.log(p11/pX1))
+
+
+def variation_of_information_2(p1X: float, pX1: float, p11: float) -> float:
+    return p1X + pX1 - 2*joint_entropy(p1X, pX1, p11)
+
+
+def conditional_entropy(p1X: float, pX1: float, p11: float) -> float:
     pXX = 1
     p01 = pX1 - p11
     p10 = p1X - p11
@@ -140,10 +133,10 @@ def mutual_information(p1X: float, pX1: float, p11: float) -> float:
                          aux_mutual_information(p10, p1X, pX0) + \
                          aux_mutual_information(p11, p1X, pX1)
 
-    return mutual_information / joint_entropy(p00, p01, p10, p11)
+    return mutual_information
 
 
-def mutual_information_I(p1X: float, pX1: float, p11: float) -> float:
+def mutual_information(p1X: float, pX1: float, p11: float) -> float:
     denominator = p1X * pX1
     if denominator < 1e-6:
         return 0  # panic
@@ -153,7 +146,6 @@ def mutual_information_I(p1X: float, pX1: float, p11: float) -> float:
     mi = p11 * np.log(p11 / denominator)
 
     return mi
-
 
 def get_interaction_table(ppi: PrecomputedPopulationInformation) -> Matrix:
     print("Starting to generate the table")
@@ -313,7 +305,7 @@ class WeakestLink(MeasurableCriterion):
 
 
         if len(present_vals) == 0:
-            return [1]
+            return []
 
         def without_that_val(val_pos: int) -> HotEncodedFeature:
             without = np.array(feature)
@@ -326,16 +318,53 @@ class WeakestLink(MeasurableCriterion):
         all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(ppi)
         pX1s = [pX1 for pX1, is_used in zip(all_pX1s, feature) if is_used]
 
-        return [mutual_information_I(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+        result = [mutual_information(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+
+        # if any(value < 0 for value in result):
+        #     print(f"The feature {HotEncoding.feature_from_hot_encoding(feature, ppi.search_space)} has {result}")
+
+        return result
+
+
+    def all_linkage_scores_for_feature(self, feature: HotEncodedFeature,
+                                   ppi: PrecomputedPopulationInformation,
+                                   p11: float):
+        present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
+
+
+        if len(present_vals) == 0:
+            return []
+
+        def without_that_val(val_pos: int) -> HotEncodedFeature:
+            without = np.array(feature)
+            without[val_pos] = 0.0
+            return without
+
+        f1Xs = list(map(without_that_val, present_vals))
+
+        p1Xs: FlatArray = self.get_proportions_of_features(f1Xs, ppi)
+        all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(ppi)
+        pX1s = [pX1 for pX1, is_used in zip(all_pX1s, feature) if is_used]
+
+        mi = [mutual_information(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+        ce = [conditional_entropy(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+        je = [joint_entropy(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+        vi = [variation_of_information(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+        v2 = [variation_of_information_2(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+
+        # if any(value < 0 for value in result):
+        #     print(f"The feature {HotEncoding.feature_from_hot_encoding(feature, ppi.search_space)} has {result}")
+
+        return mi, ce, je, vi, v2
 
     def get_weakest_list_for_feature(self, feature: HotEncodedFeature,
                                      ppi: PrecomputedPopulationInformation,
                                      p11: float) -> float:
-        if np.sum(feature) < 2:
-            return p11
+        if np.sum(feature) < 1:
+            return 0
 
         linkage_scores = self.linkage_scores_for_feature(feature, ppi, p11)
-        return np.sum(linkage_scores)
+        return np.sum(linkage_scores)   # IMPORTANT
 
     def __repr__(self):
         return f"WeakestLink"
@@ -369,16 +398,24 @@ class WeakestLink(MeasurableCriterion):
         pfi = PrecomputedFeatureInformation(ppi, [feature])
         p11 = utils.weighted_sum_of_rows(pfi.feature_presence_matrix, normalised_fitnesses)[0]
 
-        linkage_scores = self.linkage_scores_for_feature(hot_encoded_feature, ppi, p11)
+        mi, ce, je, vi, v2 = self.all_linkage_scores_for_feature(hot_encoded_feature, ppi, p11)
+
+        def repr_scores(scores):
+            return "["+", ".join(f"{score:.2f}" for score in scores)+"]"
 
 
 
-        first_line = f"The linkage scores are [" + ", ".join(f"{element:.3f}" for element in linkage_scores)+"]"
+        first_line = (f"The linkage scores are "
+                      f"\n\t mi = {repr_scores(mi)}"
+                      f"\n\t ce = {repr_scores(ce)}"
+                      f"\n\t je = {repr_scores(je)}"
+                      f"\n\t vi = {repr_scores(vi)}"
+                      f"\n\t v2 = {repr_scores(v2)}")
 
-        second_line = (f"min = {np.min(linkage_scores)}, "
-                       f"max = {np.max(linkage_scores)}, "
-                       f"len = {len(linkage_scores)}, "
-                       f"average = {np.mean(linkage_scores)}, "
-                       f"sum = {np.sum(linkage_scores)}")
+        second_line = (f"min = {np.min(mi)}, "
+                       f"max = {np.max(mi)}, "
+                       f"len = {len(mi)}, "
+                       f"average = {np.mean(mi)}, "
+                       f"sum = {np.sum(mi)}")
 
         return first_line + "\n" + second_line

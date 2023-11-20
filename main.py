@@ -65,13 +65,13 @@ def test_new_miner():
              "k": 5}
 
 
-    problem = artificial_problem
+    problem = insular_problem
 
     criterion = {"which": "balance",
                  "arguments": [
-                     {"which": "high_fitness"},
                      {"which": "explainability"},
-                     {"which": "weakest_link"}
+                     {"which": "weakest_link"},
+                     {"which": "high_fitness"}
                  ],
                  "weights": [1, 1, 1]}
 
@@ -83,9 +83,9 @@ def test_new_miner():
     selector = FeatureSelector(training_ppi, criterion)
 
     biminer = BiDirectionalMiner(selector=selector,
-                                 population_size=60,
+                                 population_size=120,
                                  stochastic=True,
-                                 uses_archive=True,
+                                 uses_archive=False,
                                  termination_criteria_met=run_with_limited_budget(20000))
 
     ga_miner = GAMiner(selector=selector,
