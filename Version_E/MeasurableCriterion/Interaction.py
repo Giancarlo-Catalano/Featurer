@@ -379,11 +379,6 @@ class WeakestLink(MeasurableCriterion):
         scores = np.array([self.get_weakest_list_for_feature(feature, ppi, p11)
                          for feature, p11 in zip(hot_encoded_features, p11s)])
 
-        if any(np.isnan(val) for val in scores):
-            print("Impostor!!")
-            offenders = [HotEncoding.feature_from_hot_encoding(feature, pfi.search_space)
-                         for feature, score in zip(hot_encoded_features, scores) if np.isnan(score)]
-            raise Exception(f"A value in the raw score array for WeakestLink is nan ({offenders})!!")
 
         return scores
 
