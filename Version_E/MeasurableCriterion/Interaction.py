@@ -311,8 +311,6 @@ class WeakestLink(MeasurableCriterion):
                                    p11: float) -> list[float]:
         present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
 
-        if 3 <= len(present_vals) <= 6:
-            print("A good feature to examine..")
 
         if len(present_vals) == 0:
             return [1]
