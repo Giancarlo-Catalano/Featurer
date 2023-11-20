@@ -70,7 +70,7 @@ def test_new_miner():
                  "arguments": [
                      {"which": "high_fitness"},
                      {"which": "explainability"},
-                     {"which": "interaction"}
+                     {"which": "weakest_link"}
                  ],
                  "weights": [1, 1, 1]}
 

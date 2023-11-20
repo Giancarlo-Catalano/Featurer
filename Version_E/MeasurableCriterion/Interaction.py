@@ -24,16 +24,22 @@ InteractionTable = Matrix
 HotEncodedFeature = FlatArray
 
 
+def flatten_var_val(var: int, val: int, search_space: SearchSpace.SearchSpace) -> int:
+    return search_space.precomputed_offsets[var] + val
+
+
 def get_pairs_to_check(search_space: SearchSpace.SearchSpace) -> list[((int, int), (int, int))]:
     amount_of_vars = search_space.dimensions
 
-    var_val_quartets = [((var_a, val_a), (var_b, val_b))
-                        for var_a in range(amount_of_vars)
-                        for val_a in range(search_space.cardinalities[var_a])
-                        for var_b in range(var_a + 1, amount_of_vars)
-                        for val_b in range(search_space.cardinalities[var_b])]
+    different_vars = [(flatten_var_val(var_a, val_a, search_space), flatten_var_val(var_b, val_b, search_space))
+                      for var_a in range(amount_of_vars)
+                      for val_a in range(search_space.cardinalities[var_a])
+                      for var_b in range(var_a + 1, amount_of_vars)  # different vars guaranteed
+                      for val_b in range(search_space.cardinalities[var_a])]
 
-    return var_val_quartets
+    same_var_same_value = [(pos, pos) for pos in range(search_space.total_cardinality)]
+
+    return different_vars + same_var_same_value
 
 
 def get_normalised_fitnesses(ppi: PrecomputedPopulationInformation) -> FlatArray:
@@ -42,56 +48,38 @@ def get_normalised_fitnesses(ppi: PrecomputedPopulationInformation) -> FlatArray
     return with_sum_one
 
 
-def get_just_value_and_without_just_value(var: int,
-                                          val: int,
-                                          search_space: SearchSpace.SearchSpace) -> (
-        HotEncodedFeature, HotEncodedFeature):
+def get_just_value(var: int, val: int, search_space: SearchSpace.SearchSpace) -> HotEncodedFeature:
     just_that_value = np.zeros(search_space.total_cardinality, dtype=float)
-    just_that_value[search_space.cardinalities[var]+val] = 1.0
+    just_that_value[flatten_var_val(var, val, search_space)] = 1.0
 
-    not_that_value = np.array(just_that_value)
-    start_pos, end_pos = search_space.precomputed_offsets[var], search_space.precomputed_offsets[var + 1]
-    not_that_value[start_pos:end_pos] = 1 - not_that_value[start_pos:end_pos]
-
-    return not_that_value, just_that_value
+    return just_that_value
 
 
-# FBB is F00, F01, F10, F11...I wanted to call it FXX but that makes it really confusing
-FBB = (HotEncodedFeature, HotEncodedFeature, HotEncodedFeature, HotEncodedFeature)
+# FBB is F1X, FX1, F11...I wanted to call it FXX but that makes it really confusing
+FBB = (HotEncodedFeature, HotEncodedFeature, HotEncodedFeature)
 
 Var_Val = (int, int)
 
 
-def get_all_f00_f01_f10_f11(pairs_to_generate,  # for some reason I can't put the type information
-                            search_space: SearchSpace.SearchSpace) -> list[HotEncodedFeature]:
-    """ for each value in the search space, we generate the f00..f11 features,
-    which are hot encoded and placed in successive rows.
+def get_all_FBB(pairs_to_generate,  # but it's Iterable[(int, int)]
+                search_space: SearchSpace.SearchSpace) -> (list[HotEncodedFeature], list[HotEncodedFeature]):
+    """ for each value in the search space, we generate the FBB features,
+    which are hot encoded and placed in successive rows., HotEncodedFeature)
     Ie, the first four rows are f00..f11 for the first pair of values, and so on"""
 
-    features_with_and_without = [[get_just_value_and_without_just_value(var, val, search_space)
-                                  for val in range(search_space.cardinalities[var])]
-                                 for var in range(search_space.dimensions)]
+    values_as_features = list(np.identity(search_space.total_cardinality, dtype=float))
 
-    # features_with_and_without[var][val][0 if without, 1 if with]
-    def get_f00_f01_f10_f11_for_val_pair(var_a, val_a, var_b, val_b) -> FBB:
-        without_a, with_a = features_with_and_without[var_a][val_a]
-        without_b, with_b = features_with_and_without[var_b][val_b]
+    # values_as_features[var][val] to access (var, val) as a feature
+    def get_F11_for_val_pair(pos_a: int, pos_b: int) -> HotEncodedFeature:
+        f1X = values_as_features[pos_a]
+        fX1 = values_as_features[pos_b]
 
-        f00 = without_a + without_b
-        f01 = without_a + with_b
-        f10 = with_a + without_b
-        f11 = with_a + with_b
+        f11 = np.maximum(f1X, fX1)  # is the feature with both
 
-        return f00, f01, f10, f11
+        return f11
 
-    all_fbbs = []
-    for var_val_a, var_val_b in pairs_to_generate:
-        var_a, val_a = var_val_a
-        var_b, val_b = var_val_b
-        fbb = get_f00_f01_f10_f11_for_val_pair(var_a, val_a, var_b, val_b)
-        all_fbbs.extend(fbb)
-
-    return all_fbbs
+    composite_fbbs = [get_F11_for_val_pair(pos_a, pos_b) for pos_a, pos_b in pairs_to_generate]
+    return values_as_features, composite_fbbs
 
 
 def get_pseudo_proportions_for_hot_encoded_features(hot_encoded_features: Iterable[HotEncodedFeature],
@@ -99,13 +87,12 @@ def get_pseudo_proportions_for_hot_encoded_features(hot_encoded_features: Iterab
     # we'll want to get some stats out of these features, so we create a pfi
     pfi = PrecomputedFeatureInformation.get_from_hot_encoded_features(ppi, np.array(hot_encoded_features))
 
-    # we're trying to find the average normalised fitness, so let's normalise the fitness scores
-    pfi.precomputed_population_information.fitness_array = get_normalised_fitnesses(ppi)
+    sum_of_fitnesses = utils.weighted_sum_of_rows(pfi.feature_presence_matrix, get_normalised_fitnesses(ppi))
 
-    return pfi.mean_fitness_for_each_feature
+    return sum_of_fitnesses
 
 
-def mutual_information(p00: float, p01: float, p10: float, p11: float) -> float:
+def mutual_information_old(p00: float, p01: float, p10: float, p11: float) -> float:
     p0X = p00 + p01
     p1X = p10 + p11
     pX0 = p00 + p10
@@ -133,6 +120,41 @@ def joint_entropy(p00: float, p01: float, p10: float, p11: float) -> float:
     return entropy(p00) + entropy(p01) + entropy(p10) + entropy(p11)
 
 
+def mutual_information(p1X: float, pX1: float, p11: float) -> float:
+    pXX = 1
+    p01 = pX1 - p11
+    p10 = p1X - p11
+    p00 = pXX - p1X - p01
+    p0X = p00 + p01
+    pX0 = p00 + p10
+
+    def aux_mutual_information(pAB, pAX, pXB) -> float:
+        """https://en.wikipedia.org/wiki/Mutual_information"""
+        denominator = pAX * pXB
+        if pAB < 1e-6:
+            return 0  # panic
+        return pAB * np.log2(pAB / denominator)
+
+    mutual_information = aux_mutual_information(p00, p0X, pX0) + \
+                         aux_mutual_information(p01, p0X, pX1) + \
+                         aux_mutual_information(p10, p1X, pX0) + \
+                         aux_mutual_information(p11, p1X, pX1)
+
+    return mutual_information / joint_entropy(p00, p01, p10, p11)
+
+
+def mutual_information_I(p1X: float, pX1: float, p11: float) -> float:
+    denominator = p1X * pX1
+    if denominator < 1e-6:
+        return 0  # panic
+    if p11 < 1e-6:
+        return 0  # panic, a bit less. This makes sense!
+
+    mi = p11 * np.log(p11 / denominator)
+
+    return mi
+
+
 def get_interaction_table(ppi: PrecomputedPopulationInformation) -> Matrix:
     print("Starting to generate the table")
     pairs_to_calculate = get_pairs_to_check(ppi.search_space)
@@ -140,24 +162,20 @@ def get_interaction_table(ppi: PrecomputedPopulationInformation) -> Matrix:
     # note that of all the interactions, we only keep the upper triangle, without even the diagonal, and only between different variables
     amount_of_vals = ppi.search_space.total_cardinality
 
-    all_fbb = get_all_f00_f01_f10_f11(pairs_to_calculate, ppi.search_space)
-    pseudo_proportions = get_pseudo_proportions_for_hot_encoded_features(all_fbb, ppi)
+    marginal_fbbs, composite_fbb = get_all_FBB(pairs_to_calculate, ppi.search_space)
+    pseudo_proportions = get_pseudo_proportions_for_hot_encoded_features(marginal_fbbs + composite_fbb, ppi)
 
-    pseudo_proportions = pseudo_proportions.reshape((-1, 4))
+    marginal_proportions = pseudo_proportions[:len(marginal_fbbs)]
+    composite_proportions = pseudo_proportions[len(marginal_fbbs):]
     table = np.zeros((amount_of_vals, amount_of_vals))
 
-    def flatten_var_val(var_val) -> int:
-        var, val = var_val
-        return ppi.search_space.precomputed_offsets[var] + val
+    for a_b, p11 in zip(pairs_to_calculate, composite_proportions):
+        position_a, position_b = a_b
 
-    for a_b, pbb in zip(pairs_to_calculate, pseudo_proportions):
-        var_val_a, var_val_b = a_b
-        position_a = flatten_var_val(var_val_a)
-        position_b = flatten_var_val(var_val_b)
+        p1X = marginal_proportions[position_a]
+        pX1 = marginal_proportions[position_b]
 
-        p00, p01, p10, p11 = pbb
-
-        value_to_put_in_table = mutual_information(p00, p01, p10, p11)  # might divide it by the joint entropy...
+        value_to_put_in_table = mutual_information(p1X=p1X, pX1=pX1, p11=p11)  # might divide it by the joint entropy...
         table[position_a][position_b] = value_to_put_in_table
 
     print("The table has been generated")
@@ -175,7 +193,7 @@ def get_interactions_for_feature(feature: HotEncodedFeature,
 
 def get_interaction_score_for_feature(feature: HotEncodedFeature,
                                       interaction_table: InteractionTable) -> InteractionScore:
-    return np.max(get_interactions_for_feature(feature, interaction_table))  # perhaps the minimum would be better?
+    return np.min(get_interactions_for_feature(feature, interaction_table))
 
 
 class Interaction(MeasurableCriterion):
@@ -255,7 +273,7 @@ class Divorce(MeasurableCriterion):
     def __repr__(self):
         return f"Divorce"
 
-    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+    def get_raw_score_array_old(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         variances = np.square(pfi.sd_for_each_feature)
 
         divorce_scores = np.array([get_divorce_score(feature, variance, pfi)
@@ -265,3 +283,80 @@ class Divorce(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Divorce = {given_score}"
+
+
+class WeakestLink(MeasurableCriterion):
+    cached_normalised_fitnesses: PPICachedData
+    cached_pX1s: PPICachedData
+
+    def get_proportions_of_features(self, hot_encoded_features: Iterable[HotEncodedFeature],
+                                    ppi: PrecomputedPopulationInformation) -> FlatArray:
+        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
+        temp_pfi = PrecomputedFeatureInformation.get_from_hot_encoded_features(ppi, np.array(hot_encoded_features))
+        proportions = utils.weighted_sum_of_rows(temp_pfi.feature_presence_matrix, normalised_fitnesses)
+        return proportions
+
+    def __init__(self):
+        self.cached_normalised_fitnesses = PPICachedData(get_normalised_fitnesses)
+
+        def get_P1Xs(ppi: PrecomputedPopulationInformation) -> FlatArray:
+            amount_of_values = ppi.search_space.total_cardinality
+            trivial_features = np.identity(amount_of_values, dtype=float)
+            return self.get_proportions_of_features(trivial_features, ppi)
+
+        self.cached_pX1s = PPICachedData(get_P1Xs)
+
+    def linkage_scores_for_feature(self, feature: HotEncodedFeature,
+                                   pfi: PrecomputedFeatureInformation,
+                                   p11: float) -> list[float]:
+        present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
+
+        if 3 <= len(present_vals) <= 6:
+            print("A good feature to examine..")
+
+        if len(present_vals) == 0:
+            return [1]
+
+        def without_that_val(val_pos: int) -> HotEncodedFeature:
+            without = np.array(feature)
+            without[val_pos] = 0.0
+            return without
+
+        f1Xs = list(map(without_that_val, present_vals))
+        ppi = pfi.precomputed_population_information
+
+        p1Xs: FlatArray = self.get_proportions_of_features(f1Xs, ppi)
+        all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(ppi)
+        pX1s = [pX1 for pX1, is_used in zip(all_pX1s, feature) if is_used]
+
+        return [mutual_information_I(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
+
+    def get_weakest_list_for_feature(self, feature: HotEncodedFeature,
+                                     pfi: PrecomputedFeatureInformation,
+                                     p11: float) -> float:
+        if np.sum(feature) < 2:
+            return p11
+
+        linkage_scores = self.linkage_scores_for_feature(feature, pfi, p11)
+        return min(linkage_scores)
+
+    def __repr__(self):
+        return f"WeakestLink"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        ppi = pfi.precomputed_population_information
+        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
+        p11s = utils.weighted_sum_of_rows(pfi.feature_presence_matrix, normalised_fitnesses)
+
+        hot_encoded_features = pfi.feature_matrix.T
+
+        scores = np.array([self.get_weakest_list_for_feature(feature, pfi, p11)
+                         for feature, p11 in zip(hot_encoded_features, p11s)])
+
+        if any(np.isnan(val) for val in scores):
+            print("Impostor!!")
+
+        return scores
+
+    def describe_score(self, given_score) -> str:
+        return f"Weakest_Link = {given_score}"
