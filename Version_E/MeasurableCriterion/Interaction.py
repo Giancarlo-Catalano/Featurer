@@ -307,7 +307,7 @@ class WeakestLink(MeasurableCriterion):
         self.cached_pX1s = PPICachedData(get_P1Xs)
 
     def linkage_scores_for_feature(self, feature: HotEncodedFeature,
-                                   pfi: PrecomputedFeatureInformation,
+                                   ppi: PrecomputedPopulationInformation,
                                    p11: float) -> list[float]:
         present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
 
@@ -321,7 +321,6 @@ class WeakestLink(MeasurableCriterion):
             return without
 
         f1Xs = list(map(without_that_val, present_vals))
-        ppi = pfi.precomputed_population_information
 
         p1Xs: FlatArray = self.get_proportions_of_features(f1Xs, ppi)
         all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(ppi)
@@ -330,13 +329,13 @@ class WeakestLink(MeasurableCriterion):
         return [mutual_information_I(p1X, pX1, p11) for p1X, pX1 in zip(p1Xs, pX1s)]
 
     def get_weakest_list_for_feature(self, feature: HotEncodedFeature,
-                                     pfi: PrecomputedFeatureInformation,
+                                     ppi: PrecomputedPopulationInformation,
                                      p11: float) -> float:
         if np.sum(feature) < 2:
             return p11
 
-        linkage_scores = self.linkage_scores_for_feature(feature, pfi, p11)
-        return min(linkage_scores)
+        linkage_scores = self.linkage_scores_for_feature(feature, ppi, p11)
+        return np.sum(linkage_scores)
 
     def __repr__(self):
         return f"WeakestLink"
@@ -348,13 +347,38 @@ class WeakestLink(MeasurableCriterion):
 
         hot_encoded_features = pfi.feature_matrix.T
 
-        scores = np.array([self.get_weakest_list_for_feature(feature, pfi, p11)
+        scores = np.array([self.get_weakest_list_for_feature(feature, ppi, p11)
                          for feature, p11 in zip(hot_encoded_features, p11s)])
 
         if any(np.isnan(val) for val in scores):
             print("Impostor!!")
+            offenders = [HotEncoding.feature_from_hot_encoding(feature, pfi.search_space)
+                         for feature, score in zip(hot_encoded_features, scores) if np.isnan(score)]
+            raise Exception(f"A value in the raw score array for WeakestLink is nan ({offenders})!!")
 
         return scores
 
     def describe_score(self, given_score) -> str:
         return f"Weakest_Link = {given_score}"
+
+    def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
+
+        hot_encoded_feature = HotEncoding.get_hot_encoded_feature(feature, ppi.search_space)
+        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
+
+        pfi = PrecomputedFeatureInformation(ppi, [feature])
+        p11 = utils.weighted_sum_of_rows(pfi.feature_presence_matrix, normalised_fitnesses)[0]
+
+        linkage_scores = self.linkage_scores_for_feature(hot_encoded_feature, ppi, p11)
+
+
+
+        first_line = f"The linkage scores are [" + ", ".join(f"{element:.3f}" for element in linkage_scores)+"]"
+
+        second_line = (f"min = {np.min(linkage_scores)}, "
+                       f"max = {np.max(linkage_scores)}, "
+                       f"len = {len(linkage_scores)}, "
+                       f"average = {np.mean(linkage_scores)}, "
+                       f"sum = {np.sum(linkage_scores)}")
+
+        return first_line + "\n" + second_line

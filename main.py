@@ -9,6 +9,7 @@ import SearchSpace
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
+from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
@@ -51,9 +52,9 @@ def get_evolved_population_sample(problem: BenchmarkProblems.CombinatorialProble
 
 def test_new_miner():
     artificial_problem = {"which": "artificial",
-                          "size": 40,
+                          "size": 20,
                           "size_of_partials": 4,
-                          "amount_of_features": 10,
+                          "amount_of_features": 4,
                           "allow_overlaps": True}
 
     insular_problem = {"which": "insular",
@@ -64,7 +65,7 @@ def test_new_miner():
              "k": 5}
 
 
-    problem = trapk
+    problem = artificial_problem
 
     criterion = {"which": "balance",
                  "arguments": [
@@ -76,7 +77,7 @@ def test_new_miner():
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 2500
+    sample_size = 3000
     #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     training_ppi = get_evolved_population_sample(problem, sample_size, 1)
     selector = FeatureSelector(training_ppi, criterion)
@@ -84,12 +85,12 @@ def test_new_miner():
     biminer = BiDirectionalMiner(selector=selector,
                                  population_size=60,
                                  stochastic=True,
-                                 uses_archive=False,
-                                 termination_criteria_met=run_with_limited_budget(10000))
+                                 uses_archive=True,
+                                 termination_criteria_met=run_with_limited_budget(20000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
-                       termination_criteria_met=run_with_limited_budget(10000))
+                       termination_criteria_met=run_with_limited_budget(20000))
 
     miner = biminer
 
