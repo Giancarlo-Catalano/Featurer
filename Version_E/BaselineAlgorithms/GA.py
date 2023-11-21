@@ -9,13 +9,15 @@ import utils
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
 from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_space
-
+import heapq
 
 class GAMiner(FeatureMiner):
     population_size: int
 
     tournament_size = 2
-    chance_of_mutation = 0.05
+    chance_of_mutation = 0.075
+    chance_of_crossover = 0.7
+    elite_size = 2
 
     Population = list[Feature]
     EvaluatedPopulation = list[(Feature, float)]
@@ -58,6 +60,7 @@ class GAMiner(FeatureMiner):
 
         return Feature(frozenbitarray(result_variable_mask), result_value_array)
 
+
     def tournament_select(self, population: EvaluatedPopulation) -> Feature:
         tournament_pool = random.choices(population, k=self.tournament_size)
         winner = max(tournament_pool, key=utils.second)[0]
@@ -71,18 +74,31 @@ class GAMiner(FeatureMiner):
         individuals = [random_feature_in_search_space(self.search_space) for _ in range(self.population_size)]
         return self.with_scores(individuals)
 
+
+    def get_elite(self, evaluated_population: EvaluatedPopulation) -> Population:
+        top_evaluated = heapq.nlargest(self.elite_size, evaluated_population, key=utils.second)
+        if len(top_evaluated) == 0:
+            return []
+        else:
+            return self.without_scores(top_evaluated)
+
     def get_next_population(self, previous_population: Population) -> Population:
 
         evaluated_population = self.with_scores(previous_population)
 
         def make_child() -> Feature:
-            mother = self.tournament_select(evaluated_population)
-            father = self.tournament_select(evaluated_population)
-            child = self.crossover(mother, father)
-            child = self.mutate(child)
-            return child
+            if random.random() < self.chance_of_crossover:
+                mother = self.tournament_select(evaluated_population)
+                father = self.tournament_select(evaluated_population)
+                child = self.crossover(mother, father)
+                child = self.mutate(child)
+                return child
+            else:
+                return self.mutate(self.tournament_select(evaluated_population))
 
-        children = [make_child() for _ in range(self.population_size)]
+        children = self.get_elite(evaluated_population)
+        remaining_to_generate = self.population_size - len(children)
+        children = [make_child() for _ in range(remaining_to_generate)]
         return children
 
     def mine_features(self) -> list[Feature]:

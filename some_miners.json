@@ -6,9 +6,7 @@
     "stochastic": true
   },
   {
-    "which": "destructive",
-    "population_size": 50,
-    "uses_archive": true,
-    "stochastic": true
+    "which": "ga",
+    "population_size": 50
   }
 ]
