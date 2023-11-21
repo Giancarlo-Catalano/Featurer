@@ -1,7 +1,8 @@
 {
   "problem": {
-    "which": "insular",
-    "amount_of_islets": 5
+    "which": "trapk",
+    "k": 4,
+    "amount_of_groups": 2
   },
   "criterion": {
     "which": "balance",
@@ -10,23 +11,19 @@
         "which": "high_fitness"
       },
       {
-        "which": "atomicity"
-      },
-      {
         "which": "explainability"
       }
     ],
     "weights": [
-      1,
       1,
       1
     ]
   },
   "test": {
     "which": "results_given_budget",
-    "sample_size": 2500,
+    "sample_size": 250,
     "features_per_run": 30,
-    "budget": 10000,
-    "runs": 2
+    "budget": 1000,
+    "runs": 1
   }
 }
