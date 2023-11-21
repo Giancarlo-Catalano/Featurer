@@ -145,7 +145,7 @@ def test_run_with_limited_budget(problem_parameters: dict,
         elif isinstance(problem, TrapK):
             ideal_presence_matrix = np.array([problem.contains_which_ideal_features(feature) for feature in found_features])
             ideal_presence_array = np.any(ideal_presence_matrix, axis=0)
-            amount_of_covered_groups = sum(ideal_presence_array)
+            amount_of_covered_groups = int(np.sum(ideal_presence_array))
             return amount_of_covered_groups, problem.amount_of_groups
         else:
             ideals = problem.get_ideal_features()
