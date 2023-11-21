@@ -65,7 +65,7 @@ def test_new_miner():
              "k": 5}
 
 
-    problem = insular_problem
+    problem = trapk
 
     criterion = {"which": "balance",
                  "arguments": [
@@ -77,7 +77,7 @@ def test_new_miner():
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 3000
+    sample_size = 1500
     #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     training_ppi = get_evolved_population_sample(problem, sample_size, 1)
     selector = FeatureSelector(training_ppi, criterion)
@@ -86,13 +86,13 @@ def test_new_miner():
                                  population_size=120,
                                  stochastic=True,
                                  uses_archive=False,
-                                 termination_criteria_met=run_with_limited_budget(20000))
+                                 termination_criteria_met=run_with_limited_budget(10000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
-                       termination_criteria_met=run_with_limited_budget(20000))
+                       termination_criteria_met=run_with_limited_budget(10000))
 
-    miner = biminer
+    miner = ga_miner
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
@@ -180,8 +180,8 @@ def test_new_criterion():
 
 
 def aggregate_folders():
-    folder_names = ["trap510_criterion1"]
-    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Nov-11"
+    folder_names = ["small_run"]
+    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Nov-21"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")

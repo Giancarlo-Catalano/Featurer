@@ -97,6 +97,7 @@ def joint_entropy(p1X: float, pX1: float, p11: float) -> float:
     p01 = pX1 - p11
     p10 = p1X - p11
     p00 = pXX - p1X - p01
+
     def entropy(pxy: float) -> float:
         if pxy <= 1e-6:
             return 0.0
@@ -106,11 +107,11 @@ def joint_entropy(p1X: float, pX1: float, p11: float) -> float:
 
 
 def variation_of_information(p1X: float, pX1: float, p11: float) -> float:
-    return p11 * ( np.log2(p11/p1X) + np.log(p11/pX1))
+    return p11 * (np.log2(p11 / p1X) + np.log(p11 / pX1))
 
 
 def variation_of_information_2(p1X: float, pX1: float, p11: float) -> float:
-    return p1X + pX1 - 2*joint_entropy(p1X, pX1, p11)
+    return p1X + pX1 - 2 * joint_entropy(p1X, pX1, p11)
 
 
 def conditional_entropy(p1X: float, pX1: float, p11: float) -> float:
@@ -147,6 +148,7 @@ def mutual_information(p1X: float, pX1: float, p11: float) -> float:
 
     return mi
 
+
 def get_interaction_table(ppi: PrecomputedPopulationInformation) -> Matrix:
     print("Starting to generate the table")
     pairs_to_calculate = get_pairs_to_check(ppi.search_space)
@@ -180,7 +182,7 @@ def get_interactions_for_feature(feature: HotEncodedFeature,
     present_pairs = np.outer(boolean_feature, boolean_feature)
     present_pairs = np.triu(present_pairs)
 
-    return np.select(present_pairs, interaction_table)
+    return interaction_table[present_pairs]  # this might be wrong
 
 
 def get_interaction_score_for_feature(feature: HotEncodedFeature,
@@ -303,7 +305,6 @@ class WeakestLink(MeasurableCriterion):
                                    p11: float) -> list[float]:
         present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
 
-
         if len(present_vals) == 0:
             return []
 
@@ -325,12 +326,43 @@ class WeakestLink(MeasurableCriterion):
 
         return result
 
-
-    def all_linkage_scores_for_feature(self, feature: HotEncodedFeature,
-                                   ppi: PrecomputedPopulationInformation,
-                                   p11: float):
+    def faster_linkage_score_for_feature(self, feature: HotEncodedFeature,
+                                         ppi: PrecomputedPopulationInformation,
+                                         p11: float) -> float:
         present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
 
+        if len(present_vals) == 0:
+            return 0
+
+        if p11 < 1e-6:
+            return 0
+
+        def without_that_val(val_pos: int) -> HotEncodedFeature:
+            without = np.array(feature)
+            without[val_pos] = 0.0
+            return without
+
+        f1Xs = list(map(without_that_val, present_vals))
+
+        p1Xs: FlatArray = self.get_proportions_of_features(f1Xs, ppi)
+        all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(ppi)
+        pX1s = all_pX1s[
+            np.array(feature, dtype=bool)]  # feature is used as the predicate to select the marginal probabilities
+
+        max_pX1_times_P1X = np.min(p1Xs * pX1s)
+        if max_pX1_times_P1X < 1e-06:
+            return 12
+
+        result = p11 * np.log(p11 / max_pX1_times_P1X)
+        if np.isnan(result):
+            raise Exception("This was not supposed to happen!!")
+
+        return result
+
+    def all_linkage_scores_for_feature(self, feature: HotEncodedFeature,
+                                       ppi: PrecomputedPopulationInformation,
+                                       p11: float):
+        present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
 
         if len(present_vals) == 0:
             return []
@@ -364,7 +396,7 @@ class WeakestLink(MeasurableCriterion):
             return 0
 
         linkage_scores = self.linkage_scores_for_feature(feature, ppi, p11)
-        return np.sum(linkage_scores)   # IMPORTANT
+        return np.sum(linkage_scores)  # IMPORTANT
 
     def __repr__(self):
         return f"WeakestLink"
@@ -376,9 +408,8 @@ class WeakestLink(MeasurableCriterion):
 
         hot_encoded_features = pfi.feature_matrix.T
 
-        scores = np.array([self.get_weakest_list_for_feature(feature, ppi, p11)
-                         for feature, p11 in zip(hot_encoded_features, p11s)])
-
+        scores = np.array([self.faster_linkage_score_for_feature(feature, ppi, p11)
+                           for feature, p11 in zip(hot_encoded_features, p11s)])
 
         return scores
 
@@ -396,9 +427,7 @@ class WeakestLink(MeasurableCriterion):
         mi, ce, je, vi, v2 = self.all_linkage_scores_for_feature(hot_encoded_feature, ppi, p11)
 
         def repr_scores(scores):
-            return "["+", ".join(f"{score:.2f}" for score in scores)+"]"
-
-
+            return "[" + ", ".join(f"{score:.2f}" for score in scores) + "]"
 
         first_line = (f"The linkage scores are "
                       f"\n\t mi = {repr_scores(mi)}"
