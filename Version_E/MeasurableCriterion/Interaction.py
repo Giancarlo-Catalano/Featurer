@@ -349,12 +349,12 @@ class WeakestLink(MeasurableCriterion):
         pX1s = all_pX1s[
             np.array(feature, dtype=bool)]  # feature is used as the predicate to select the marginal probabilities
 
-        max_pX1_times_P1X = np.max(p1Xs * pX1s)
+        max_pX1_times_P1X = np.min(p1Xs * pX1s)
         if max_pX1_times_P1X < 1e-06:
             return 12
 
         result = p11 * np.log(p11 / max_pX1_times_P1X)
-
+        return result
         big_prod = np.prod(p1Xs)*np.prod(pX1s)
         if big_prod < 1e-6:
             return 12
@@ -420,9 +420,9 @@ class WeakestLink(MeasurableCriterion):
         return scores
 
     def describe_score(self, given_score) -> str:
-        return f"Weakest_Link = {given_score}"
+        return f"Weakest_Link = {given_score:.2f}"
 
-    def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
+    def describe_feature_long(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
 
         hot_encoded_feature = HotEncoding.get_hot_encoded_feature(feature, ppi.search_space)
         normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)

@@ -8,8 +8,8 @@ from Version_E.MeasurableCriterion.CriterionUtilities import Not
 
 def get_fuzzy_match_matrix(pfi: PrecomputedFeatureInformation, min_errors: int, max_errors: int):
     at_least_min_errors = pfi.feature_presence_error_matrix >= min_errors
-    at_most_min_errors = pfi.feature_presence_error_matrix <= max_errors
-    match_matrix = np.array(np.logical_and(at_least_min_errors, at_most_min_errors), dtype=float)
+    at_most_max_errors = pfi.feature_presence_error_matrix <= max_errors
+    match_matrix = np.array(np.logical_and(at_least_min_errors, at_most_max_errors), dtype=float)
     return match_matrix
 
 
@@ -57,7 +57,7 @@ class Robustness(MeasurableCriterion):
         fuzzy_mean = get_mean_of_fuzzy_match_matrix(fuzzy_match_matrix, pfi)
 
         # the denominator there is to normalise the "deviation": without it, smaller average fitnesses deviate relatively more
-        return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
+        return (normal_means - fuzzy_mean)# / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))
 
     def get_raw_score_array_experimental(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         fuzzy_match_matrix = get_fuzzy_match_matrix(pfi, self.min_amount_of_differences, self.max_amount_of_differences)
@@ -65,7 +65,7 @@ class Robustness(MeasurableCriterion):
         return -sds
 
     def describe_score(self, given_score) -> str:
-        return f"Robustness score [{self.min_amount_of_differences}, {self.max_amount_of_differences}] = {-given_score:.2f}"
+        return f"Robustness score [{self.min_amount_of_differences}, {self.max_amount_of_differences}] = {given_score:.2f}"
 
 def Atomicity():
-    return Not(Robustness(1, 1))
+    return Robustness(1, 1)

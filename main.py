@@ -64,6 +64,9 @@ def test_new_miner():
              "amount_of_groups": 3,
              "k": 5}
 
+    plateau = {"which": "plateau",
+               "amount_of_groups": 6}
+
 
     problem = trapk
 
@@ -71,9 +74,10 @@ def test_new_miner():
                  "arguments": [
                      {"which": "explainability"},
                      {"which": "weakest_link"},
-                     {"which": "high_fitness"}
+                     {"which": "high_fitness"},
+                     {"which": "atomicity"}
                  ],
-                 "weights": [1, 1, 1]}
+                 "weights": [1, 1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
