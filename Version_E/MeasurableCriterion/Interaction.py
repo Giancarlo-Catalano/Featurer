@@ -358,7 +358,8 @@ class WeakestLink(MeasurableCriterion):
         big_prod = np.prod(p1Xs)*np.prod(pX1s)
         if big_prod < 1e-6:
             return 12
-        return p11 * (np.sum(feature)*np.log2(p11)-np.log2(np.prod(p1Xs)*np.prod(pX1s)))
+        sum_of_mi = p11 * (np.sum(feature)*np.log2(p11)-np.log2(np.prod(p1Xs)*np.prod(pX1s)))
+        return sum_of_mi
         if np.isnan(result):
             raise Exception("This was not supposed to happen!!")
 
