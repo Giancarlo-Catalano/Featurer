@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 from typing import Iterable
 
 import utils
@@ -34,6 +35,7 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
                                       for miner_run in program_run["results_for_each_miner"]]
             return [parse_miner_run_item(miner_run) for miner_run in miner_runs]
 
+    os.makedirs(os.path.dirname(output_name), exist_ok=True)   # to create the directory if it doesn't exist
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["Miner", "Quality", "Time"])
