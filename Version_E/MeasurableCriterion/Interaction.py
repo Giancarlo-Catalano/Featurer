@@ -349,21 +349,15 @@ class WeakestLink(MeasurableCriterion):
         pX1s = all_pX1s[
             np.array(feature, dtype=bool)]  # feature is used as the predicate to select the marginal probabilities
 
-        max_pX1_times_P1X = np.min(p1Xs * pX1s)
-        if max_pX1_times_P1X < 1e-06:
-            return 12
 
-        result = p11 * np.log(p11 / max_pX1_times_P1X)
-        return result
+        max_pX1_p1X = np.max(pX1s * p1Xs)
+        return p11 * np.log2(p11/max_pX1_p1X)
         big_prod = np.prod(p1Xs)*np.prod(pX1s)
-        if big_prod < 1e-6:
-            return 12
-        sum_of_mi = p11 * (np.sum(feature)*np.log2(p11)-np.log2(np.prod(p1Xs)*np.prod(pX1s)))
+        if big_prod < 1e-9:
+            return 0
+        sum_of_mi = p11 * (np.sum(feature)*np.log2(p11)-np.log2(big_prod))
         return sum_of_mi
-        if np.isnan(result):
-            raise Exception("This was not supposed to happen!!")
 
-        return result
 
     def all_linkage_scores_for_feature(self, feature: HotEncodedFeature,
                                        ppi: PrecomputedPopulationInformation,

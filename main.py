@@ -77,7 +77,7 @@ def test_new_miner():
                      {"which": "high_fitness"},
                      {"which": "atomicity"}
                  ],
-                 "weights": [1, 1, 1, 1]}
+                 "weights": [1, 1, 1, 0]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
