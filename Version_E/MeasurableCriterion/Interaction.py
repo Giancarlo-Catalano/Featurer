@@ -352,11 +352,6 @@ class WeakestLink(MeasurableCriterion):
 
         max_pX1_p1X = np.max(pX1s * p1Xs)
         return p11 * np.log2(p11/max_pX1_p1X)
-        big_prod = np.prod(p1Xs)*np.prod(pX1s)
-        if big_prod < 1e-9:
-            return 0
-        sum_of_mi = p11 * (np.sum(feature)*np.log2(p11)-np.log2(big_prod))
-        return sum_of_mi
 
 
     def all_linkage_scores_for_feature(self, feature: HotEncodedFeature,
@@ -396,7 +391,7 @@ class WeakestLink(MeasurableCriterion):
             return 0
 
         linkage_scores = self.linkage_scores_for_feature(feature, ppi, p11)
-        return np.sum(linkage_scores)  # IMPORTANT
+        return np.min(linkage_scores)  # IMPORTANT
 
     def __repr__(self):
         return f"WeakestLink"

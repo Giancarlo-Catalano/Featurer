@@ -56,15 +56,18 @@ class ArtificialProblem(TestableCombinatorialProblem):
     def generate_features(self) -> list[Feature]:
 
         def generate_random_group() -> list[Feature]:
-            return [self.get_random_feature() for _ in range(self.amount_of_features)]
+            return list(utils.generate_distinct(self.get_random_feature, self.amount_of_features))
 
         def feature_group_is_usable(group: Iterable[Feature]) -> bool:
             return all([self.features_are_separate(a, b) for a, b in itertools.combinations(group, 2)])
 
-        while True:
-            tentative_group = generate_random_group()
-            if feature_group_is_usable(tentative_group):
-                return tentative_group
+        if self.allow_overlaps:
+            return generate_random_group()
+        else:
+            while True:
+                tentative_group = generate_random_group()
+                if feature_group_is_usable(tentative_group):
+                    return tentative_group
 
     def generate_scores_for_features(self):
         amount_needed = len(self.important_features)

@@ -6,7 +6,7 @@ from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFit
 from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce, WeakestLink
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
-from Version_E.MeasurableCriterion.Robustness import Robustness, Atomicity
+from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness
 from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 
 
@@ -47,8 +47,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Balance(parsed_arguments, weights=weights)
     elif criterion_string == "completeness":
         return Completeness()
-    elif criterion_string == "atomicity":
-        return Atomicity()
+    elif criterion_string == "deceptiveness":
+        return Deceptiveness()
     elif criterion_string == "shap":
         return SHAPValue()
     elif criterion_string == "interaction":

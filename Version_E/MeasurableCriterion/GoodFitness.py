@@ -49,7 +49,7 @@ class ConsistentFitness(MeasurableCriterion):
         return - np.log10(p_values)
 
     def describe_score(self, given_score) -> str:
-        return f"Consistent with p-value = 1/10^-{int(given_score)}"
+        return f"Consistent with p-value = 1/10^{int(given_score)}"
 
 
 class FitnessHigherThanAverage(MeasurableCriterion):

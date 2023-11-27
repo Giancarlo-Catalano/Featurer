@@ -70,14 +70,18 @@ def test_new_miner():
 
     problem = trapk
 
+    weakest_link = {"which": "weakest_link"}
+    simple = {"which": "explainability"}
+    high_fitness = {"which": "high_fitness"}
+    consistent_fitness = {"which": "consistent_fitness"}
+
     criterion = {"which": "balance",
                  "arguments": [
-                     {"which": "explainability"},
-                     {"which": "weakest_link"},
-                     {"which": "high_fitness"},
-                     {"which": "atomicity"}
-                 ],
-                 "weights": [1, 1, 1, 0]}
+                     {"which": "any",
+                      "arguments": [weakest_link,
+                                    simple]},
+                     high_fitness],
+                 "weights": [1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -89,8 +93,8 @@ def test_new_miner():
     biminer = BiDirectionalMiner(selector=selector,
                                  population_size=150,
                                  stochastic=False,
-                                 uses_archive=False,
-                                 termination_criteria_met=run_with_limited_budget(10000))
+                                 uses_archive=True,
+                                 termination_criteria_met=run_with_limited_budget(30000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
