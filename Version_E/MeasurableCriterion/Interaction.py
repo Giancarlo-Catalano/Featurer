@@ -349,7 +349,6 @@ class WeakestLink(MeasurableCriterion):
         pX1s = all_pX1s[
             np.array(feature, dtype=bool)]  # feature is used as the predicate to select the marginal probabilities
 
-
         max_pX1_p1X = np.max(pX1s * p1Xs)
         return p11 * np.log2(p11/max_pX1_p1X)
 
@@ -438,3 +437,50 @@ class WeakestLink(MeasurableCriterion):
                        f"sum = {np.sum(mi)}")
 
         return first_line + "\n" + second_line
+
+
+
+class MarginalImprovement(MeasurableCriterion):
+    fXX_average_cached: PPICachedData
+    fX1_average_cached: PPICachedData
+
+    def get_average_of_ppi(self, ppi: PrecomputedPopulationInformation) -> float:
+        return np.average(ppi.fitness_array)
+
+    def get_fX1_average(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
+        sum_of_fitnesses = utils.weighted_sum_of_rows(ppi.candidate_matrix, ppi.fitness_array)
+        count_of_each_fX1 = np.sum(ppi.candidate_matrix, axis=0)
+        return utils.divide_arrays_safely(sum_of_fitnesses, count_of_each_fX1, 0)
+
+    def __init__(self):
+        self.fXX_average_cached = PPICachedData(self.get_average_of_ppi)
+        self.fX1_average_cached = PPICachedData(self.fX1_average_cached)
+
+    def __repr__(self):
+        return MarginalImprovement
+
+    def get_raw_score_of_feature(self, feature: HotEncodedFeature,
+                                 f11_mean: float,
+                                 ppi: PrecomputedPopulationInformation) -> float:
+
+        present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
+
+        if len(present_vals) == 0:
+            return 0
+
+        if f11_mean < 1e-6:
+            return 0
+
+        def without_that_val(val_pos: int) -> HotEncodedFeature:
+            without = np.array(feature)
+            without[val_pos] = 0.0
+            return without
+
+        f1Xs = np.array(map(without_that_val, present_vals))
+        temp_pfi = PrecomputedFeatureInformation.get_from_hot_encoded_features(ppi, f1Xs)
+        f1X_means = temp_pfi.mean_fitness_for_each_feature
+
+        all_fX1_mean: FlatArray = self.fX1_average_cached.get_data_for_ppi(ppi)
+
+        return f11_mean/np.min(all_fX1_mean)
+

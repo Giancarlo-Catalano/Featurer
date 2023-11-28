@@ -76,12 +76,9 @@ def test_new_miner():
     consistent_fitness = {"which": "consistent_fitness"}
 
     criterion = {"which": "balance",
-                 "arguments": [
-                     {"which": "any",
-                      "arguments": [weakest_link,
-                                    simple]},
-                     high_fitness],
-                 "weights": [1, 1]}
+                 "arguments":  [weakest_link,
+                                simple],
+                 "weights": [4, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -94,13 +91,13 @@ def test_new_miner():
                                  population_size=150,
                                  stochastic=False,
                                  uses_archive=True,
-                                 termination_criteria_met=run_with_limited_budget(30000))
+                                 termination_criteria_met=run_with_limited_budget(10000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
                        termination_criteria_met=run_with_limited_budget(10000))
 
-    miner = biminer
+    miner = ga_miner
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
