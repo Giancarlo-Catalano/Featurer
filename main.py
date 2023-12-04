@@ -72,7 +72,7 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = plateau
+    problem = artificial_problem
 
     weakest_link = {"which": "weakest_link"}
     simple = {"which": "explainability"}
@@ -82,26 +82,25 @@ def test_new_miner():
     na = {"which": "non_additiveness"}
     pairwise_robustness = {"which": "pairwise_robustness"}
     P00_linkage = {"which": "P00_linkage"}
-    target_size = {"which": "target_size",
-                   "target": 5}
     classic_linkage = {"which": "classic_linkage"}
+    worst_case = {"which": "worst_case"}
 
     criterion = {"which": "balance",
-                 "arguments":  [high_fitness, simple],
-                 "weights": [1, 1]}
+                 "arguments":  [simple, weakest_link, high_fitness],
+                 "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
     #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-    training_ppi = get_evolved_population_sample(problem, sample_size, 1)
+    training_ppi = get_evolved_population_sample(problem, sample_size, 100)
     selector = FeatureSelector(training_ppi, criterion)
 
-    biminer = BiDirectionalMiner(selector=selector,
+    biminer = ConstructiveMiner(selector=selector,
                                  population_size=100,
                                  stochastic=False,
-                                 uses_archive=False,
-                                 termination_criteria_met=run_with_limited_budget(10000))
+                                 uses_archive=True,
+                                 termination_criteria_met=run_with_limited_budget(20000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
@@ -112,7 +111,7 @@ def test_new_miner():
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
 
-    good_features = miner.get_meaningful_features(120)
+    good_features = miner.get_meaningful_features(30)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))

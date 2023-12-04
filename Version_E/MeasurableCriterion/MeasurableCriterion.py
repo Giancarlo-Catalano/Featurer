@@ -22,7 +22,7 @@ class MeasurableCriterion:
         """ Return a numpy array which contains a numerical score for each feature in the input.
             NOTE: the score should INCREASE as the criteria is being satisfied
         """
-        raise Exception("Error: a realisation of MeasurableCriterion does not implement get_score_array")
+        raise Exception("Error: a realisation of MeasurableCriterion does not implement get_raw_score_array")
 
     def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         """ Returns the scores which correlate with the criterion
@@ -40,7 +40,7 @@ class MeasurableCriterion:
 
     def get_single_raw_score(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> float:
         pfi = PrecomputedFeatureInformation(ppi, [feature])
-        return self.get_raw_score_array(pfi)[0]
+        return self.get_score_array(pfi)[0]  # TODO this should be get_raw_score_array
 
     def describe_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
         raw_score = self.get_single_raw_score(feature, ppi)

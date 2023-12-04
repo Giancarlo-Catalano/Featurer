@@ -57,8 +57,13 @@ class TrivialExplainability(MeasurableCriterion):
         return np.array([self.explainability_of_feature(feature, amount_of_vars)
                          for feature in pfi.features])
 
+
+    def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        amount_of_vars = np.sum(pfi.feature_matrix, axis=0)
+        return 1 - (amount_of_vars / pfi.search_space.dimensions)
+
     def describe_score(self, given_score) -> str:
-        return f"Trivial explainability = {given_score}"
+        return f"Trivial explainability = {given_score:.2f}"
 
 
 

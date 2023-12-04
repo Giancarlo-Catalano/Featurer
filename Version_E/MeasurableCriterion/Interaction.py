@@ -493,17 +493,17 @@ class ClassicLinkage(MeasurableCriterion):
     Variable = int
     Value = int
     # LinkageTable = map[(Variable, Variable), Fitness]
-    
+
     def get_where_var_val_is_used(self, var: Variable, val: Value, ppi: PrecomputedPopulationInformation) -> FlatArray:
         position_in_hot_encoded = ppi.search_space.position_in_hot_encoded(var, val)
         used_where = np.array(ppi.candidate_matrix[:, position_in_hot_encoded], dtype=bool)
         return used_where
-    
+
     def get_fitnesses_for_var_val(self, var: Variable, val: Value, ppi: PrecomputedPopulationInformation) -> FlatArray:
         return ppi.fitness_array[self.get_where_var_val_is_used(var, val, ppi)]
-    
-    def get_fitnesses_for_var_val_pair(self, var_a: Variable, val_a: Value, 
-                                       var_b: Variable, val_b: Value, 
+
+    def get_fitnesses_for_var_val_pair(self, var_a: Variable, val_a: Value,
+                                       var_b: Variable, val_b: Value,
                                        ppi: PrecomputedPopulationInformation) -> FlatArray:
         where_a = self.get_where_var_val_is_used(var_a, val_a, ppi)
         where_b = self.get_where_var_val_is_used(var_b, val_b, ppi)
@@ -534,6 +534,23 @@ class ClassicLinkage(MeasurableCriterion):
         ss_int = ss_tot - ss_factor(var_a) - ss_factor(var_b) - ss_within
         return ss_int
 
+
+    def normalise_table(self, linkage_table: dict):
+        present_values = linkage_table.values()
+        position_with_values = list(enumerate(present_values))
+        position_with_values.sort(key=utils.second)
+        scrambled_positions, sorted_values = utils.unzip(position_with_values)
+        scrambled_positions_with_rank = list(enumerate(scrambled_positions))
+        scrambled_positions_with_rank.sort(key=utils.first)
+        resorted_positions, ranks = utils.unzip(scrambled_positions_with_rank)
+        max_rank = len(present_values)-1
+
+        normalised_ranks = [rank / max_rank for rank in ranks]
+
+        return {key: rank for (key, rank) in zip(linkage_table.keys(), normalised_ranks)}
+
+
+
     def anova_SS_int_between_all_requested_pairs(self, list_of_pairs: list[(Variable, Variable)],
                                                  ppi: PrecomputedPopulationInformation):
         total_mean: float = np.mean(ppi.fitness_array)
@@ -548,6 +565,8 @@ class ClassicLinkage(MeasurableCriterion):
         amount_of_vars = ppi.search_space.dimensions
         pairs_to_calculate = itertools.combinations(range(amount_of_vars), 2)
         result = self.anova_SS_int_between_all_requested_pairs(pairs_to_calculate, ppi)
+
+        result = self.normalise_table(result)
 
         view_table = np.zeros((amount_of_vars, amount_of_vars))
         for (var_a, var_b) in result:
@@ -576,7 +595,8 @@ class ClassicLinkage(MeasurableCriterion):
             return np.min(linkages)
 
 
-    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+
+    def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         ppi = pfi.precomputed_population_information
         return np.array([self.get_single_linkage_score_for_feature(feature, ppi)
                          for feature in pfi.features])

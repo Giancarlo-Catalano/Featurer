@@ -63,7 +63,7 @@ class Balance(MeasurableCriterion):
                 ", ".join(f"{criterion}({weight})" for criterion, weight in zip(self.criteria, self.weights)) + \
                 "]"
 
-    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+    def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         scores = [criterion.get_score_array(pfi) for criterion in self.criteria]
         atomic_scores = np.array(scores)
         return utils.weighted_average_of_rows(atomic_scores, self.weights)

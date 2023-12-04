@@ -149,3 +149,5 @@ class PrecomputedFeatureInformation:
         result_pfi.feature_presence_matrix = result_pfi.compute_feature_presence_matrix()
         #result_pfi.amount_of_features = amount_of_features
         return result_pfi
+
+

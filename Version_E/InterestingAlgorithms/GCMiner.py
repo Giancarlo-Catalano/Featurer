@@ -65,6 +65,12 @@ class GCMiner(FeatureMiner):
     def select(self, population: EvaluatedPopulation) -> EvaluatedPopulation:
         raise Exception("An implementation of ArchiveMiner does not implement select")
 
+    def order_within(self, population: Population, lower_bound: int, upper_bound: int) -> Population:
+        def feature_is_within_bounds(feature: Feature):
+            return lower_bound <= feature.variable_mask.count() <= upper_bound
+
+        return [feature for feature in population if feature_is_within_bounds(feature)]
+
     def mine_features_with_archive(self) -> Population:
         population = self.get_initial_population()
         archive = set()
@@ -80,6 +86,7 @@ class GCMiner(FeatureMiner):
         while should_continue():
             iteration += 1
             #print(f"In iteration {iteration}")
+            population = self.order_within(population, 0, 7)
             population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
@@ -111,6 +118,7 @@ class GCMiner(FeatureMiner):
         while should_continue():
             iteration += 1
             # print(f"In iteration {iteration}")
+            population = self.order_within(population, 2, 7)
             population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)

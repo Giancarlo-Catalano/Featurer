@@ -2,7 +2,8 @@ from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance, Extreme
 from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability, TargetSize
 from Version_E.MeasurableCriterion.ForSampling import Completeness
-from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
+from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage, \
+    WorstCase
 from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce, WeakestLink, PairwiseRobustness, P00Linkage, \
     ClassicLinkage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
@@ -44,7 +45,7 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Any(parsed_arguments)
     elif criterion_string == "balance":
         parsed_arguments = [decode_criterion(criterion, problem) for criterion in properties["arguments"]]
-        weights = properties["weights"]
+        weights = properties.get("weights", None)
         return Balance(parsed_arguments, weights=weights)
     elif criterion_string == "completeness":
         return Completeness()
@@ -64,6 +65,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return ClassicLinkage()
     elif criterion_string == "target_size":
         return TargetSize(properties["target"])
+    elif criterion_string == "worst_case":
+        return WorstCase()
     else:
         raise Exception(f"The criterion string {criterion_string} was not recognised")
 
