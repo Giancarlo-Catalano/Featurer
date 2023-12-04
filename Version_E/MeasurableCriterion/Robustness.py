@@ -13,9 +13,8 @@ def get_fuzzy_match_matrix(pfi: PrecomputedFeatureInformation, min_errors: int, 
     return match_matrix
 
 
-def get_mean_of_fuzzy_match_matrix(fuzzy_matrix: np.ndarray, pfi: PrecomputedFeatureInformation) -> np.ndarray:
-    sum_of_fitnesses = utils.weighted_sum_of_rows(fuzzy_matrix,
-                                                  pfi.fitness_array)
+def get_mean_of_fuzzy_match_matrix(fuzzy_matrix: np.ndarray, fitness_array) -> np.ndarray:
+    sum_of_fitnesses = utils.weighted_sum_of_rows(fuzzy_matrix, fitness_array)
 
     count_for_each_feature = np.sum(fuzzy_matrix, axis=0)
 
@@ -54,7 +53,7 @@ class Robustness(MeasurableCriterion):
     def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
         normal_means = pfi.mean_fitness_for_each_feature
         fuzzy_match_matrix = get_fuzzy_match_matrix(pfi, self.min_amount_of_differences, self.max_amount_of_differences)
-        fuzzy_mean = get_mean_of_fuzzy_match_matrix(fuzzy_match_matrix, pfi)
+        fuzzy_mean = get_mean_of_fuzzy_match_matrix(fuzzy_match_matrix, pfi.fitness_array)
 
         # the denominator there is to normalise the "deviation": without it, smaller average fitnesses deviate relatively more
         return (normal_means - fuzzy_mean) / (1 + np.abs(normal_means) + np.abs(fuzzy_mean))

@@ -1,9 +1,10 @@
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Balance, Extreme
-from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability
+from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability, TargetSize
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage
-from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce, WeakestLink
+from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce, WeakestLink, PairwiseRobustness, P00Linkage, \
+    ClassicLinkage
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness
@@ -53,12 +54,16 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return SHAPValue()
     elif criterion_string == "interaction":
         return Interaction()
-    elif criterion_string == "divorce":
-        return Divorce()
     elif criterion_string == "weakest_link":
         return WeakestLink()
-    elif criterion_string == "expected_fitness":
-        raise Exception("Not implemented yet")
+    elif criterion_string == "pairwise_robustness":
+        return PairwiseRobustness()
+    elif criterion_string == "P00_linkage":
+        return P00Linkage()
+    elif criterion_string == "classic_linkage":
+        return ClassicLinkage()
+    elif criterion_string == "target_size":
+        return TargetSize(properties["target"])
     else:
         raise Exception(f"The criterion string {criterion_string} was not recognised")
 

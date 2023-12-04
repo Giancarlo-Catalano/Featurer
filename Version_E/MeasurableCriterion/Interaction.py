@@ -1,3 +1,4 @@
+import itertools
 from typing import Iterable
 
 import numpy as np
@@ -8,6 +9,7 @@ from Version_E import HotEncoding
 from Version_E.Feature import Feature
 from Version_E.MeasurableCriterion.CriterionUtilities import PPICachedData
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
+from Version_E.MeasurableCriterion.Robustness import get_fuzzy_match_matrix, get_mean_of_fuzzy_match_matrix
 from Version_E.PrecomputedFeatureInformation import PrecomputedFeatureInformation
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 
@@ -213,7 +215,7 @@ class Interaction(MeasurableCriterion):
 
 
 def calculate_variance_of_features(pfi: PrecomputedFeatureInformation):
-    return np.squared(pfi.sd_for_each_feature)
+    return np.square(pfi.sd_for_each_feature)
 
 
 def get_divorce_score(feature: Feature,
@@ -350,8 +352,7 @@ class WeakestLink(MeasurableCriterion):
             np.array(feature, dtype=bool)]  # feature is used as the predicate to select the marginal probabilities
 
         max_pX1_p1X = np.max(pX1s * p1Xs)
-        return p11 * np.log2(p11/max_pX1_p1X)
-
+        return p11 * np.log2(p11 / max_pX1_p1X)
 
     def all_linkage_scores_for_feature(self, feature: HotEncodedFeature,
                                        ppi: PrecomputedPopulationInformation,
@@ -410,77 +411,176 @@ class WeakestLink(MeasurableCriterion):
     def describe_score(self, given_score) -> str:
         return f"Weakest_Link = {given_score:.2f}"
 
-    def describe_feature_long(self, feature: Feature, ppi: PrecomputedPopulationInformation) -> str:
 
-        hot_encoded_feature = HotEncoding.get_hot_encoded_feature(feature, ppi.search_space)
-        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
-
-        pfi = PrecomputedFeatureInformation(ppi, [feature])
-        p11 = utils.weighted_sum_of_rows(pfi.feature_presence_matrix, normalised_fitnesses)[0]
-
-        mi, ce, je, vi, v2 = self.all_linkage_scores_for_feature(hot_encoded_feature, ppi, p11)
-
-        def repr_scores(scores):
-            return "[" + ", ".join(f"{score:.2f}" for score in scores) + "]"
-
-        first_line = (f"The linkage scores are "
-                      f"\n\t mi = {repr_scores(mi)}"
-                      f"\n\t ce = {repr_scores(ce)}"
-                      f"\n\t je = {repr_scores(je)}"
-                      f"\n\t vi = {repr_scores(vi)}"
-                      f"\n\t v2 = {repr_scores(v2)}")
-
-        second_line = (f"min = {np.min(mi)}, "
-                       f"max = {np.max(mi)}, "
-                       f"len = {len(mi)}, "
-                       f"average = {np.mean(mi)}, "
-                       f"sum = {np.sum(mi)}")
-
-        return first_line + "\n" + second_line
-
-
-
-class MarginalImprovement(MeasurableCriterion):
-    fXX_average_cached: PPICachedData
-    fX1_average_cached: PPICachedData
-
-    def get_average_of_ppi(self, ppi: PrecomputedPopulationInformation) -> float:
-        return np.average(ppi.fitness_array)
-
-    def get_fX1_average(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
-        sum_of_fitnesses = utils.weighted_sum_of_rows(ppi.candidate_matrix, ppi.fitness_array)
-        count_of_each_fX1 = np.sum(ppi.candidate_matrix, axis=0)
-        return utils.divide_arrays_safely(sum_of_fitnesses, count_of_each_fX1, 0)
+class PairwiseRobustness(MeasurableCriterion):
 
     def __init__(self):
-        self.fXX_average_cached = PPICachedData(self.get_average_of_ppi)
-        self.fX1_average_cached = PPICachedData(self.fX1_average_cached)
+        pass
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        two_errors_fpm = np.array(pfi.feature_presence_error_matrix == 2, dtype=float)
+        mean_for_each_feature = get_mean_of_fuzzy_match_matrix(two_errors_fpm, pfi.fitness_array)
+        return mean_for_each_feature
 
     def __repr__(self):
-        return MarginalImprovement
+        return "PairwiseRobustness"
 
-    def get_raw_score_of_feature(self, feature: HotEncodedFeature,
-                                 f11_mean: float,
+    def describe_score(self, given_score) -> str:
+        return f"PairwiseRobustness = {given_score}"
+
+
+class P00Linkage(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "P00Linkage"
+
+    def describe_score(self, given_score) -> str:
+        return f"P00Linkage = {given_score}"
+
+    def get_f00s(self, feature: Feature, hot_feature: HotEncodedFeature,
+                 search_space: SearchSpace.SearchSpace) -> np.ndarray:
+        present_vars = [index for index, is_used in enumerate(feature.variable_mask)
+                        if is_used]
+
+        alternate_encoding_feature = np.array(hot_feature)
+
+        def invert_var(input_array: HotEncodedFeature, var: int):
+            start, end = search_space.precomputed_offsets[var:var + 2]
+            input_array[start:end] = 1 - input_array[start:end]
+
+        for var_index, is_used in enumerate(feature.variable_mask):
+            if not is_used:
+                invert_var(alternate_encoding_feature, var_index)
+
+        def with_inverted_vars(var_a: int, var_b: int) -> HotEncodedFeature:
+            result = np.array(alternate_encoding_feature)
+            invert_var(result, var_a)
+            invert_var(result, var_b)
+            return result
+
+        f00s = [with_inverted_vars(left, right)
+                for left, right in utils.cyclic_pairwise(present_vars)]
+
+        return np.array(f00s)
+
+    def get_individual_raw_score(self, feature: Feature, hot_feature: HotEncodedFeature,
                                  ppi: PrecomputedPopulationInformation) -> float:
-
-        present_vals = [val_pos for val_pos, is_used in enumerate(feature) if is_used]
-
-        if len(present_vals) == 0:
+        if np.sum(hot_feature) < 2:
             return 0
+        f00s: np.ndarray = self.get_f00s(feature, hot_feature, ppi.search_space)
 
-        if f11_mean < 1e-6:
+        error_count_matrix = ppi.candidate_matrix @ (1 - f00s).T
+        no_errors = np.array(error_count_matrix == 1, dtype=float)
+        scores = get_mean_of_fuzzy_match_matrix(no_errors, ppi.fitness_array)
+
+        return np.min(scores)
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        ppi = pfi.precomputed_population_information
+        hot_features = pfi.feature_matrix.T
+        return np.array([self.get_individual_raw_score(feature, hot_feature, ppi)
+                         for feature, hot_feature in zip(pfi.features, hot_features)])
+
+
+
+
+class ClassicLinkage(MeasurableCriterion):
+    cached_linkage_table: PPICachedData
+
+    Fitness = float
+    Variable = int
+    Value = int
+    # LinkageTable = map[(Variable, Variable), Fitness]
+    
+    def get_where_var_val_is_used(self, var: Variable, val: Value, ppi: PrecomputedPopulationInformation) -> FlatArray:
+        position_in_hot_encoded = ppi.search_space.position_in_hot_encoded(var, val)
+        used_where = np.array(ppi.candidate_matrix[:, position_in_hot_encoded], dtype=bool)
+        return used_where
+    
+    def get_fitnesses_for_var_val(self, var: Variable, val: Value, ppi: PrecomputedPopulationInformation) -> FlatArray:
+        return ppi.fitness_array[self.get_where_var_val_is_used(var, val, ppi)]
+    
+    def get_fitnesses_for_var_val_pair(self, var_a: Variable, val_a: Value, 
+                                       var_b: Variable, val_b: Value, 
+                                       ppi: PrecomputedPopulationInformation) -> FlatArray:
+        where_a = self.get_where_var_val_is_used(var_a, val_a, ppi)
+        where_b = self.get_where_var_val_is_used(var_b, val_b, ppi)
+        where_both = np.logical_and(where_a, where_b)
+        return ppi.fitness_array[where_both]
+
+
+    def anova_SS_int_between_vars(self, var_a: Variable, var_b: Variable, ppi: PrecomputedPopulationInformation,
+                                    total_mean:float, ss_tot:float) -> float:
+        def values_for(var) -> Iterable[int]:
+            return range(ppi.search_space.cardinalities[var])
+        def ss_factor(var) -> float:
+            ss_sum_for_levels = 0
+            for val in values_for(var):
+                fitnesses = self.get_fitnesses_for_var_val(var, val, ppi)
+                ss_sum_for_levels += len(fitnesses)*np.square(np.mean(fitnesses)-total_mean)
+            return ss_sum_for_levels
+
+        def ss_e(var_a, val_a, var_b, val_b) -> float:
+            observations = self.get_fitnesses_for_var_val_pair(var_a, val_a, var_b, val_b, ppi)
+            mean_of_observations = np.mean(observations)
+            return np.sum(np.square(observations-mean_of_observations))
+
+        ss_within = np.sum([ss_e(var_a, val_a, var_b, val_b)
+                            for val_a in values_for(var_a)
+                            for val_b in values_for(var_b)])
+
+        ss_int = ss_tot - ss_factor(var_a) - ss_factor(var_b) - ss_within
+        return ss_int
+
+    def anova_SS_int_between_all_requested_pairs(self, list_of_pairs: list[(Variable, Variable)],
+                                                 ppi: PrecomputedPopulationInformation):
+        total_mean: float = np.mean(ppi.fitness_array)
+        ss_tot: float = np.sum(np.square(ppi.fitness_array - total_mean))
+        linkage_table = {(var_a, var_b): self.anova_SS_int_between_vars(var_a, var_b, ppi, total_mean, ss_tot)
+                         for var_a, var_b in list_of_pairs}
+
+        return linkage_table
+
+
+    def generate_linkage_table(self, ppi: PrecomputedPopulationInformation):
+        amount_of_vars = ppi.search_space.dimensions
+        pairs_to_calculate = itertools.combinations(range(amount_of_vars), 2)
+        result = self.anova_SS_int_between_all_requested_pairs(pairs_to_calculate, ppi)
+
+        view_table = np.zeros((amount_of_vars, amount_of_vars))
+        for (var_a, var_b) in result:
+            value = result[(var_a, var_b)]
+            view_table[var_a][var_b] = value
+            view_table[var_b][var_a] = value
+        return result
+
+
+    def __init__(self):
+        self.cached_linkage_table = PPICachedData(self.generate_linkage_table)
+
+
+    def get_linkage_values_for_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation):
+        used_values = [index for index, is_used in enumerate(feature.variable_mask) if is_used]
+        pairs_to_check = itertools.combinations(used_values, 2)
+        linkage_table = self.cached_linkage_table.get_data_for_ppi(ppi)
+        return [linkage_table[pair] for pair in pairs_to_check]
+
+
+    def get_single_linkage_score_for_feature(self, feature: Feature, ppi: PrecomputedPopulationInformation):
+        linkages = self.get_linkage_values_for_feature(feature, ppi)
+        if len(linkages) < 1:
             return 0
+        else:
+            return np.min(linkages)
 
-        def without_that_val(val_pos: int) -> HotEncodedFeature:
-            without = np.array(feature)
-            without[val_pos] = 0.0
-            return without
 
-        f1Xs = np.array(map(without_that_val, present_vals))
-        temp_pfi = PrecomputedFeatureInformation.get_from_hot_encoded_features(ppi, f1Xs)
-        f1X_means = temp_pfi.mean_fitness_for_each_feature
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        ppi = pfi.precomputed_population_information
+        return np.array([self.get_single_linkage_score_for_feature(feature, ppi)
+                         for feature in pfi.features])
 
-        all_fX1_mean: FlatArray = self.fX1_average_cached.get_data_for_ppi(ppi)
 
-        return f11_mean/np.min(all_fX1_mean)
-
+    def describe_score(self, given_score) -> str:
+        return f"The feature has classical linkage value of {given_score}"

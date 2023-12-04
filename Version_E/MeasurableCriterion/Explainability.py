@@ -59,3 +59,22 @@ class TrivialExplainability(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Trivial explainability = {given_score}"
+
+
+
+class TargetSize(MeasurableCriterion):
+    target_size: int
+
+    def __init__(self, target_size: int):
+        self.target_size = target_size
+
+    def __repr__(self):
+        return f"TargetSize({self.target_size})"
+
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        amount_of_values = np.sum(pfi.feature_matrix, axis=0)
+        return -np.abs(amount_of_values-self.target_size)
+
+    def describe_score(self, given_score) -> str:
+        return f"Distance from target size = {-given_score}"

@@ -39,3 +39,4 @@ class CorrelationCriterion(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Correlation with phi-score = {given_score}"
+

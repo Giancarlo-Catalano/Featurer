@@ -1,3 +1,4 @@
+import itertools
 from typing import Optional
 
 import numpy as np
@@ -32,7 +33,7 @@ def hot_encode_candidate_population(population: list[SearchSpace.Candidate],
 def feature_from_hot_encoding(hot_encoded: np.ndarray, search_space: SearchSpace.SearchSpace) -> Feature:
     def deconcat_hot_encoding(hot_encoded_input: np.ndarray) -> list[np.ndarray]:
         return [hot_encoded_input[begin:end]
-                for (begin, end) in utils.adjacent_pairs(search_space.precomputed_offsets)]
+                for (begin, end) in itertools.pairwise(search_space.precomputed_offsets)]
 
     def from_hot_encoding(hot_encoded_int: np.ndarray) -> Optional[int]:
         for index, value in enumerate(hot_encoded_int):

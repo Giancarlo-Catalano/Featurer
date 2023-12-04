@@ -132,6 +132,8 @@ class SearchSpace:
             result_list[var] = val
         return Candidate(tuple(result_list))
 
+    def position_in_hot_encoded(self, var: int, val: int) -> int:
+        return self.precomputed_offsets[var]+val
 
 def merge_two_features(feature_a, feature_b) -> UserFeature:
     def remove_duplicates(input_list: list):

@@ -67,18 +67,28 @@ def test_new_miner():
     plateau = {"which": "plateau",
                "amount_of_groups": 6}
 
+    checkerboard = {"which": "checkerboard",
+                    "rows": 4,
+                    "cols": 4}
 
-    problem = trapk
+
+    problem = plateau
 
     weakest_link = {"which": "weakest_link"}
     simple = {"which": "explainability"}
     high_fitness = {"which": "high_fitness"}
+    is_good = {"which": "fitness_higher_than_average"}
     consistent_fitness = {"which": "consistent_fitness"}
+    na = {"which": "non_additiveness"}
+    pairwise_robustness = {"which": "pairwise_robustness"}
+    P00_linkage = {"which": "P00_linkage"}
+    target_size = {"which": "target_size",
+                   "target": 5}
+    classic_linkage = {"which": "classic_linkage"}
 
     criterion = {"which": "balance",
-                 "arguments":  [weakest_link,
-                                simple],
-                 "weights": [4, 1]}
+                 "arguments":  [high_fitness, simple],
+                 "weights": [1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -88,16 +98,16 @@ def test_new_miner():
     selector = FeatureSelector(training_ppi, criterion)
 
     biminer = BiDirectionalMiner(selector=selector,
-                                 population_size=150,
+                                 population_size=100,
                                  stochastic=False,
-                                 uses_archive=True,
+                                 uses_archive=False,
                                  termination_criteria_met=run_with_limited_budget(10000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
                        termination_criteria_met=run_with_limited_budget(10000))
 
-    miner = ga_miner
+    miner = biminer
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")

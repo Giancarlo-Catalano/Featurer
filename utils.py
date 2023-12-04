@@ -22,9 +22,13 @@ def cumulative_sum(elements):
     return result
 
 
-def adjacent_pairs(elements):
-    # I should be able to use itertools.pairwise(elements), but it does not work
-    return zip(elements, elements[1:])
+def cyclic_pairwise(elements):
+    """Given an iterable A B C D, it produces AB BC CD DA"""
+
+    # this strange code is what happens when you read the itertools reference for the first time
+    return itertools.chain(itertools.pairwise(elements),
+                           [(elements[-1], elements[0])])
+
 
 
 def first(pair):

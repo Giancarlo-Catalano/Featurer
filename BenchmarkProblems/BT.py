@@ -388,7 +388,11 @@ class ExpandedBTProblem(CombinatorialConstrainedProblem):
             return [week[5] or week[6] for week in as_matrix]
 
         def count_consecutives(working_weekends):
-            return len(list(utils.adjacent_pairs(working_weekends)))
+            amount = len(working_weekends)
+            if amount < 2:
+                return 0
+            else:
+                return amount-1
 
         return count_consecutives(get_working_weekends(worker_rota))
 
