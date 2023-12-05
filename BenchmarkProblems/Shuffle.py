@@ -39,6 +39,7 @@ class ShuffleProblem(TestableCombinatorialProblem):
     original_problem: TestableCombinatorialProblem
     permutation: Permutation
 
+
     def shuffle_feature(self, feature: Feature) -> Feature:
         new_mask = frozenbitarray(self.permutation.shuffle(feature.variable_mask))
         new_vals = np.array(self.permutation.shuffle(feature.values_mask))
@@ -67,7 +68,7 @@ class ShuffleProblem(TestableCombinatorialProblem):
 
     def __init__(self, original_problem: TestableCombinatorialProblem):
         self.original_problem = original_problem
-        self.permutation = Permutation(self.search_space.dimensions)
+        self.permutation = Permutation(self.original_problem.search_space.dimensions)
 
         original_search_space_cardinalities = self.original_problem.search_space.cardinalities
         shuffled_cardinalities = self.permutation.shuffle(original_search_space_cardinalities)

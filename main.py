@@ -62,7 +62,8 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = plateau
+    problem = {"which": "shuffle",
+               "problem": plateau}
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
@@ -81,8 +82,11 @@ def test_new_miner():
                                  uses_archive=True,
                                  termination_criteria_met=run_with_limited_budget(10000))
 
-    print(f"The problem is {problem.long_repr()}")
+    print(f"The problem is {problem}")
+    print(f"It has ideals \n", "\n\t".join(f"{ideal}" for ideal in problem.get_ideal_features()))
+
     print(f"The miner is {miner}")
+
 
     good_features = miner.get_meaningful_features(30)
     print("The good features are: ")
@@ -107,6 +111,6 @@ def aggregate_folders():
 
 
 if __name__ == '__main__':
-    execute_command_line()
-    #test_new_miner()
-    #aggregate_folders()
+    #execute_command_line()
+    test_new_miner()
+    aggregate_folders()
