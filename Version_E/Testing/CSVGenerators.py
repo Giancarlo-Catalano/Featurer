@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+from collections import namedtuple
 from typing import Iterable
 
 import utils
@@ -39,6 +40,35 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["Miner", "Quality", "Time"])
+        for input_file in file_names:
+            rows = parse_contents_of_file(input_file)
+            csv_writer.writerows(rows)
+
+
+def make_csv_for_budget_needed_run(file_names: list[str], output_name: str):
+    Datapoint = namedtuple("Datapoint", "miner evaluations time successfull")
+
+    def parse_miner_run_item(miner_run: dict) -> Datapoint:
+        miner_str = generate_miner_name(miner_run["miner"])
+        evaluations = miner_run["used_budget"]
+        time = miner_run["time"]
+        successfull = miner_run["successfull"]
+        return Datapoint(miner_str, evaluations, time, successfull)
+
+
+    def parse_contents_of_file(file_name: str) -> list[Datapoint]:
+        print(f"Will be parsing {file_name}")
+        with open(file_name, "r") as file:
+            contents_of_file = json.load(file)
+            miner_runs: list[dict] = [miner_run
+                                      for program_run in contents_of_file["result"]
+                                      for miner_run in program_run["results_for_each_miner"]]
+            return [parse_miner_run_item(miner_run) for miner_run in miner_runs]
+
+    os.makedirs(os.path.dirname(output_name), exist_ok=True)   # to create the directory if it doesn't exist
+    with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
+        csv_writer = csv.writer(output_file, delimiter=",")
+        csv_writer.writerow(["Miner", "Evaluations", "Time", "Successfull"])
         for input_file in file_names:
             rows = parse_contents_of_file(input_file)
             csv_writer.writerows(rows)

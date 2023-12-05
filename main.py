@@ -37,7 +37,7 @@ def aggregate_files(directory: str, output_name: str):
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     # aggregate
-    CSVGenerators.make_csv_for_limited_budget_run(files_in_directory, output_name)
+    CSVGenerators.make_csv_for_budget_needed_run(files_in_directory, output_name)
 
 
 
@@ -96,8 +96,8 @@ def test_new_miner():
 
 
 def aggregate_folders():
-    folder_names = ["trap5"]
-    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Nov-22"
+    folder_names = ["test"]
+    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-5"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")
@@ -107,6 +107,6 @@ def aggregate_folders():
 
 
 if __name__ == '__main__':
-    execute_command_line()
+    #execute_command_line()
     #test_new_miner()
-    # aggregate_folders()
+    aggregate_folders()
