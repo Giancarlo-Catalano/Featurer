@@ -83,7 +83,7 @@ def test_new_miner():
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "explainability"},
-                                {"which": "high_fitness"}, {"which": "weakest_link"}],
+                                {"which": "high_fitness"}, {"which": "interaction"}],
                  "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)

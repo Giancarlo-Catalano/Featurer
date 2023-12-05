@@ -4,8 +4,7 @@ from Version_E.MeasurableCriterion.Explainability import Explainability, Trivial
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage, \
     WorstCase
-from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce, WeakestLink, PairwiseRobustness, P00Linkage, \
-    ClassicLinkage
+from Version_E.MeasurableCriterion.Interaction import Interaction
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness
@@ -55,14 +54,6 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return SHAPValue()
     elif criterion_string == "interaction":
         return Interaction()
-    elif criterion_string == "weakest_link":
-        return WeakestLink()
-    elif criterion_string == "pairwise_robustness":
-        return PairwiseRobustness()
-    elif criterion_string == "P00_linkage":
-        return P00Linkage()
-    elif criterion_string == "classic_linkage":
-        return ClassicLinkage()
     elif criterion_string == "target_size":
         return TargetSize(properties["target"])
     elif criterion_string == "worst_case":
