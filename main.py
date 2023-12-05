@@ -43,7 +43,10 @@ def aggregate_files(directory: str, output_name: str):
 def get_evolved_population_sample(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
                            population_size: int,
                            evaluation_budget: int) -> PrecomputedPopulationInformation:
-    ga = GASampler(problem.score_of_candidate, problem.search_space, population_size, evaluation_budget)
+    ga = GASampler(problem.score_of_candidate,
+                   problem.search_space,
+                   population_size,
+                   run_with_limited_budget(evaluation_budget))
     population = ga.evolve_population()
     fitness_list = [problem.score_of_candidate(candidate) for candidate in population]
 
@@ -56,9 +59,6 @@ def test_new_miner():
                           "size_of_partials": 4,
                           "amount_of_features": 4,
                           "allow_overlaps": True}
-
-    insular_problem = {"which": "insular",
-                       "amount_of_islets": 4}
 
     trapk = {"which": "trapk",
              "amount_of_groups": 3,
@@ -73,10 +73,6 @@ def test_new_miner():
 
 
     problem = plateau
-
-    weakest_link = {"which": "weakest_link"}
-    simple = {"which": "explainability"}
-    high_fitness = {"which": "high_fitness"}
     is_good = {"which": "fitness_higher_than_average"}
     consistent_fitness = {"which": "consistent_fitness"}
     na = {"which": "non_additiveness"}
@@ -86,13 +82,13 @@ def test_new_miner():
     worst_case = {"which": "worst_case"}
 
     criterion = {"which": "balance",
-                 "arguments":  [simple, weakest_link, high_fitness],
+                 "arguments":  [{"which": "explainability"},
+                                {"which": "high_fitness"}, {"which": "weakest_link"}],
                  "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
-    #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
     training_ppi = get_evolved_population_sample(problem, sample_size, 10000)
     selector = FeatureSelector(training_ppi, criterion)
 
@@ -100,7 +96,7 @@ def test_new_miner():
                                  population_size=100,
                                  stochastic=False,
                                  uses_archive=True,
-                                 termination_criteria_met=run_with_limited_budget(20000))
+                                 termination_criteria_met=run_with_limited_budget(10000))
 
     ga_miner = GAMiner(selector=selector,
                        population_size=120,
@@ -119,12 +115,6 @@ def test_new_miner():
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
-
-    print("The ideal features have the following scores")
-    ideals = problem.get_ideal_features()
-    for feature in ideals:
-        print(problem.feature_repr(feature.to_legacy_feature()))
-        print(criterion.describe_feature(feature, training_ppi))
 
 
 
