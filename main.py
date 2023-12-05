@@ -107,6 +107,6 @@ def aggregate_folders():
 
 
 if __name__ == '__main__':
-    #execute_command_line()
+    execute_command_line()
     #test_new_miner()
-    aggregate_folders()
+    #aggregate_folders()
