@@ -40,17 +40,7 @@ def aggregate_files(directory: str, output_name: str):
     CSVGenerators.make_csv_for_limited_budget_run(files_in_directory, output_name)
 
 
-def get_evolved_population_sample(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
-                           population_size: int,
-                           evaluation_budget: int) -> PrecomputedPopulationInformation:
-    ga = GASampler(problem.score_of_candidate,
-                   problem.search_space,
-                   population_size,
-                   run_with_limited_budget(evaluation_budget))
-    population = ga.evolve_population()
-    fitness_list = [problem.score_of_candidate(candidate) for candidate in population]
 
-    return PrecomputedPopulationInformation(problem.search_space, population, fitness_list)
 
 
 def test_new_miner():
@@ -73,13 +63,6 @@ def test_new_miner():
 
 
     problem = plateau
-    is_good = {"which": "fitness_higher_than_average"}
-    consistent_fitness = {"which": "consistent_fitness"}
-    na = {"which": "non_additiveness"}
-    pairwise_robustness = {"which": "pairwise_robustness"}
-    P00_linkage = {"which": "P00_linkage"}
-    classic_linkage = {"which": "classic_linkage"}
-    worst_case = {"which": "worst_case"}
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "explainability"},
@@ -89,20 +72,14 @@ def test_new_miner():
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
-    training_ppi = get_evolved_population_sample(problem, sample_size, 10000)
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 10000)
     selector = FeatureSelector(training_ppi, criterion)
 
-    biminer = ConstructiveMiner(selector=selector,
+    miner = ConstructiveMiner(selector=selector,
                                  population_size=100,
                                  stochastic=False,
                                  uses_archive=True,
                                  termination_criteria_met=run_with_limited_budget(10000))
-
-    ga_miner = GAMiner(selector=selector,
-                       population_size=120,
-                       termination_criteria_met=run_with_limited_budget(10000))
-
-    miner = biminer
 
     print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
@@ -130,6 +107,6 @@ def aggregate_folders():
 
 
 if __name__ == '__main__':
-    # execute_command_line()
-    test_new_miner()
+    execute_command_line()
+    #test_new_miner()
     # aggregate_folders()

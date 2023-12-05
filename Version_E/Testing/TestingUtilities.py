@@ -9,6 +9,7 @@ from Version_E.InterestingAlgorithms.Miner import FeatureSelector, run_with_limi
     FeatureMiner
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Sampling.GASampler import GASampler
 from Version_E.Testing import Miners, Criteria, Problems
 
 JSON = dict
@@ -44,6 +45,18 @@ def execute_and_time(func, *args, **kwargs):
 def run_multiple_times(func, runs, *args, **kwargs):
     return [func(*args, **kwargs) for _ in range(runs)]
 
+def get_evolved_population_sample(problem: CombinatorialProblem,
+                           population_size: int,
+                           evaluation_budget: int) -> PrecomputedPopulationInformation:
+    ga = GASampler(problem.score_of_candidate,
+                   problem.search_space,
+                   population_size,
+                   run_with_limited_budget(evaluation_budget))
+    population = ga.evolve_population()
+    fitness_list = [problem.score_of_candidate(candidate) for candidate in population]
+
+    return PrecomputedPopulationInformation(problem.search_space, population, fitness_list)
+
 
 def decode_termination_predicate(problem: CombinatorialProblem, test_settings: Settings) -> TerminationPredicate:
     test_kind = test_settings["which"]
@@ -70,8 +83,8 @@ def decode_criterion(criterion_arguments: Settings, problem: CombinatorialProble
 
 
 
-def make_selector(problem: CombinatorialProblem, sample_size: int, criterion: MeasurableCriterion) -> FeatureSelector:
-    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+def make_selector(problem: CombinatorialProblem, sample_size: int, ga_budget: int, criterion: MeasurableCriterion) -> FeatureSelector:
+    training_ppi = get_evolved_population_sample(problem, sample_size, ga_budget)
     selector = FeatureSelector(training_ppi, criterion)
     return selector
 

@@ -111,6 +111,8 @@ def no_test(problem: TestableCombinatorialProblem,
     return {"test_results": "you get to have lunch early!"}
 
 
+
+
 def get_miners_from_parameters(termination_predicate: TerminationPredicate,
                                problem: CombinatorialProblem,
                                criterion_parameters: dict,
@@ -118,7 +120,8 @@ def get_miners_from_parameters(termination_predicate: TerminationPredicate,
                                test_parameters: dict) -> list[FeatureMiner]:
     criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
     sample_size = test_parameters["sample_size"]
-    selector = TestingUtilities.make_selector(problem, sample_size, criterion)
+    ga_budget = test_parameters["ga_budget"]
+    selector = TestingUtilities.make_selector(problem, sample_size, ga_budget, criterion)
     miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
               for miner_args in miner_settings_list]
     return miners
@@ -143,7 +146,8 @@ def test_run_with_limited_budget(problem_parameters: dict,
             amount_of_total = problem.amount_of_islets
             return amount_of_found, amount_of_total
         elif isinstance(problem, TrapK):
-            ideal_presence_matrix = np.array([problem.contains_which_ideal_features(feature) for feature in found_features])
+            ideal_presence_matrix = np.array([problem.contains_which_ideal_features(feature)
+                                              for feature in found_features])
             ideal_presence_array = np.any(ideal_presence_matrix, axis=0)
             amount_of_covered_groups = int(np.sum(ideal_presence_array))
             return amount_of_covered_groups, problem.amount_of_groups
@@ -366,7 +370,7 @@ def apply_test_once(arguments: Settings) -> TestResults:
                                                  criterion_parameters=arguments["criterion"],
                                                  miner_settings_list=miners,
                                                  test_parameters=test_parameters,
-                                                 max_budget=test_parameters["budget"])
+                                                 max_budget=test_parameters["max_budget"])
     elif test_kind == "compare_connectedness_of_results":
         miners = TestingUtilities.load_miners_from_second_command_line_argument()
         return test_compare_connectedness_of_results(problem_parameters=arguments["problem"],

@@ -1,35 +1,27 @@
 {
   "problem": {
-    "which": "artificial",
-    "size": 30,
-    "size_of_partials": 5,
-    "amount_of_features": 5,
-    "allow_overlaps": false
-  },
+    "which": "plateau",
+    "amount_of_groups": 5},
   "criterion": {
     "which": "balance",
     "arguments": [
       {
-        "which": "fitness_higher_than_average"
+        "which": "simple"
       },
       {
-        "which": "consistent_fitness"
+        "which": "high_fitness"
       },
       {
-        "which": "explainability"
+        "which": "interaction"
       }
-    ],
-    "weights": [
-      1,
-      1,
-      1
     ]
   },
   "test": {
     "which": "budget_needed_to_find_ideals",
-    "sample_size": 2400,
-    "features_per_run": 100,
-    "budget": 200000,
+    "sample_size": 1500,
+    "features_per_run": 50,
+    "ga_budget": 10000,
+    "max_budget": 100000,
     "runs": 2
   }
 }

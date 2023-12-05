@@ -85,10 +85,6 @@ class ConsistentFitness(MeasurableCriterion):
         return f"The quality of the p value is {given_score:.2f}"
 
 
-
-
-
-
 class FitnessHigherThanAverage(MeasurableCriterion):
     def __init__(self):
         pass

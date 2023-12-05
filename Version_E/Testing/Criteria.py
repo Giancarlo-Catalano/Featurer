@@ -14,7 +14,7 @@ from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 def decode_criterion(properties: dict, problem: CombinatorialProblem) -> MeasurableCriterion:
     criterion_string = properties["which"]
 
-    if criterion_string == "explainability":
+    if criterion_string == "simple":
         return TrivialExplainability()
     elif criterion_string == "high_fitness":
         return HighFitness()
