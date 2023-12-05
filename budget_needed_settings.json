@@ -20,8 +20,8 @@
     "which": "budget_needed_to_find_ideals",
     "sample_size": 1500,
     "features_per_run": 50,
-    "ga_budget": 10000,
-    "max_budget": 100000,
+    "ga_budget": 100,
+    "max_budget": 100,
     "runs": 2
   }
 }

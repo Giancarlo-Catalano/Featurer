@@ -108,8 +108,7 @@ class GAMiner(FeatureMiner):
 
         def should_continue():
             return not self.termination_criteria_met(iteration=iteration,
-                                                     population=population,
-                                                     archive=set(),
+                                                     returnable=population,
                                                      used_budget=self.feature_selector.used_budget)
 
         while should_continue():

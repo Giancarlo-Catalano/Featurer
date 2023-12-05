@@ -79,7 +79,7 @@ class GCMiner(FeatureMiner):
         def should_continue():
             return (not self.termination_criteria_met(iteration=iteration,
                                                       population=population,
-                                                      archive=archive,
+                                                      returnable=archive,
                                                       used_budget=self.feature_selector.used_budget)) and len(
                 population) > 0
 
@@ -111,8 +111,9 @@ class GCMiner(FeatureMiner):
         def should_continue():
             return (not self.termination_criteria_met(iteration=iteration,
                                                       population=population,
-                                                      used_budget=self.feature_selector.used_budget)) and len(
-                population) > 0
+                                                      used_budget=self.feature_selector.used_budget,
+                                                      returnable=population
+                                                      )) and len(population) > 0
 
         while should_continue():
             iteration += 1
