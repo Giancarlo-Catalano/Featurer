@@ -42,8 +42,8 @@ def aggregate_files(directory: str, output_name: str):
 
 def get_evolved_population_sample(problem: BenchmarkProblems.CombinatorialProblem.CombinatorialProblem,
                            population_size: int,
-                           amount_of_generations: int) -> PrecomputedPopulationInformation:
-    ga = GASampler(problem.score_of_candidate, problem.search_space, population_size, amount_of_generations)
+                           evaluation_budget: int) -> PrecomputedPopulationInformation:
+    ga = GASampler(problem.score_of_candidate, problem.search_space, population_size, evaluation_budget)
     population = ga.evolve_population()
     fitness_list = [problem.score_of_candidate(candidate) for candidate in population]
 
@@ -72,7 +72,7 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = artificial_problem
+    problem = plateau
 
     weakest_link = {"which": "weakest_link"}
     simple = {"which": "explainability"}
@@ -93,7 +93,7 @@ def test_new_miner():
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
     #training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-    training_ppi = get_evolved_population_sample(problem, sample_size, 100)
+    training_ppi = get_evolved_population_sample(problem, sample_size, 10000)
     selector = FeatureSelector(training_ppi, criterion)
 
     biminer = ConstructiveMiner(selector=selector,

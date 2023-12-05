@@ -322,7 +322,7 @@ def test_compare_samplers(problem_parameters: dict,
         ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
                                search_space=problem.search_space,
                                population_size=ga_sampler_parameters["population_size"],
-                               generations=ga_sampler_parameters["generations"])
+                               evaluation_budget=ga_sampler_parameters["generations"])
 
         return ga_sampler.get_evolved_individuals(amount_of_sampled_candidates)
 

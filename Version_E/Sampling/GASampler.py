@@ -13,20 +13,27 @@ class GASampler:
     fitness_function: Callable
     search_space: SearchSpace.SearchSpace
     population_size: int
-    generations: int
+    evaluation_budget: int
+
+    used_budget: int
 
     def __init__(self, fitness_function: Callable, search_space: SearchSpace.SearchSpace, population_size: int,
-                 generations: int):
+                 evaluation_budget: int):
         self.fitness_function = fitness_function
         self.search_space = search_space
         self.population_size = population_size
-        self.generations = generations
+        self.evaluation_budget = evaluation_budget
+        self.used_budget = 0
 
     def __repr__(self):
         return "GASampler"
 
+    def evaluate_individual(self, candidate: Candidate) -> float:
+        self.used_budget +=1
+        return self.fitness_function(candidate)
+
     def with_scores(self, population: Population) -> EvaluatedPopulation:
-        return [(candidate, self.fitness_function(candidate)) for candidate in population]
+        return [(candidate, self.evaluate_individual(candidate)) for candidate in population]
 
 
     def generate_selector(self, evaluated_population: EvaluatedPopulation): #  -> SupportsNext[Candidate]:
@@ -87,7 +94,7 @@ class GASampler:
 
     def evolve_population(self) -> Population:
         population = [self.search_space.get_random_candidate() for _ in range(self.population_size)]
-        for generation in range(self.generations):
+        while self.used_budget < self.evaluation_budget:
             population = self.get_new_generation(population)
 
         return population
