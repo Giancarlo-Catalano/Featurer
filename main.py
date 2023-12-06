@@ -55,20 +55,19 @@ def test_new_miner():
              "k": 5}
 
     plateau = {"which": "plateau",
-               "amount_of_groups": 6}
+               "amount_of_groups": 5}
 
     checkerboard = {"which": "checkerboard",
                     "rows": 4,
                     "cols": 4}
 
 
-    problem = {"which": "shuffle",
-               "problem": plateau}
+    problem = plateau
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
-                                {"which": "high_fitness"}, {"which": "interaction"}],
-                 "weights": [1, 1, 1]}
+                                {"which": "high_fitness"},
+                                {"which": "interaction"}]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
@@ -113,4 +112,4 @@ def aggregate_folders():
 if __name__ == '__main__':
     #execute_command_line()
     test_new_miner()
-    aggregate_folders()
+    #aggregate_folders()
