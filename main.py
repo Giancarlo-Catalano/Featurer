@@ -99,8 +99,8 @@ def test_new_miner():
 
 
 def aggregate_folders():
-    folder_names = ["test"]
-    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-5"
+    folder_names = ["plateau"]
+    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-7"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")
@@ -110,6 +110,6 @@ def aggregate_folders():
 
 
 if __name__ == '__main__':
-    #execute_command_line()
-    test_new_miner()
+    execute_command_line()
+    #test_new_miner()
     #aggregate_folders()

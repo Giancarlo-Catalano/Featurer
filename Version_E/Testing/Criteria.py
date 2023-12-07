@@ -53,7 +53,7 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
     elif criterion_string == "shap":
         return SHAPValue()
     elif criterion_string == "interaction":
-        return SimpleInteraction()
+        return Interaction()
     elif criterion_string == "target_size":
         return TargetSize(properties["target"])
     elif criterion_string == "worst_case":
