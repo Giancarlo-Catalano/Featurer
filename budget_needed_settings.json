@@ -1,7 +1,8 @@
 {
   "problem": {
-    "which": "plateau",
-    "amount_of_groups": 5},
+    "which": "trapk",
+    "k": 5,
+    "amount_of_groups": 10},
   "criterion": {
     "which": "balance",
     "arguments": [
@@ -20,8 +21,8 @@
     "which": "budget_needed_to_find_ideals",
     "sample_size": 1500,
     "features_per_run": 50,
-    "ga_budget": 100,
-    "max_budget": 100,
+    "ga_budget": 10000,
+    "max_budget": 10000,
     "runs": 2
   }
 }

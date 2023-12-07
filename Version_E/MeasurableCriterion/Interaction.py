@@ -202,8 +202,12 @@ class Interaction(MeasurableCriterion):
         pX1s = all_pX1s[feature == 1]
         p11, p1Xs = self.get_p1Xs_for_feature_adjusted_by_fitness(feature_column_index, pfi, normalised_fitnesses)
 
+        if p11 == 0:
+            return 0
         max_pX1_p1X = np.max(pX1s * p1Xs)
-        return p11 * np.log2(p11 / max_pX1_p1X)
+        result =  p11 * np.log2(p11 / max_pX1_p1X)
+
+        return result
 
     def __repr__(self):
         return f"WeakestLink(P)"
