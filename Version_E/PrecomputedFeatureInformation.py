@@ -20,6 +20,7 @@ class PrecomputedFeatureInformation:
     precomputed_sd_for_each_feature: Optional[np.ndarray]
     precomputed_mean_fitness_for_each_feature: Optional[np.ndarray]
     precomputed_marginal_probabilities: Optional[np.ndarray]
+    precomputed_normalised_fitnesses: Optional[np.ndarray]
 
     @property
     def search_space(self):
@@ -37,16 +38,19 @@ class PrecomputedFeatureInformation:
     def fitness_array(self) -> np.ndarray:
         return self.precomputed_population_information.fitness_array
 
+
     def compute_feature_matrix(self, features: Iterable[Feature]) -> np.ndarray:
         hot_encoded_features = [get_hot_encoded_feature(feature, self.search_space) for feature in features]
         return np.array(hot_encoded_features).T
 
     def compute_feature_presence_error_matrix(self):
-        errors = (1 - self.candidate_matrix) @ self.feature_matrix
+        inverted_candidate_matrix = 1- self.candidate_matrix  # (self.candidate_matrix == 0).astype(int) #
+        feature_matrix = self.feature_matrix  # self.feature_matrix.astype(int) #
+        errors = inverted_candidate_matrix @ feature_matrix
         # the (row = i, col = j) element of errors is the amount of errors present when checking how well
         # feature # j fits in candidate # i
         # In other words, each row is a candidate as the features it contains.
-        return errors
+        return errors # .astype(float)
 
     def compute_feature_presence_matrix(self) -> np.ndarray:
         return np.array(self.feature_presence_error_matrix < 1, dtype=float)
@@ -79,6 +83,16 @@ class PrecomputedFeatureInformation:
     def compute_marginal_probabilities(self) -> np.ndarray:
         sum_in_hot_encoding_order: np.ndarray[float] = np.sum(self.candidate_matrix, axis=0)
         return sum_in_hot_encoding_order / self.sample_size
+
+
+    def compute_normalised_fitnesses(self) -> np.ndarray:
+        means = self.mean_fitness_for_each_feature
+        min_fitness = np.min(self.fitness_array)
+        max_fitness = np.max(self.fitness_array)
+
+        position_within_range = (means - min_fitness) / (max_fitness - min_fitness)
+
+        return position_within_range
 
     @property
     def amount_of_features(self):

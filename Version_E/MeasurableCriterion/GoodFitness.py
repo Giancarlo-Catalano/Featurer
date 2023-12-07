@@ -24,8 +24,6 @@ class HighFitness(MeasurableCriterion):
 
         position_within_range = (means - min_fitness) / (max_fitness - min_fitness)
 
-        def smoothstep(x):
-            return 3 * (x ** 2) - 2 * (x ** 3)
 
         return position_within_range
 

@@ -46,7 +46,7 @@ def mutual_information(p1X: float, pX1: float, p11: float) -> float:
     return p11 * np.log(p11 / denominator)
 
 
-class Interaction(MeasurableCriterion):
+class SlowInteraction(MeasurableCriterion):
     cached_normalised_fitnesses: PPICachedData
     cached_pX1s: PPICachedData
 
@@ -147,46 +147,60 @@ class Interaction(MeasurableCriterion):
         return f"Weakest_Link = {given_score:.2f}"
 
 
-class SimpleInteraction(MeasurableCriterion):
+class Interaction(MeasurableCriterion):
     cached_pX1s: PPICachedData
-
+    cached_normalised_fitnesses: PPICachedData
     def get_P1Xs(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
-        return np.mean(ppi.candidate_matrix, axis=0)
+        normalised_fitnesses = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
+        def get_P1X_for_column(val_column: int) -> float:
+            where_val_is_used = ppi.candidate_matrix[:, val_column] == 1
+            return np.sum(normalised_fitnesses, where=where_val_is_used)
 
-    def get_p1Xs_for_feature(self, feature_column_index: int,
-                             pfi: PrecomputedFeatureInformation) -> (float, np.ndarray):
+        amount_of_values = ppi.search_space.total_cardinality
+        return np.array([get_P1X_for_column(val_column) for val_column in range(amount_of_values)])
+
+    def get_p1Xs_for_feature_adjusted_by_fitness(self, feature_column_index: int,
+                                                 pfi: PrecomputedFeatureInformation,
+                                                 normalised_fitnesses: FlatArray) -> (float, np.ndarray):
         errors_for_feature = pfi.feature_presence_error_matrix[:, feature_column_index]
         less_than_two_errors = errors_for_feature < 2
-        rows_with_less_than_two_errors = pfi.candidate_matrix[less_than_two_errors]
-        errors_filtered = errors_for_feature[less_than_two_errors]
-
-        one_error_matches = rows_with_less_than_two_errors[errors_filtered == 1]
-
-        amount_of_exact_matches = np.sum(errors_filtered == 0)
         feature = pfi.feature_matrix[:, feature_column_index]
-        individual_errors = (1 - one_error_matches) * feature
+        variable_is_used = feature == 1
 
-        amount_of_less_than_2_matches, _ = rows_with_less_than_two_errors.shape
-        matches_for_value = np.array([np.sum(row)
-                                      for row in itertools.compress(individual_errors.T, feature)])
+        rows_with_less_than_two_errors = pfi.candidate_matrix[less_than_two_errors][:, variable_is_used]
+        fitnesses_with_less_than_two_errors = normalised_fitnesses[less_than_two_errors]
+        error_counts = errors_for_feature[less_than_two_errors]
 
-        p11 = amount_of_exact_matches / pfi.sample_size
-        p1Xs = (matches_for_value+amount_of_exact_matches) / pfi.sample_size
+        with_one_error = error_counts == 1
+        candidates_with_one_error = rows_with_less_than_two_errors[with_one_error]
+        fitnesses_with_one_error = fitnesses_with_less_than_two_errors[with_one_error]
+
+        fitnesses_with_zero_errors = fitnesses_with_less_than_two_errors[error_counts == 0]
+
+        individual_errors = (1 - candidates_with_one_error) * feature[variable_is_used]
+        fitnesses_where_no_errors = individual_errors * fitnesses_with_one_error.reshape((-1, 1))
+
+
+        p11 = np.sum(fitnesses_with_zero_errors)
+        p1Xs = np.sum(fitnesses_where_no_errors, axis=0)+p11
 
         return p11, p1Xs
 
     def __init__(self):
         self.cached_pX1s = PPICachedData(self.get_P1Xs)
+        self.cached_normalised_fitnesses = PPICachedData(get_normalised_fitnesses)
 
     def weakest_link_for_feature(self, feature_column_index: int,
-                                         pfi: PrecomputedFeatureInformation) -> float:
-        all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(pfi.precomputed_population_information)
-
+                                 pfi: PrecomputedFeatureInformation) -> float:
         feature: HotEncodedFeature = pfi.feature_matrix[:, feature_column_index]
         if not any(feature):
             return 0
+        all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(pfi.precomputed_population_information)
+        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(pfi.precomputed_population_information)
+
+
         pX1s = all_pX1s[feature == 1]
-        p11, p1Xs = self.get_p1Xs_for_feature(feature_column_index, pfi)
+        p11, p1Xs = self.get_p1Xs_for_feature_adjusted_by_fitness(feature_column_index, pfi, normalised_fitnesses)
 
         max_pX1_p1X = np.max(pX1s * p1Xs)
         return p11 * np.log2(p11 / max_pX1_p1X)
