@@ -94,7 +94,7 @@ class GASampler:
     def reset_used_budget(self):
         self.used_budget = 0
 
-    def evolve_from_population(self, population = None) -> Population:
+    def evolve_population(self, population = None) -> Population:
         if population is None:
             population = [self.search_space.get_random_candidate()
                           for _ in range(self.population_size)]
@@ -102,7 +102,6 @@ class GASampler:
         while not self.termination_criteria(used_budget=self.used_budget):
             population = self.get_new_generation(population)
 
-        self.reset_used_budget()
         return population
 
 

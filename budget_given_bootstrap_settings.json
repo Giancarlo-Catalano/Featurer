@@ -1,0 +1,29 @@
+{
+  "problem": {
+    "which": "trapk",
+    "k": 5,
+    "amount_of_groups": 1},
+  "criterion": {
+    "which": "balance",
+    "arguments": [
+      {
+        "which": "simple"
+      },
+      {
+        "which": "high_fitness"
+      },
+      {
+        "which": "interaction"
+      }
+    ]
+  },
+  "test": {
+    "which": "budget_given_bootstrap",
+    "sample_size": 1500,
+    "features_per_run": 50,
+    "ga_budget": 10000,
+    "miner_max_budget": 1000,
+    "bootstrap_budgets": [1000, 2000, 3000, 4000, 5000, 6000],
+    "runs": 2
+  }
+}
