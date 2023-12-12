@@ -222,7 +222,7 @@ def test_performance_given_bootstrap(problem_parameters: dict,
                          termination_criteria=bogus_termination_criteria)
 
     def test_a_single_miner(miner_parameters: Settings) -> Iterable[TestResults]:
-        print(f"Testing {miner_parameters}")
+        #print(f"Testing {miner_parameters}")
         ga_sampler = make_ga_sampler()
 
         bootstrap_population = None
