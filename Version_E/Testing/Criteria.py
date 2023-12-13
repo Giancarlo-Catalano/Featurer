@@ -4,7 +4,7 @@ from Version_E.MeasurableCriterion.Explainability import Explainability, Trivial
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage, \
     WorstCase
-from Version_E.MeasurableCriterion.Interaction import Interaction
+from Version_E.MeasurableCriterion.Interaction import Interaction, SlowInteraction
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness

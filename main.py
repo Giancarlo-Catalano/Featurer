@@ -11,7 +11,7 @@ from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
-from Version_E.InterestingAlgorithms.Miner import FeatureSelector
+from Version_E.InterestingAlgorithms.Miner import FeatureSelector, run_until_found_features
 from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
 from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
@@ -51,7 +51,7 @@ def test_new_miner():
                           "allow_overlaps": True}
 
     trapk = {"which": "trapk",
-             "amount_of_groups": 3,
+             "amount_of_groups": 5,
              "k": 5}
 
     plateau = {"which": "plateau",
@@ -62,7 +62,7 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = plateau
+    problem = trapk
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
@@ -72,17 +72,17 @@ def test_new_miner():
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
-    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 10000)
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 20000)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = ConstructiveMiner(selector=selector,
+    miner = BiDirectionalMiner(selector=selector,
                                  population_size=100,
                                  stochastic=False,
-                                 uses_archive=True,
-                                 termination_criteria_met=run_with_limited_budget(10000))
+                                 uses_archive=False,
+                                 termination_criteria_met=run_until_found_features(problem.get_ideal_features(), max_budget = 1000000))
 
     print(f"The problem is {problem}")
-    print(f"It has ideals \n", "\n\t".join(f"{ideal}" for ideal in problem.get_ideal_features()))
+    print(f"It has ideals \n\t" +"\n\t".join(f"{ideal}" for ideal in problem.get_ideal_features()))
 
     print(f"The miner is {miner}")
 
@@ -100,7 +100,7 @@ def test_new_miner():
 
 def aggregate_folders():
     folder_names = ["plateau", "artificial", "trapk"]
-    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-8"
+    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-13"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")
@@ -111,5 +111,5 @@ def aggregate_folders():
 
 if __name__ == '__main__':
     #execute_command_line()
-    #test_new_miner()
-    aggregate_folders()
+    test_new_miner()
+    #aggregate_folders()

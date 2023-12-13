@@ -99,8 +99,10 @@ class GASampler:
             population = [self.search_space.get_random_candidate()
                           for _ in range(self.population_size)]
 
+
         while not self.termination_criteria(used_budget=self.used_budget):
             population = self.get_new_generation(population)
+
 
         return population
 
