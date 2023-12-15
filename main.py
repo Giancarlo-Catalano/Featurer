@@ -62,7 +62,7 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = trapk
+    problem = artificial_problem
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
@@ -72,14 +72,14 @@ def test_new_miner():
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
-    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 20000)
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 10000)
     selector = FeatureSelector(training_ppi, criterion)
 
-    miner = BiDirectionalMiner(selector=selector,
+    miner = ConstructiveMiner(selector=selector,
                                  population_size=100,
                                  stochastic=False,
-                                 uses_archive=False,
-                                 termination_criteria_met=run_until_found_features(problem.get_ideal_features(), max_budget = 1000000))
+                                 uses_archive=True,
+                                 termination_criteria_met=run_with_limited_budget(budget_limit = 20000))
 
     print(f"The problem is {problem}")
     print(f"It has ideals \n\t" +"\n\t".join(f"{ideal}" for ideal in problem.get_ideal_features()))
