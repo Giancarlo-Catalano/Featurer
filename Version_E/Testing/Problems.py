@@ -9,6 +9,7 @@ from BenchmarkProblems.GraphColouring import GraphColouringProblem, InsularGraph
 from BenchmarkProblems.Knapsack import KnapsackProblem
 from BenchmarkProblems.OneMax import OneMaxProblem
 from BenchmarkProblems.PlateauProblem import PlateauProblem
+from BenchmarkProblems.Shuffle import ShuffleProblem
 from BenchmarkProblems.TrapK import TrapK
 
 
@@ -43,6 +44,8 @@ def decode_problem(properties: dict) -> CombinatorialProblem:
         return InsularGraphColouringProblem(amount_of_islets = properties["amount_of_islets"])
     elif problem_string == "plateau":
         return PlateauProblem(amount_of_groups = properties["amount_of_groups"])
+    elif problem_string == "shuffle":
+        return ShuffleProblem(decode_problem(properties["problem"]))
     else:
         raise Exception("The problem was not recognised")
 

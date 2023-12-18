@@ -35,6 +35,12 @@ class PrecomputedPopulationInformation:
         fitnesses = [problem.score_of_candidate(candidate) for candidate in population]
         return cls(search_space, population, fitnesses)
 
+    @classmethod
+    def from_preevolved_population(cls, preevolved_population,
+                                   problem: CombinatorialProblem.CombinatorialProblem):
+        fitness_list = [problem.score_of_candidate(candidate) for candidate in preevolved_population]
+        return cls(problem.search_space, preevolved_population, fitness_list)
+
 
     def get_reduced_version(self, new_sample_size: int):
         # perhaps this should be randomised?

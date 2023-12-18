@@ -81,5 +81,9 @@ class TargetSize(MeasurableCriterion):
         amount_of_values = np.sum(pfi.feature_matrix, axis=0)
         return -np.abs(amount_of_values-self.target_size)
 
+    def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        amount_of_values = np.sum(pfi.feature_matrix, axis=0)
+        return 1 - np.abs(self.target_size - amount_of_values) / (pfi.search_space.dimensions-self.target_size)
+
     def describe_score(self, given_score) -> str:
-        return f"Distance from target size = {-given_score}"
+        return f"Distance from target size = {given_score}"

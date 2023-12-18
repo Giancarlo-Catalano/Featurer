@@ -168,7 +168,7 @@ def run_until_found_features(features_to_find: Iterable[Feature], max_budget: in
     def should_terminate(**kwargs):
         if (kwargs["used_budget"] >= max_budget):
             return True
-        return all_are_found_in(kwargs["archive"]) or all_are_found_in(kwargs["population"])
+        return all_are_found_in(kwargs["returnable"])
 
     return should_terminate
 

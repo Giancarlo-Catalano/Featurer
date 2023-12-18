@@ -3,9 +3,8 @@ from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Bala
 from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability, TargetSize
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage, \
-    WorstCase
-from Version_E.MeasurableCriterion.Interaction import Interaction, Divorce, WeakestLink, PairwiseRobustness, P00Linkage, \
-    ClassicLinkage
+    WorstCase, SuprisinglyHighFitness
+from Version_E.MeasurableCriterion.Interaction import Interaction, SlowInteraction, Artefact
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness
@@ -15,7 +14,7 @@ from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 def decode_criterion(properties: dict, problem: CombinatorialProblem) -> MeasurableCriterion:
     criterion_string = properties["which"]
 
-    if criterion_string == "explainability":
+    if criterion_string == "simple":
         return TrivialExplainability()
     elif criterion_string == "high_fitness":
         return HighFitness()
@@ -55,18 +54,14 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return SHAPValue()
     elif criterion_string == "interaction":
         return Interaction()
-    elif criterion_string == "weakest_link":
-        return WeakestLink()
-    elif criterion_string == "pairwise_robustness":
-        return PairwiseRobustness()
-    elif criterion_string == "P00_linkage":
-        return P00Linkage()
-    elif criterion_string == "classic_linkage":
-        return ClassicLinkage()
     elif criterion_string == "target_size":
         return TargetSize(properties["target"])
     elif criterion_string == "worst_case":
         return WorstCase()
+    elif criterion_string == "surprise":
+        return SuprisinglyHighFitness()
+    elif criterion_string == "artefact":
+        return Artefact()
     else:
         raise Exception(f"The criterion string {criterion_string} was not recognised")
 

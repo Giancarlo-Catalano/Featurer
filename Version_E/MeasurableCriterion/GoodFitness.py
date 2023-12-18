@@ -24,8 +24,6 @@ class HighFitness(MeasurableCriterion):
 
         position_within_range = (means - min_fitness) / (max_fitness - min_fitness)
 
-        def smoothstep(x):
-            return 3 * (x ** 2) - 2 * (x ** 3)
 
         return position_within_range
 
@@ -85,10 +83,6 @@ class ConsistentFitness(MeasurableCriterion):
         return f"The quality of the p value is {given_score:.2f}"
 
 
-
-
-
-
 class FitnessHigherThanAverage(MeasurableCriterion):
     def __init__(self):
         pass
@@ -146,3 +140,39 @@ class WorstCase(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"The Absolute observed minimum is {given_score}"
+
+
+class SuprisinglyHighFitness(MeasurableCriterion):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "Surprise"
+
+    def get_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        min_fitness = np.min(pfi.fitness_array)
+        max_fitness = np.max(pfi.fitness_array)
+
+        def mean_fitness(fitness_iterable: np.ndarray) -> float:
+            if len(fitness_iterable) == 0:
+                return np.mean(pfi.fitness_array)
+            else:
+                return np.mean(fitness_iterable)
+
+        def get_surprise(column_index: int) -> float:
+            which_rows = pfi.feature_presence_matrix[:, column_index] == 1
+            rows_where = pfi.fitness_array[which_rows]
+            rows_where_not = pfi.fitness_array[np.logical_not(which_rows)]
+
+            mean_where = mean_fitness(rows_where)
+            mean_where_not = mean_fitness(rows_where_not)
+            difference = mean_where - mean_where_not
+
+            normalised_difference = difference / (max_fitness - min_fitness)
+
+            return normalised_difference
+
+        return np.array([get_surprise(index) for index in range(pfi.amount_of_features)])
+
+    def describe_score(self, given_score) -> str:
+        return f"Surprise = {given_score:.2f}"

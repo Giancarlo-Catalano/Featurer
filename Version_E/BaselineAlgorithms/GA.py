@@ -5,11 +5,35 @@ from typing import Callable
 import numpy as np
 from bitarray import bitarray, frozenbitarray
 
+import SearchSpace
 import utils
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, FeatureSelector
 from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_space
 import heapq
+
+
+def mutate_feature(feature: Feature,
+           search_space: SearchSpace.SearchSpace,
+           chance_of_mutation: float) -> Feature:
+    def with_empty(current: Feature, var_index) -> Feature:
+        return current.with_value(var_index, None)
+
+    def with_random_value(current: Feature, var_index) -> Feature:
+        available_values = list(range(search_space.cardinalities[var_index]))
+        if current.variable_mask[var_index]:
+            available_values.pop(current.values_mask[var_index])
+        return current.with_value(var_index, random.choice(available_values))
+
+    mutated: Feature = copy.copy(feature)
+    for var_index in range(search_space.dimensions):
+        if random.random() < chance_of_mutation:
+            if mutated.variable_mask[var_index] and random.random() < 0.5:
+                mutated = with_empty(mutated, var_index)
+            else:
+                mutated = with_random_value(mutated, var_index)
+
+    return mutated
 
 class GAMiner(FeatureMiner):
     population_size: int
@@ -22,33 +46,17 @@ class GAMiner(FeatureMiner):
     Population = list[Feature]
     EvaluatedPopulation = list[(Feature, float)]
 
-    def __init__(self, selector: FeatureSelector, population_size: int, termination_criteria_met: Callable):
+    def __init__(self, selector: FeatureSelector, population_size: int, termination_criteria_met: Callable, crossover_enabled=True):
         super().__init__(selector, termination_criteria_met)
         self.population_size = population_size
+        if not crossover_enabled:
+            self.chance_of_crossover = 0
 
     def __repr__(self):
         return f"GA(population = {self.population_size})"
 
     def mutate(self, feature: Feature) -> Feature:
-
-        def with_empty(current: Feature, var_index) -> Feature:
-            return current.with_value(var_index, None)
-
-        def with_random_value(current: Feature, var_index) -> Feature:
-            available_values = list(range(self.search_space.cardinalities[var_index]))
-            if current.variable_mask[var_index]:
-                available_values.pop(current.values_mask[var_index])
-            return current.with_value(var_index, random.choice(available_values))
-
-        mutated: Feature = copy.copy(feature)
-        for var_index in range(self.search_space.dimensions):
-            if random.random() < self.chance_of_mutation:
-                if mutated.variable_mask[var_index] and random.random() < 0.5:
-                    mutated = with_empty(mutated, var_index)
-                else:
-                    mutated = with_random_value(mutated, var_index)
-
-        return mutated
+        return mutate_feature(feature, self.search_space, self.chance_of_mutation)
 
     def crossover(self, mother: Feature, father: Feature):
         crossover_point = random.randrange(self.search_space.dimensions)
@@ -108,8 +116,7 @@ class GAMiner(FeatureMiner):
 
         def should_continue():
             return not self.termination_criteria_met(iteration=iteration,
-                                                     population=population,
-                                                     archive=set(),
+                                                     returnable=population,
                                                      used_budget=self.feature_selector.used_budget)
 
         while should_continue():

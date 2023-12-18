@@ -6,7 +6,21 @@
     "stochastic": true
   },
   {
+    "which": "bidirectional",
+    "population_size": 100,
+    "uses_archive": false,
+    "stochastic": true
+  },
+  {
+    "which": "bidirectional",
+    "population_size": 100,
+    "uses_archive": true,
+    "stochastic": false
+  },
+  {
     "which": "ga",
     "population_size": 50
-  }
+  },
+  {"which":  "random"},
+  {"which":  "hill_climber"}
 ]

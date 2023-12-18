@@ -118,7 +118,8 @@ def get_miners_from_parameters(termination_predicate: TerminationPredicate,
                                test_parameters: dict) -> list[FeatureMiner]:
     criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
     sample_size = test_parameters["sample_size"]
-    selector = TestingUtilities.make_selector(problem, sample_size, criterion)
+    ga_budget = test_parameters["ga_budget"]
+    selector = TestingUtilities.make_selector(problem, sample_size, ga_budget, criterion)
     miners = [TestingUtilities.decode_miner(miner_args, selector, termination_predicate)
               for miner_args in miner_settings_list]
     return miners
@@ -136,14 +137,14 @@ def test_run_with_limited_budget(problem_parameters: dict,
     miners = get_miners_from_parameters(termination_predicate, problem,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
-
     def count_results(found_features: Iterable[Feature]) -> (int, int):
         if isinstance(problem, InsularGraphColouringProblem):
             amount_of_found = problem.count_how_many_islets_covered(found_features)
             amount_of_total = problem.amount_of_islets
             return amount_of_found, amount_of_total
         elif isinstance(problem, TrapK):
-            ideal_presence_matrix = np.array([problem.contains_which_ideal_features(feature) for feature in found_features])
+            ideal_presence_matrix = np.array([problem.contains_which_ideal_features(feature)
+                                              for feature in found_features])
             ideal_presence_array = np.any(ideal_presence_matrix, axis=0)
             amount_of_covered_groups = int(np.sum(ideal_presence_array))
             return amount_of_covered_groups, problem.amount_of_groups
@@ -151,7 +152,6 @@ def test_run_with_limited_budget(problem_parameters: dict,
             ideals = problem.get_ideal_features()
             amount_of_found_ideals = len([ideal for ideal in ideals if ideal in found_features])
             return amount_of_found_ideals, len(ideals)
-
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
         # print(f"Testing {miner}")
@@ -180,7 +180,7 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
-        #print(f"Testing {miner}")
+        # print(f"Testing {miner}")
         mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
         mined_features = utils.remove_duplicates(mined_features, hashable=True)
         ideals = problem.get_ideal_features()
@@ -199,6 +199,61 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
                                        for miner, miner_parameters in zip(miners, miner_settings_list)]}
 
 
+def test_performance_given_bootstrap(problem_parameters: dict,
+                                     criterion_parameters: dict,
+                                     miner_settings_list: list[dict],
+                                     test_parameters: dict):
+    problem: TestableCombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
+    features_per_run = test_parameters["features_per_run"]
+
+    budgets_for_bootstrap_ga = test_parameters["bootstrap_budgets"]
+
+    miner_max_budget = test_parameters["miner_max_budget"]
+    ideal_features = problem.get_ideal_features()
+    termination_predicate = run_until_found_features(ideal_features, miner_max_budget)
+
+    # bootstrap_eval -> bootstrap_ppi -> selector -> miner
+
+    def make_ga_sampler():
+        bogus_termination_criteria = run_with_limited_budget(1)
+        return GASampler(fitness_function=problem.score_of_candidate,
+                         search_space=problem.search_space,
+                         population_size=test_parameters["sample_size"],
+                         termination_criteria=bogus_termination_criteria)
+
+    def test_a_single_miner(miner_parameters: Settings) -> Iterable[TestResults]:
+        #print(f"Testing {miner_parameters}")
+        ga_sampler = make_ga_sampler()
+
+        bootstrap_population = None
+        for bootstrap_budget in budgets_for_bootstrap_ga:
+            ga_sampler.termination_criteria = run_with_limited_budget(bootstrap_budget)
+            bootstrap_population = ga_sampler.evolve_population(population=bootstrap_population)
+            bootstrap_ppi = PrecomputedPopulationInformation.from_preevolved_population(bootstrap_population, problem)
+            criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
+            selector = FeatureSelector(bootstrap_ppi, criterion)
+
+            miner = TestingUtilities.decode_miner(miner_parameters,
+                                                  selector,
+                                                  termination_predicate=termination_predicate)
+            mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
+            mined_features = utils.remove_duplicates(mined_features, hashable=True)
+            amount_of_found_ideals = len([mined for mined in mined_features if mined in ideal_features])
+            successfull = amount_of_found_ideals == len(ideal_features)
+            used_budget = miner.feature_selector.used_budget
+            yield {"miner": miner_parameters,
+                    "successfull": successfull,
+                    "found": amount_of_found_ideals,
+                    "total": len(ideal_features),
+                    "used_miner_budget": used_budget,
+                    "used_bootstrap_budget": ga_sampler.used_budget,
+                    "time": execution_time}
+
+    return {"results_for_miners_and_budgets": [result_for_miner_and_budget
+                                               for miner_params in miner_settings_list
+                                               for result_for_miner_and_budget in test_a_single_miner(miner_params)]}
+
+
 def test_compare_connectedness_of_results(problem_parameters: dict,
                                           criterion_parameters: dict,
                                           miner_settings_list: list[dict],
@@ -212,7 +267,7 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
                                         criterion_parameters, miner_settings_list, test_parameters)
 
     def test_a_single_miner(miner: FeatureMiner, miner_parameters: Settings) -> TestResults:
-        #print(f"Testing {miner}")
+        # print(f"Testing {miner}")
 
         def are_connected(node_index_a: int, node_index_b) -> bool:
             return bool(problem.adjacency_matrix[node_index_a, node_index_b])
@@ -276,13 +331,12 @@ def test_compare_samplers(problem_parameters: dict,
     termination_predicate = run_with_limited_budget(max_budget)
     amount_of_reference_features = test_parameters["amount_of_reference_features"]
     amount_of_sampled_candidates = test_parameters["amount_of_sampled_candidates"]
-    good_fitness_criterion = Balance([HighFitness(), ConsistentFitness()], weights = [1, 1])
+    good_fitness_criterion = Balance([HighFitness(), ConsistentFitness()], weights=[1, 1])
     importance_of_explainability_list = test_parameters["importance_of_explainability"]
 
     termination_predicate = run_with_limited_budget(12000)
     sample_size = 2400
     training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
-
 
     def sample_using_simple_sampler(importance_of_explainability: float) -> list[SearchSpace.Candidate]:
         reference_features_for_simple_sampler = get_reference_features_for_simple_sampling(
@@ -322,7 +376,7 @@ def test_compare_samplers(problem_parameters: dict,
         ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
                                search_space=problem.search_space,
                                population_size=ga_sampler_parameters["population_size"],
-                               generations=ga_sampler_parameters["generations"])
+                               evaluation_budget=ga_sampler_parameters["generations"])
 
         return ga_sampler.get_evolved_individuals(amount_of_sampled_candidates)
 
@@ -332,7 +386,6 @@ def test_compare_samplers(problem_parameters: dict,
         return {"sampler": sampler_name,
                 "ioe": ioe,
                 "fitnesses": [problem.score_of_candidate(candidate) for candidate in samples]}
-
 
     results = []
     for ioe in importance_of_explainability_list:
@@ -344,7 +397,6 @@ def test_compare_samplers(problem_parameters: dict,
 
     sampled_using_ga = sample_using_ga()
     results.append(get_result_item(sampled_using_ga, "GA", 0))
-
 
     return {"for_each_ioe": results}
 
@@ -366,7 +418,7 @@ def apply_test_once(arguments: Settings) -> TestResults:
                                                  criterion_parameters=arguments["criterion"],
                                                  miner_settings_list=miners,
                                                  test_parameters=test_parameters,
-                                                 max_budget=test_parameters["budget"])
+                                                 max_budget=test_parameters["max_budget"])
     elif test_kind == "compare_connectedness_of_results":
         miners = TestingUtilities.load_miners_from_second_command_line_argument()
         return test_compare_connectedness_of_results(problem_parameters=arguments["problem"],
@@ -386,6 +438,12 @@ def apply_test_once(arguments: Settings) -> TestResults:
         return test_get_distribution(arguments=arguments,
                                      runs=test_parameters["runs"],
                                      features_per_run=test_parameters["features_per_run"])
+    if test_kind == "budget_given_bootstrap":
+        miners = TestingUtilities.load_miners_from_second_command_line_argument()
+        return test_performance_given_bootstrap(problem_parameters=arguments["problem"],
+                                                miner_settings_list=miners,
+                                                criterion_parameters=arguments["criterion"],
+                                                test_parameters=test_parameters)
     elif test_kind == "no_test":
         problem, miner = TestingUtilities.generate_problem_miner(arguments)
         return no_test(problem=problem,

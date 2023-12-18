@@ -79,14 +79,13 @@ class GCMiner(FeatureMiner):
         def should_continue():
             return (not self.termination_criteria_met(iteration=iteration,
                                                       population=population,
-                                                      archive=archive,
+                                                      returnable=archive,
                                                       used_budget=self.feature_selector.used_budget)) and len(
                 population) > 0
 
         while should_continue():
             iteration += 1
             #print(f"In iteration {iteration}")
-            population = self.order_within(population, 0, 7)
             population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
@@ -112,13 +111,13 @@ class GCMiner(FeatureMiner):
         def should_continue():
             return (not self.termination_criteria_met(iteration=iteration,
                                                       population=population,
-                                                      used_budget=self.feature_selector.used_budget)) and len(
-                population) > 0
+                                                      used_budget=self.feature_selector.used_budget,
+                                                      returnable=population
+                                                      )) and len(population) > 0
 
         while should_continue():
             iteration += 1
             # print(f"In iteration {iteration}")
-            population = self.order_within(population, 2, 7)
             population = self.remove_duplicate_features(population)
             evaluated_population = self.with_scores(population)
             evaluated_population = self.truncation_selection(evaluated_population, self.population_size)
