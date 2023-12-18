@@ -3,8 +3,8 @@ from Version_E.MeasurableCriterion.CriterionUtilities import All, Any, Not, Bala
 from Version_E.MeasurableCriterion.Explainability import Explainability, TrivialExplainability, TargetSize
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage, \
-    WorstCase
-from Version_E.MeasurableCriterion.Interaction import Interaction, SlowInteraction
+    WorstCase, SuprisinglyHighFitness
+from Version_E.MeasurableCriterion.Interaction import Interaction, SlowInteraction, Artefact
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness
@@ -58,6 +58,10 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return TargetSize(properties["target"])
     elif criterion_string == "worst_case":
         return WorstCase()
+    elif criterion_string == "surprise":
+        return SuprisinglyHighFitness()
+    elif criterion_string == "artefact":
+        return Artefact()
     else:
         raise Exception(f"The criterion string {criterion_string} was not recognised")
 
