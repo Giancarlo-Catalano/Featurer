@@ -45,9 +45,9 @@ def aggregate_files(directory: str, output_name: str):
 
 def test_new_miner():
     artificial_problem = {"which": "artificial",
-                          "size": 20,
+                          "size": 15,
                           "size_of_partials": 4,
-                          "amount_of_features": 4,
+                          "amount_of_features": 5,
                           "allow_overlaps": True}
 
     trapk = {"which": "trapk",
@@ -67,12 +67,13 @@ def test_new_miner():
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
                                 {"which": "high_fitness"},
-                                {"which": "interaction"}]}
+                                {"which": "interaction"}],
+                 "weights": [1, 1, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 1500
-    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 10000)
+    sample_size = 10000
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, -1)
     selector = FeatureSelector(training_ppi, criterion)
 
     miner = ConstructiveMiner(selector=selector,
@@ -95,6 +96,10 @@ def test_new_miner():
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
+
+    for feature in problem.get_ideal_features():
+        print(problem.feature_repr(feature.to_legacy_feature()))
+        print(criterion.describe_feature(feature, training_ppi))
 
 
 

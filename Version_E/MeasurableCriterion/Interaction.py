@@ -150,8 +150,10 @@ class SlowInteraction(MeasurableCriterion):
 class Interaction(MeasurableCriterion):
     cached_pX1s: PPICachedData
     cached_normalised_fitnesses: PPICachedData
+
     def get_P1Xs(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
         normalised_fitnesses = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
+
         def get_P1X_for_column(val_column: int) -> float:
             where_val_is_used = ppi.candidate_matrix[:, val_column] == 1
             return np.sum(normalised_fitnesses, where=where_val_is_used)
@@ -180,9 +182,8 @@ class Interaction(MeasurableCriterion):
         individual_errors = (1 - candidates_with_one_error) * feature[variable_is_used]
         fitnesses_where_no_errors = individual_errors * fitnesses_with_one_error.reshape((-1, 1))
 
-
         p11 = np.sum(fitnesses_with_zero_errors)
-        p1Xs = np.sum(fitnesses_where_no_errors, axis=0)+p11
+        p1Xs = np.sum(fitnesses_where_no_errors, axis=0) + p11
 
         return p11, p1Xs
 
@@ -196,8 +197,8 @@ class Interaction(MeasurableCriterion):
         if not any(feature):
             return 0
         all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(pfi.precomputed_population_information)
-        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(pfi.precomputed_population_information)
-
+        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(
+            pfi.precomputed_population_information)
 
         pX1s = all_pX1s[feature == 1]
         p11, p1Xs = self.get_p1Xs_for_feature_adjusted_by_fitness(feature_column_index, pfi, normalised_fitnesses)
@@ -205,7 +206,7 @@ class Interaction(MeasurableCriterion):
         if p11 == 0:
             return 0
         max_pX1_p1X = np.max(pX1s * p1Xs)
-        result =  p11 * np.log2(p11 / max_pX1_p1X)
+        result = p11 * np.log2(p11 / max_pX1_p1X)
 
         return result
 
@@ -220,3 +221,50 @@ class Interaction(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Weakest_Link(P) = {given_score:.2f}"
+
+
+class Artefact(MeasurableCriterion):
+    cached_marginals: PPICachedData
+
+    def get_marginal_probabilities(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
+        return np.sum(ppi.candidate_matrix, axis=0) / ppi.sample_size
+
+    def get_observed_quantities(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return pfi.feature_presence_matrix.sum(axis=0)
+
+    def get_expected_quantities(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        marginal_probabilities: np.ndarray = self.cached_marginals.get_data_for_ppi(
+            pfi.precomputed_population_information)
+
+        def get_individual_expected(feature: HotEncodedFeature):
+            return np.product(marginal_probabilities[feature == 1]) * pfi.sample_size
+
+        return np.array([get_individual_expected(feature) for feature in pfi.feature_matrix.T])
+
+
+    def get_chi_squared_scores(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        observed = self.get_observed_quantities(pfi)
+        expected = self.get_expected_quantities(pfi)
+
+        def is_empty_feature(feature: Feature):
+            return feature.variable_mask.count() == 0
+
+        if any(is_empty_feature(f) for f in pfi.features):
+            print("Empty feature detected")
+
+        o_minus_e = observed-expected
+        return (o_minus_e)/np.sqrt(expected)
+
+
+
+    def __init__(self):
+        self.cached_marginals = PPICachedData(self.get_marginal_probabilities)
+
+    def __repr__(self):
+        return f"Artefact"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        return self.get_chi_squared_scores(pfi)
+
+    def describe_score(self, given_score) -> str:
+        return f"artefact= {given_score:.2f}"
