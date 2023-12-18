@@ -62,17 +62,18 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = artificial_problem
+    problem = trapk
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
                                 {"which": "high_fitness"},
-                                {"which": "interaction"}]}
+                                {"which": "artefact"}],
+                 "weights": [1, 0, 1]}
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 1500
-    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 10000)
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 100000)
     selector = FeatureSelector(training_ppi, criterion)
 
     miner = ConstructiveMiner(selector=selector,
@@ -95,6 +96,10 @@ def test_new_miner():
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
+
+    for feature in problem.get_ideal_features():
+        print(problem.feature_repr(feature.to_legacy_feature()))
+        print(criterion.describe_feature(feature, training_ppi))
 
 
 
