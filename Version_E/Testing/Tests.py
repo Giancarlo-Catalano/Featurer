@@ -214,12 +214,12 @@ def test_performance_given_bootstrap(problem_parameters: dict,
     populations_for_bootstrap = test_parameters["bootstrap_populations"]
 
 
-    def test_for_population_size(bootstrap_pop_size: int):
+    def test_for_population_size(pop_size: int):
         # first we make the ga sampler, but we have to give it a dummy termination criteria
         bogus_termination_criteria = run_with_limited_budget(1)
         ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
                          search_space=problem.search_space,
-                         population_size=test_parameters["sample_size"],
+                         population_size=pop_size,
                          termination_criteria=bogus_termination_criteria)
 
         # this will be the reference population, which will be reused over and over
@@ -251,7 +251,7 @@ def test_performance_given_bootstrap(problem_parameters: dict,
             # measure how much budget was used
             used_budget_by_miner = miner.feature_selector.used_budget
 
-            yield {"bootstrap_population_size": bootstrap_pop_size,
+            yield {"bootstrap_population_size": pop_size,
                    "bootstrap_generations": generations,
                    "problem_str": problem_str,
                    "successful": successful,

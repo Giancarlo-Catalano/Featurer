@@ -37,7 +37,7 @@ def aggregate_files(directory: str, output_name: str):
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     # aggregate
-    CSVGenerators.make_csv_for_budget_needed_run(files_in_directory, output_name)
+    CSVGenerators.make_csv_for_bgb(files_in_directory, output_name)
 
 
 
@@ -62,7 +62,7 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = trapk
+    problem = artificial_problem
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
@@ -72,15 +72,15 @@ def test_new_miner():
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 10000
-    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, -1)
+    sample_size = 100
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 1000)
     selector = FeatureSelector(training_ppi, criterion)
 
     miner = ConstructiveMiner(selector=selector,
-                                 population_size=100,
+                                 population_size=150,
                                  stochastic=False,
                                  uses_archive=True,
-                                 termination_criteria_met=run_with_limited_budget(budget_limit = 20000))
+                                 termination_criteria_met=run_with_limited_budget(budget_limit = 10000))
 
     print(f"The problem is {problem}")
     print(f"It has ideals \n\t" +"\n\t".join(f"{ideal}" for ideal in problem.get_ideal_features()))
@@ -104,7 +104,7 @@ def test_new_miner():
 
 
 def aggregate_folders():
-    folder_names = ["mixed"]
+    folder_names = ["bgb"]
     folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-19"
 
     for folder_name in folder_names:
@@ -116,5 +116,5 @@ def aggregate_folders():
 
 if __name__ == '__main__':
     execute_command_line()
-    #test_new_miner()
-    #aggregate_folders()
+    test_new_miner()
+    aggregate_folders()

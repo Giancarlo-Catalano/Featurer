@@ -17,7 +17,6 @@ def merge_results_by_keys(results: list[dict]) -> dict:
     return {key: get_aggregated_by_key(key) for key in all_keys}
 
 
-
 def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
     MinerFoundAndTime = (str, int, float)
 
@@ -36,7 +35,7 @@ def make_csv_for_limited_budget_run(file_names: list[str], output_name: str):
                                       for miner_run in program_run["results_for_each_miner"]]
             return [parse_miner_run_item(miner_run) for miner_run in miner_runs]
 
-    os.makedirs(os.path.dirname(output_name), exist_ok=True)   # to create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_name), exist_ok=True)  # to create the directory if it doesn't exist
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["Miner", "Quality", "Time"])
@@ -55,7 +54,6 @@ def make_csv_for_budget_needed_run(file_names: list[str], output_name: str):
         successfull = miner_run["successfull"]
         return Datapoint(miner_str, evaluations, time, successfull, problem_string)
 
-
     def parse_contents_of_file(file_name: str) -> list[Datapoint]:
         print(f"Will be parsing {file_name}")
         with open(file_name, "r") as file:
@@ -66,7 +64,7 @@ def make_csv_for_budget_needed_run(file_names: list[str], output_name: str):
                                       for miner_run in program_run["results_for_each_miner"]]
             return [parse_miner_run_item(miner_run, problem_string) for miner_run in miner_runs]
 
-    os.makedirs(os.path.dirname(output_name), exist_ok=True)   # to create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_name), exist_ok=True)  # to create the directory if it doesn't exist
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["Miner", "Evaluations", "Time", "Successfull", "Problem"])
@@ -74,6 +72,31 @@ def make_csv_for_budget_needed_run(file_names: list[str], output_name: str):
             rows = parse_contents_of_file(input_file)
             csv_writer.writerows(rows)
 
+
+def make_csv_for_bgb(file_names: list[str], output_name: str):
+    Datapoint = namedtuple("Datapoint", "population generations problem success used_budget time")
+
+    def parse_miner_run_item(miner_run: dict) -> Datapoint:
+        return Datapoint(population=miner_run["bootstrap_population_size"],
+                         generations=miner_run["bootstrap_generations"],
+                         problem=miner_run["problem_str"],
+                         success=miner_run["successful"],
+                         used_budget=miner_run["used_miner_budget"],
+                         time=miner_run["time"])
+
+    def items_in_file(file_name: str) -> Iterable[dict]:
+        print(f"Will be parsing {file_name}")
+        with open(file_name, "r") as file:
+            contents_of_file = json.load(file)
+            return [datapoint for test_run in contents_of_file["result"]
+                              for datapoint in test_run["results_for_params"]]
+
+    os.makedirs(os.path.dirname(output_name), exist_ok=True)  # to create the directory if it doesn't exist
+    with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
+        csv_writer = csv.writer(output_file, delimiter=",")
+        csv_writer.writerow(["Population", "Generations", "Problem", "Success", "Used_budget", "Time"])
+        for input_file in file_names:
+            csv_writer.writerows(parse_miner_run_item(item) for item in items_in_file(input_file))
 
 
 def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
@@ -88,10 +111,6 @@ def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
                         for run in runs
                         for fitness in run["fitnesses"]]
                 csv_writer.writerows(rows)
-
-
-
-
 
 
 # unused
@@ -150,7 +169,6 @@ def make_csv_for_connectedness(input_name, output_name: str):
     #             output_file.write("\n")
 
 
-
 def aggregate_algorithm_jsons_into_csv(json_file_list: list[str], output_file_name: str, for_time=False):
     def get_miner_result_dict_from_file(single_file_name: str) -> dict:
         with open(single_file_name, "r") as file:
@@ -160,8 +178,6 @@ def aggregate_algorithm_jsons_into_csv(json_file_list: list[str], output_file_na
                                                             for result_item in item['result']]
                        for item in miner_runs}
             return as_dict
-
-
 
     miner_result_dicts: list[dict] = [get_miner_result_dict_from_file(input_file) for input_file in json_file_list]
     aggregated = merge_results_by_keys(miner_result_dicts)
