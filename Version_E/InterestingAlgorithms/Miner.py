@@ -147,7 +147,7 @@ class FeatureMiner:
 
 
 
-def run_for_fixed_amount_of_iterations(amount_of_iterations: int) -> Callable:
+def run_until_fixed_amount_of_iterations(amount_of_iterations: int) -> Callable:
     def should_terminate(**kwargs):
         return kwargs["iteration"] >= amount_of_iterations
 

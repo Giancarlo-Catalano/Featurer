@@ -12,7 +12,7 @@ from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMine
 from Version_E.InterestingAlgorithms.ConstructiveMiner import ConstructiveMiner
 from Version_E.InterestingAlgorithms.DestructiveMiner import DestructiveMiner
 from Version_E.InterestingAlgorithms.Miner import FeatureSelector, run_until_found_features
-from Version_E.InterestingAlgorithms.Miner import run_for_fixed_amount_of_iterations, run_with_limited_budget
+from Version_E.InterestingAlgorithms.Miner import run_until_fixed_amount_of_iterations, run_with_limited_budget
 from Version_E.MeasurableCriterion.SHAPValue import SHAPValue
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
 from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests, CSVGenerators
@@ -115,6 +115,6 @@ def aggregate_folders():
 
 
 if __name__ == '__main__':
-    #execute_command_line()
-    test_new_miner()
+    execute_command_line()
+    #test_new_miner()
     #aggregate_folders()

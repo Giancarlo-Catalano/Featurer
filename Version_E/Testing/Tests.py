@@ -14,7 +14,7 @@ from BenchmarkProblems.GraphColouring import GraphColouringProblem, InsularGraph
 from BenchmarkProblems.TrapK import TrapK
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
-    run_until_found_features, FeatureSelector
+    run_until_found_features, FeatureSelector, run_until_fixed_amount_of_iterations
 from Version_E.MeasurableCriterion.CriterionUtilities import Balance, Extreme
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
@@ -200,58 +200,73 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
 
 
 def test_performance_given_bootstrap(problem_parameters: dict,
-                                     criterion_parameters: dict,
-                                     miner_settings_list: list[dict],
-                                     test_parameters: dict):
+                                       criterion_parameters: dict,
+                                       miner_parameters: dict,
+                                       test_parameters: dict) -> TestResults:
     problem: TestableCombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
-    features_per_run = test_parameters["features_per_run"]
-
-    budgets_for_bootstrap_ga = test_parameters["bootstrap_budgets"]
-
+    problem_str = problem_parameters["problem"]["which"] # assumes it's been shuffled
+    mined_per_run = test_parameters["features_per_run"]
     miner_max_budget = test_parameters["miner_max_budget"]
     ideal_features = problem.get_ideal_features()
-    termination_predicate = run_until_found_features(ideal_features, miner_max_budget)
+    found_all_targets = run_until_found_features(ideal_features, miner_max_budget)
 
-    # bootstrap_eval -> bootstrap_ppi -> selector -> miner
+    generations_for_bootstrap = test_parameters["bootstrap_generations"]
+    populations_for_bootstrap = test_parameters["bootstrap_populations"]
 
-    def make_ga_sampler():
+
+    def test_for_population_size(bootstrap_pop_size: int):
+        # first we make the ga sampler, but we have to give it a dummy termination criteria
         bogus_termination_criteria = run_with_limited_budget(1)
-        return GASampler(fitness_function=problem.score_of_candidate,
+        ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
                          search_space=problem.search_space,
                          population_size=test_parameters["sample_size"],
                          termination_criteria=bogus_termination_criteria)
 
-    def test_a_single_miner(miner_parameters: Settings) -> Iterable[TestResults]:
-        #print(f"Testing {miner_parameters}")
-        ga_sampler = make_ga_sampler()
-
+        # this will be the reference population, which will be reused over and over
+        # Note that when this is None, ga_miner knows to make a random population
         bootstrap_population = None
-        for bootstrap_budget in budgets_for_bootstrap_ga:
-            ga_sampler.termination_criteria = run_with_limited_budget(bootstrap_budget)
+
+        for generations in generations_for_bootstrap:
+            # update the reference population by running the ga to the desired amount of generations
+            ga_sampler.termination_criteria = run_until_fixed_amount_of_iterations(generations)
             bootstrap_population = ga_sampler.evolve_population(population=bootstrap_population)
+
+            # make a ppi out of that population, and all the related objects
             bootstrap_ppi = PrecomputedPopulationInformation.from_preevolved_population(bootstrap_population, problem)
             criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
             selector = FeatureSelector(bootstrap_ppi, criterion)
 
+
+            # use the reference population to mine features
             miner = TestingUtilities.decode_miner(miner_parameters,
                                                   selector,
-                                                  termination_predicate=termination_predicate)
-            mined_features, execution_time = execute_and_time(miner.get_meaningful_features, features_per_run)
+                                                  termination_predicate=found_all_targets)
+            mined_features, execution_time = execute_and_time(miner.get_meaningful_features, mined_per_run)
             mined_features = utils.remove_duplicates(mined_features, hashable=True)
-            amount_of_found_ideals = len([mined for mined in mined_features if mined in ideal_features])
-            successfull = amount_of_found_ideals == len(ideal_features)
-            used_budget = miner.feature_selector.used_budget
-            yield {"miner": miner_parameters,
-                    "successfull": successfull,
-                    "found": amount_of_found_ideals,
-                    "total": len(ideal_features),
-                    "used_miner_budget": used_budget,
-                    "used_bootstrap_budget": ga_sampler.used_budget,
-                    "time": execution_time}
 
-    return {"results_for_miners_and_budgets": [result_for_miner_and_budget
-                                               for miner_params in miner_settings_list
-                                               for result_for_miner_and_budget in test_a_single_miner(miner_params)]}
+            # check whether the run was successfull or not
+            amount_of_found_ideals = len([mined for mined in mined_features if mined in ideal_features])
+            successful = amount_of_found_ideals == len(ideal_features)
+
+            # measure how much budget was used
+            used_budget_by_miner = miner.feature_selector.used_budget
+
+            yield {"bootstrap_population_size": bootstrap_pop_size,
+                   "bootstrap_generations": generations,
+                   "problem_str": problem_str,
+                   "successful": successful,
+                   "used_miner_budget": used_budget_by_miner,
+                   "time": execution_time}
+
+
+
+    all_results = [item_for_combination
+                   for bootstrap_pop_size in populations_for_bootstrap
+                   for item_for_combination in test_for_population_size(bootstrap_pop_size)]
+
+
+    return {"results_for_params": all_results}
+
 
 
 def test_compare_connectedness_of_results(problem_parameters: dict,
@@ -441,7 +456,7 @@ def apply_test_once(arguments: Settings) -> TestResults:
     if test_kind == "budget_given_bootstrap":
         miners = TestingUtilities.load_miners_from_second_command_line_argument()
         return test_performance_given_bootstrap(problem_parameters=arguments["problem"],
-                                                miner_settings_list=miners,
+                                                miner_parameters=test_parameters["miner"],
                                                 criterion_parameters=arguments["criterion"],
                                                 test_parameters=test_parameters)
     elif test_kind == "no_test":

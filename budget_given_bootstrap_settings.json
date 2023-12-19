@@ -1,8 +1,11 @@
 {
   "problem": {
-    "which": "trapk",
-    "k": 5,
-    "amount_of_groups": 1},
+    "which": "shuffle",
+    "problem":
+      {"which": "trapk",
+       "k": 5,
+       "amount_of_groups": 1}
+  },
   "criterion": {
     "which": "balance",
     "arguments": [
@@ -21,9 +24,15 @@
     "which": "budget_given_bootstrap",
     "sample_size": 1500,
     "features_per_run": 50,
-    "ga_budget": 10000,
-    "miner_max_budget": 1000,
-    "bootstrap_budgets": [1000, 2000, 3000, 4000, 5000, 6000],
-    "runs": 2
+    "bootstrap_generations": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    "miner_max_budget": 30000,
+    "bootstrap_populations": [100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000],
+    "runs": 1,
+    "miner": {
+      "which": "constructive",
+      "population_size": 150,
+      "uses_archive": true,
+      "stochastic": false
+    }
   }
 }

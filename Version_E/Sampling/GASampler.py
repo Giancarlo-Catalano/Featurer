@@ -17,6 +17,7 @@ class GASampler:
     evaluation_budget: int
 
     used_budget: int
+    used_generations: int
 
     def __init__(self, fitness_function: Callable, search_space: SearchSpace.SearchSpace, population_size: int,
                  termination_criteria: Callable):
@@ -25,6 +26,7 @@ class GASampler:
         self.population_size = population_size
         self.termination_criteria = termination_criteria
         self.used_budget = 0
+        self.used_generations = 0
 
     def __repr__(self):
         return "GASampler"
@@ -96,6 +98,7 @@ class GASampler:
         children = list(elite)
         children.extend(make_new_child() for _ in range(self.population_size - elite_size))
 
+        self.used_generations +=1
         return children
 
     def reset_used_budget(self):
@@ -106,7 +109,7 @@ class GASampler:
             population = [self.search_space.get_random_candidate()
                           for _ in range(self.population_size)]
 
-        while not self.termination_criteria(used_budget=self.used_budget):
+        while not self.termination_criteria(used_budget=self.used_budget, iteration=self.used_generations):
             population = self.get_new_generation(population)
 
         return population
