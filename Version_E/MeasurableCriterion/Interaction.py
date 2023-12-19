@@ -268,3 +268,87 @@ class Artefact(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"artefact= {given_score:.2f}"
+
+
+
+class InteractionSimplified(MeasurableCriterion):
+    cached_pX1s: PPICachedData
+    cached_normalised_fitnesses: PPICachedData
+
+    def get_P1Xs(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
+        normalised_fitnesses = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
+
+        def get_P1X_for_column(val_column: int) -> float:
+            where_val_is_used = ppi.candidate_matrix[:, val_column] == 1
+            return np.mean(normalised_fitnesses, where=where_val_is_used)
+
+        amount_of_values = ppi.search_space.total_cardinality
+        return np.array([get_P1X_for_column(val_column) for val_column in range(amount_of_values)])
+
+    def get_p1Xs_for_feature_adjusted_by_fitness(self, feature_column_index: int,
+                                                 pfi: PrecomputedFeatureInformation,
+                                                 normalised_fitnesses: FlatArray) -> (float, np.ndarray):
+        errors_for_feature = pfi.feature_presence_error_matrix[:, feature_column_index]
+        less_than_two_errors = errors_for_feature < 2
+        feature = pfi.feature_matrix[:, feature_column_index]
+        variable_is_used = feature == 1
+
+        rows_with_less_than_two_errors = pfi.candidate_matrix[less_than_two_errors][:, variable_is_used]
+        fitnesses_with_less_than_two_errors = normalised_fitnesses[less_than_two_errors]
+        error_counts = errors_for_feature[less_than_two_errors]
+
+        with_one_error = error_counts == 1
+        candidates_with_one_error = rows_with_less_than_two_errors[with_one_error]
+        fitnesses_with_one_error = fitnesses_with_less_than_two_errors[with_one_error]
+
+        fitnesses_with_zero_errors = fitnesses_with_less_than_two_errors[error_counts == 0]
+
+        individual_errors = (1 - candidates_with_one_error) * feature[variable_is_used]
+        fitnesses_where_no_errors = individual_errors * fitnesses_with_one_error.reshape((-1, 1))
+
+        p11 = np.mean(fitnesses_with_zero_errors)
+
+        samples_for_each_column = np.sum(individual_errors, axis=0)
+        samples_for_each_var = samples_for_each_column + len(fitnesses_with_zero_errors)
+        p1Xs = (np.sum(fitnesses_where_no_errors, axis=0) + np.sum(p11)) / samples_for_each_var
+
+        return p11, p1Xs
+
+    def get_remapped_fitnesses(self, ppi: PrecomputedPopulationInformation) -> np.ndarray:
+        return utils.remap_array_in_zero_one(ppi.fitness_array)
+
+    def __init__(self):
+        self.cached_normalised_fitnesses = PPICachedData(self.get_remapped_fitnesses)
+        self.cached_pX1s = PPICachedData(self.get_P1Xs)
+
+
+    def weakest_link_for_feature(self, feature_column_index: int,
+                                 pfi: PrecomputedFeatureInformation) -> float:
+        feature: HotEncodedFeature = pfi.feature_matrix[:, feature_column_index]
+        if not any(feature):
+            return 0
+        all_pX1s: FlatArray = self.cached_pX1s.get_data_for_ppi(pfi.precomputed_population_information)
+        normalised_fitnesses: FlatArray = self.cached_normalised_fitnesses.get_data_for_ppi(
+            pfi.precomputed_population_information)
+
+        pX1s = all_pX1s[feature == 1]
+        p11, p1Xs = self.get_p1Xs_for_feature_adjusted_by_fitness(feature_column_index, pfi, normalised_fitnesses)
+
+        if p11 == 0:
+            return 0
+        max_pX1_p1X = np.max(pX1s * p1Xs)
+        result = p11 * np.log2(p11 / max_pX1_p1X)
+
+        return result
+
+    def __repr__(self):
+        return f"WeakestLink(P)"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        scores = np.array([self.weakest_link_for_feature(feature_index, pfi)
+                           for feature_index in range(pfi.amount_of_features)])
+
+        return scores
+
+    def describe_score(self, given_score) -> str:
+        return f"Weakest_Link(P) = {given_score:.2f}"
