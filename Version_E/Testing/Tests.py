@@ -7,7 +7,6 @@ from typing import Callable, Iterable
 
 import numpy as np
 
-import SearchSpace
 import utils
 from BenchmarkProblems.CombinatorialProblem import TestableCombinatorialProblem, CombinatorialProblem
 from BenchmarkProblems.GraphColouring import GraphColouringProblem, InsularGraphColouringProblem
@@ -15,15 +14,13 @@ from BenchmarkProblems.TrapK import TrapK
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.Miner import FeatureMiner, run_with_limited_budget, \
     run_until_found_features, FeatureSelector, run_until_fixed_amount_of_iterations
-from Version_E.MeasurableCriterion.CriterionUtilities import Balance, Extreme
-from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness
 from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
+from Version_E.Sampling.EDAs.EDASampler import UMDA
+from Version_E.Sampling.FullSolutionSampler import FullSolutionSampler
 from Version_E.Sampling.GASampler import GASampler
-from Version_E.Sampling.RegurgitationSampler import get_reference_features_for_regurgitation_sampling, \
-    regurgitation_sample
-from Version_E.Testing import TestingUtilities, Criteria
+from Version_E.Sampling.SimpleSampler import SimpleSampler
+from Version_E.Testing import TestingUtilities
 from Version_E.Testing.TestingUtilities import execute_and_time
-from Version_E.Sampling.SimpleSampler import SimpleSampler, get_reference_features_for_simple_sampling
 
 Settings = dict
 TestResults = dict
@@ -200,11 +197,11 @@ def test_budget_needed_to_find_ideals(problem_parameters: dict,
 
 
 def test_performance_given_bootstrap(problem_parameters: dict,
-                                       criterion_parameters: dict,
-                                       miner_parameters: dict,
-                                       test_parameters: dict) -> TestResults:
+                                     criterion_parameters: dict,
+                                     miner_parameters: dict,
+                                     test_parameters: dict) -> TestResults:
     problem: TestableCombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
-    problem_str = problem_parameters["problem"]["which"] # assumes it's been shuffled
+    problem_str = problem_parameters["problem"]["which"]  # assumes it's been shuffled
     mined_per_run = test_parameters["features_per_run"]
     miner_max_budget = test_parameters["miner_max_budget"]
     ideal_features = problem.get_ideal_features()
@@ -213,14 +210,13 @@ def test_performance_given_bootstrap(problem_parameters: dict,
     generations_for_bootstrap = test_parameters["bootstrap_generations"]
     populations_for_bootstrap = test_parameters["bootstrap_populations"]
 
-
     def test_for_population_size(pop_size: int):
         # first we make the ga sampler, but we have to give it a dummy termination criteria
         bogus_termination_criteria = run_with_limited_budget(1)
         ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
-                         search_space=problem.search_space,
-                         population_size=pop_size,
-                         termination_criteria=bogus_termination_criteria)
+                               search_space=problem.search_space,
+                               population_size=pop_size,
+                               termination_criteria=bogus_termination_criteria)
 
         # this will be the reference population, which will be reused over and over
         # Note that when this is None, ga_miner knows to make a random population
@@ -235,7 +231,6 @@ def test_performance_given_bootstrap(problem_parameters: dict,
             bootstrap_ppi = PrecomputedPopulationInformation.from_preevolved_population(bootstrap_population, problem)
             criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
             selector = FeatureSelector(bootstrap_ppi, criterion)
-
 
             # use the reference population to mine features
             miner = TestingUtilities.decode_miner(miner_parameters,
@@ -258,15 +253,11 @@ def test_performance_given_bootstrap(problem_parameters: dict,
                    "used_miner_budget": used_budget_by_miner,
                    "time": execution_time}
 
-
-
     all_results = [item_for_combination
                    for bootstrap_pop_size in populations_for_bootstrap
                    for item_for_combination in test_for_population_size(bootstrap_pop_size)]
 
-
     return {"results_for_params": all_results}
-
 
 
 def test_compare_connectedness_of_results(problem_parameters: dict,
@@ -337,83 +328,70 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
 
 
 def test_compare_samplers(problem_parameters: dict,
-                          reference_miner_parameters: dict,
-                          sampling_miner_parameters: dict,
-                          ga_sampler_parameters: dict,
-                          test_parameters: dict,
-                          max_budget: int) -> TestResults:
+                          sampler_list: list[dict],
+                          criterion_parameters: dict,
+                          test_parameters: dict) -> TestResults:
     problem: CombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
-    termination_predicate = run_with_limited_budget(max_budget)
-    amount_of_reference_features = test_parameters["amount_of_reference_features"]
-    amount_of_sampled_candidates = test_parameters["amount_of_sampled_candidates"]
-    good_fitness_criterion = Balance([HighFitness(), ConsistentFitness()], weights=[1, 1])
-    importance_of_explainability_list = test_parameters["importance_of_explainability"]
 
-    termination_predicate = run_with_limited_budget(12000)
-    sample_size = 2400
-    training_ppi = PrecomputedPopulationInformation.from_problem(problem, sample_size)
+    # generate the reference population using a ga
+    reference_population_generator = GASampler(fitness_function=problem.score_of_candidate,
+                                               search_space=problem.search_space,
+                                               population_size=test_parameters["reference_population_size"],
+                                               termination_criteria=run_until_fixed_amount_of_iterations(
+                                                   test_parameters["reference_generations"]))
 
-    def sample_using_simple_sampler(importance_of_explainability: float) -> list[SearchSpace.Candidate]:
-        reference_features_for_simple_sampler = get_reference_features_for_simple_sampling(
-            problem=problem,
-            termination_predicate=termination_predicate,
-            ppi=training_ppi,
-            reference_miner_parameters=reference_miner_parameters,
-            amount_to_return=amount_of_reference_features,
-            importance_of_explainability=importance_of_explainability)
-        temp_selector = FeatureSelector(training_ppi, good_fitness_criterion)
-        scores_of_reference_features_for_simple_sampler = temp_selector.get_scores(
-            reference_features_for_simple_sampler)
-        simple_sampler = SimpleSampler(problem.search_space,
-                                       list(zip(reference_features_for_simple_sampler,
-                                                scores_of_reference_features_for_simple_sampler)))
+    reference_population = reference_population_generator.evolve_population()
+    reference_ppi = PrecomputedPopulationInformation.from_preevolved_population(reference_population, problem)
+    criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
+    selector = FeatureSelector(reference_ppi, criterion)
 
-        return [simple_sampler.sample_candidate() for _ in
-                range(amount_of_sampled_candidates)]
+    full_solution_amount = test_parameters["full_solution_amount"]
 
-    def sample_using_regurgitation(importance_of_explainability: float) -> list[SearchSpace.Candidate]:
-        reference_features_for_regurgitation_sampler = get_reference_features_for_regurgitation_sampling(
-            problem=problem,
-            termination_predicate=termination_predicate,
-            ppi=training_ppi,
-            reference_miner_parameters=reference_miner_parameters,
-            amount_to_return=amount_of_reference_features,
-            importance_of_explainability=importance_of_explainability)
 
-        return regurgitation_sample(reference_features=reference_features_for_regurgitation_sampler,
-                                    termination_predicate=termination_predicate,
-                                    # might change in the future, could be faster!
-                                    original_ppi=training_ppi,
-                                    sampling_miner_parameters=sampling_miner_parameters,
-                                    amount_to_return=amount_of_sampled_candidates)
 
-    def sample_using_ga() -> list[SearchSpace.Candidate]:
-        ga_sampler = GASampler(fitness_function=problem.score_of_candidate,
-                               search_space=problem.search_space,
-                               population_size=ga_sampler_parameters["population_size"],
-                               evaluation_budget=ga_sampler_parameters["generations"])
+    # test the various ways of obtaining a full solution
+    #    Miner gives PSs -> PSs are passed to a SimpleSampler -> Full solutions
+    #    EDA or Traditional GA -> Full Solutions
 
-        return ga_sampler.get_evolved_individuals(amount_of_sampled_candidates)
+    fitness_function = problem.score_of_candidate
 
-    def get_result_item(samples: Iterable[SearchSpace.Candidate],
-                        sampler_name: str,
-                        ioe: float) -> dict:
-        return {"sampler": sampler_name,
-                "ioe": ioe,
-                "fitnesses": [problem.score_of_candidate(candidate) for candidate in samples]}
 
-    results = []
-    for ioe in importance_of_explainability_list:
-        sampled_from_simple = sample_using_simple_sampler(ioe)
-        sampled_from_regurgitation = sample_using_regurgitation(ioe)
+    def get_miner_sampler(sampler_dict: dict) -> SimpleSampler:
+        miner = TestingUtilities.decode_miner(sampler_dict["miner"],
+                                              selector,
+                                              run_with_limited_budget(test_parameters["miner_budget"]))
+        basis_features = miner.get_meaningful_features(test_parameters["basis_PS_amount"])
+        scored_basis_features = list(zip(basis_features, selector.get_scores(basis_features)))
+        return SimpleSampler(search_space= problem.search_space,
+                             features_with_scores=scored_basis_features,
+                             fitness_function=fitness_function)
 
-        results.append(get_result_item(sampled_from_simple, "SimpleSampler", ioe))
-        results.append(get_result_item(sampled_from_regurgitation, "RegurgitationSampler", ioe))
+    def get_baseline_sampler(sampler_dict: dict) -> FullSolutionSampler:
+        sampler_kind = sampler_dict["which"]
+        if sampler_kind == "GA":
+            return GASampler(fitness_function=fitness_function,
+                             search_space=problem.search_space,
+                             population_size=sampler_dict["population"],
+                             termination_criteria=run_with_limited_budget(sampler_dict["budget"]))
+        elif sampler_kind == "UMDA":
+            return UMDA(search_space = problem.search_space,
+                        fitness_function= fitness_function,
+                        population_size = sampler_dict["population"],
+                        termination_predicate=run_with_limited_budget(sampler_dict["budget"]))
+        else:
+            raise Exception("Sampler method was not recognised")
 
-    sampled_using_ga = sample_using_ga()
-    results.append(get_result_item(sampled_using_ga, "GA", 0))
 
-    return {"for_each_ioe": results}
+    def get_datapoints_for_sampler(sampler_dict: dict) -> list[float]:
+        method = sampler_dict["method"]
+        sampler = get_miner_sampler(sampler_dict) if method == "via_miner" else get_baseline_sampler(sampler_dict)
+        sampled_with_scores = sampler.sample(full_solution_amount)
+        sampled, scores = utils.unzip(sampled_with_scores)
+        return scores
+
+
+    return {"sampling_results": [ {"sampler": sampler_dict, "fitnesses": get_datapoints_for_sampler(sampler_dict)}
+                                  for sampler_dict in sampler_list ]}
 
 
 def apply_test_once(arguments: Settings) -> TestResults:
@@ -421,40 +399,39 @@ def apply_test_once(arguments: Settings) -> TestResults:
     test_kind = test_parameters["which"]
 
     if test_kind == "results_given_budget":
-        miners = TestingUtilities.load_miners_from_second_command_line_argument()
+        miners = TestingUtilities.load_data_from_second_file()
         return test_run_with_limited_budget(problem_parameters=arguments["problem"],
                                             criterion_parameters=arguments["criterion"],
                                             miner_settings_list=miners,
                                             test_parameters=test_parameters,
                                             budget=test_parameters["budget"])
     elif test_kind == "budget_needed_to_find_ideals":
-        miners = TestingUtilities.load_miners_from_second_command_line_argument()
+        miners = TestingUtilities.load_data_from_second_file()
         return test_budget_needed_to_find_ideals(problem_parameters=arguments["problem"],
                                                  criterion_parameters=arguments["criterion"],
                                                  miner_settings_list=miners,
                                                  test_parameters=test_parameters,
                                                  max_budget=test_parameters["max_budget"])
     elif test_kind == "compare_connectedness_of_results":
-        miners = TestingUtilities.load_miners_from_second_command_line_argument()
+        miners = TestingUtilities.load_data_from_second_file()
         return test_compare_connectedness_of_results(problem_parameters=arguments["problem"],
                                                      criterion_parameters=arguments["criterion"],
                                                      miner_settings_list=miners,
                                                      test_parameters=test_parameters,
                                                      max_budget=test_parameters["budget"])
     elif test_kind == "compare_samplers":
+        samplers: list[dict] = TestingUtilities.load_data_from_second_file()
         return test_compare_samplers(problem_parameters=arguments["problem"],
-                                     reference_miner_parameters=arguments["reference_miner"],
-                                     sampling_miner_parameters=arguments["sampling_miner"],
-                                     ga_sampler_parameters=arguments["ga_sampler"],
-                                     test_parameters=test_parameters,
-                                     max_budget=test_parameters["budget"])
+                                     criterion_parameters=arguments["criterion"],
+                                     sampler_list=samplers,
+                                     test_parameters=test_parameters)
 
     if test_kind == "get_distribution":
         return test_get_distribution(arguments=arguments,
                                      runs=test_parameters["runs"],
                                      features_per_run=test_parameters["features_per_run"])
     if test_kind == "budget_given_bootstrap":
-        miners = TestingUtilities.load_miners_from_second_command_line_argument()
+        miners = TestingUtilities.load_data_from_second_file()
         return test_performance_given_bootstrap(problem_parameters=arguments["problem"],
                                                 miner_parameters=test_parameters["miner"],
                                                 criterion_parameters=arguments["criterion"],

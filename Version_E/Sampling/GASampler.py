@@ -5,38 +5,24 @@ import numpy as np
 import SearchSpace
 import utils
 from SearchSpace import Candidate
+from Version_E.Sampling.FullSolutionSampler import FullSolutionSampler, Population, EvaluatedPopulation, Fitness
 
 
-class GASampler:
-    Population = list[Candidate]
-    EvaluatedPopulation = list[(Candidate, float)]
-
-    fitness_function: Callable
-    search_space: SearchSpace.SearchSpace
+class GASampler(FullSolutionSampler):
     population_size: int
-    evaluation_budget: int
-
-    used_budget: int
     used_generations: int
 
-    def __init__(self, fitness_function: Callable, search_space: SearchSpace.SearchSpace, population_size: int,
+    def __init__(self,
+                 fitness_function: Callable,
+                 search_space: SearchSpace.SearchSpace,
+                 population_size: int,
                  termination_criteria: Callable):
-        self.fitness_function = fitness_function
-        self.search_space = search_space
+        super().__init__(search_space, fitness_function, termination_criteria)
         self.population_size = population_size
-        self.termination_criteria = termination_criteria
-        self.used_budget = 0
         self.used_generations = 0
 
     def __repr__(self):
         return "GASampler"
-
-    def evaluate_individual(self, candidate: Candidate) -> float:
-        self.used_budget += 1
-        return self.fitness_function(candidate)
-
-    def with_scores(self, population: Population) -> EvaluatedPopulation:
-        return [(candidate, self.evaluate_individual(candidate)) for candidate in population]
 
     def generate_selector(self, evaluated_population: EvaluatedPopulation):  # -> SupportsNext[Candidate]:
         population, scores = utils.unzip(evaluated_population)
@@ -98,25 +84,17 @@ class GASampler:
         children = list(elite)
         children.extend(make_new_child() for _ in range(self.population_size - elite_size))
 
-        self.used_generations +=1
+        self.used_generations += 1
         return children
-
-    def reset_used_budget(self):
-        self.used_budget = 0
 
     def evolve_population(self, population=None) -> Population:
         if population is None:
-            population = [self.search_space.get_random_candidate()
-                          for _ in range(self.population_size)]
+            population = self.get_random_population(self.population_size)
 
-        while not self.termination_criteria(used_budget=self.used_budget, iteration=self.used_generations):
+        while not self.termination_criteria(used_budget=self.evaluator.used_evaluations, iteration=self.used_generations):
             population = self.get_new_generation(population)
 
         return population
 
-    def get_evolved_individuals(self, amount_requested: int) -> Population:
-        result = []
-        while len(result) < amount_requested:
-            result.extend(self.evolve_population())
-
-        return result[:amount_requested]
+    def get_final_population(self) -> Population:
+        return self.evolve_population(population=None)

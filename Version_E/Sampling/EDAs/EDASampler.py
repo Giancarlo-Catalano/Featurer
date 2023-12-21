@@ -1,45 +1,66 @@
 from typing import Callable
 
 import utils
-from UnivariateUtils import Evaluator, Population, EvaluatedPopulation, UnivariateModel
+from UnivariateUtils import UnivariateModel
 from SearchSpace import SearchSpace, Candidate
+from Version_E.Sampling.FullSolutionSampler import FullSolutionSampler, EvaluatedPopulation, Population, Evaluator
 
 
-class EDASampler:
+class EDASampler(FullSolutionSampler):
     population_size: int
     selection_proportion = 0.3
 
-    def __init__(self, population_size: int):
+    search_space: SearchSpace
+    fitness_function: Callable
+    termination_predicate: Callable
+
+    def __init__(self,
+                 search_space: SearchSpace,
+                 fitness_function: Callable,
+                 population_size: int,
+                 termination_criteria: Callable):
+        super().__init__(search_space, fitness_function, termination_criteria)
         self.population_size = population_size
 
     def combine_new_model(self, current_model: UnivariateModel,
                           selected_population_model: UnivariateModel) -> UnivariateModel:
         raise Exception("In an implementation of EDASampler, self.update is not implemented")
 
-    def run(self, search_space: SearchSpace, fitness_function: Callable, budget: int) -> Candidate:
-        evaluator = Evaluator(fitness_function)
-        model = UnivariateModel.get_uniform(search_space)
+    def sample(self, how_many_to_return: int) -> EvaluatedPopulation:
+        evaluator = Evaluator(self.fitness_function)
+        model = UnivariateModel.get_uniform(self.search_space)
 
         population = evaluator.with_fitnesses(model.sample_many(self.population_size))
 
-        while evaluator.used_evaluations < budget:
+        iteration_count = 0
+
+        def should_continue():
+            return self.termination_predicate(iteration=iteration_count, used_budget=evaluator.used_evaluations)
+
+        while should_continue():
             amount_of_population_to_keep = int(len(population) * self.selection_proportion)
             selected = evaluator.select(population, amount_of_population_to_keep)
             model_from_selected = UnivariateModel.get_from_selected_population(evaluator.without_fitnesses(selected),
-                                                                               search_space)
+                                                                               self.search_space)
             model = self.combine_new_model(model, model_from_selected)
             children = model.sample_many(self.population_size - len(selected))
             evaluated_children = evaluator.with_fitnesses(children)
             population = selected + evaluated_children
 
+            iteration_count += 1
 
-        return population.sort(key=utils.second, reverse=True)[0]
+        population.sort(key=utils.second, reversed=True)
+        return population[:how_many_to_return]
 
 
 class UMDA(EDASampler):
 
-    def __init__(self):
-        pass
+    def __init__(self,
+                 search_space: SearchSpace,
+                 fitness_function: Callable,
+                 population_size: int,
+                 termination_predicate):
+        super().__init__(search_space, fitness_function, population_size, termination_predicate)
 
     def __repr__(self):
         return "UMDA"
@@ -52,7 +73,13 @@ class UMDA(EDASampler):
 class PBIL(EDASampler):
     rho: float
 
-    def __init__(self, rho: float):
+    def __init__(self,
+                 search_space: SearchSpace,
+                 fitness_function: Callable,
+                 population_size: int,
+                 termination_predicate: Callable,
+                 rho: float):
+        super().__init__(search_space, fitness_function, population_size, termination_predicate)
         self.rho = rho
 
     def __repr__(self):

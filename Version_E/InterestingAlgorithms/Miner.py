@@ -173,3 +173,7 @@ def run_until_found_features(features_to_find: Iterable[Feature], max_budget: in
     return should_terminate
 
 
+def run_as_long_as_you_need():
+    return True
+
+

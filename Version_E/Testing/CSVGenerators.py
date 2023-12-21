@@ -103,8 +103,8 @@ def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
         csv_writer.writerow(["sampler", "ioe", "fitness"])
-        for input_file in file_names:
-            with open(input_file, "r") as input_file:
+        for input_file_str in file_names:
+            with open(input_file_str, "r") as input_file:
                 data = json.load(input_file)
                 runs = utils.concat_lists([run["for_each_ioe"] for run in data["result"]])
                 rows = [(run["sampler"], run["ioe"], fitness)

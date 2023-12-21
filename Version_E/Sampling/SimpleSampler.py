@@ -6,47 +6,21 @@ import numpy as np
 
 import SearchSpace
 import utils
-from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
 from Version_E.Feature import Feature
-from Version_E.InterestingAlgorithms.Miner import FeatureSelector
-from Version_E.MeasurableCriterion.CriterionUtilities import Balance
-from Version_E.MeasurableCriterion.Explainability import Explainability
-from Version_E.MeasurableCriterion.GoodFitness import ConsistentFitness, HighFitness
-from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
-from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInformation
-from Version_E.Testing import Miners
+from Version_E.InterestingAlgorithms.Miner import run_as_long_as_you_need
+from Version_E.Sampling.FullSolutionSampler import FullSolutionSampler, EvaluatedPopulation
 
 
-def get_reference_features_for_simple_sampling(problem: CombinatorialProblem,
-                                               termination_predicate: Callable,
-                                               ppi: PrecomputedPopulationInformation,
-                                               reference_miner_parameters: dict,
-                                               amount_to_return: int,
-                                               importance_of_explainability: float) -> list[Feature]:
-    search_criterion = Balance([
-                            Explainability(problem),
-                            Balance([
-                                HighFitness(),
-                                ConsistentFitness()],
-                                weights = [1, 1])],
-                            weights=[importance_of_explainability, 1 - importance_of_explainability])
-
-    selector = FeatureSelector(ppi, search_criterion)
-
-    miner = Miners.decode_miner(reference_miner_parameters,
-                                selector=selector,
-                                termination_predicate=termination_predicate)
-
-    mined_features = miner.get_meaningful_features(amount_to_return)
-
-    return mined_features
-
-
-class SimpleSampler:
+class SimpleSampler(FullSolutionSampler):
     search_space: SearchSpace.SearchSpace
     features_with_scores: list[(Feature, float)]
 
-    def __init__(self, search_space: SearchSpace.SearchSpace, features_with_scores: list[(Feature, float)]):
+    def __init__(self, search_space: SearchSpace.SearchSpace,
+                 features_with_scores: list[(Feature, float)],
+                 fitness_function: Callable):
+        super().__init__(search_space,
+                         fitness_function=fitness_function,  #actually not used during the sampling!!
+                         termination_criteria=run_as_long_as_you_need)
         self.search_space = search_space
         self.features_with_scores = features_with_scores
         scores = utils.unzip(self.features_with_scores)[1]
@@ -110,3 +84,7 @@ class SimpleSampler:
         produced_feature = self.sample_feature_unsafe()
         filled_feature = self.fill_in_the_gaps(produced_feature)
         return filled_feature.to_candidate()
+
+    def sample(self, how_many_to_return: int) -> EvaluatedPopulation:
+        sampled = [self.sample_candidate() for _ in range(how_many_to_return)]
+        return self.with_scores(sampled)

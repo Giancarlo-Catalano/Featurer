@@ -1,50 +1,12 @@
 import random
-from typing import Iterable, Sized, Callable
+from typing import Iterable
 
 import numpy as np
 
-import utils
 from SearchSpace import SearchSpace, Candidate
+from Version_E.Sampling.FullSolutionSampler import Population
 
 VariableDistribution = np.ndarray
-Population = list[Candidate]
-Fitness = float
-EvaluatedPopulation = list[(Candidate, Fitness)]
-
-
-class Evaluator:
-    fitness_function: Callable
-    used_evaluations: int
-
-    def __init__(self, fitness_function: Callable):
-        self.fitness_function = fitness_function
-        self.used_evaluations = 0
-
-
-    def __repr__(self):
-        return "Evaluator"
-
-
-    def evaluate(self, candidate: Candidate) -> Fitness:
-        self.used_evaluations += 1
-        return self.fitness_function(candidate)
-
-    def with_fitnesses(self, population: Population) -> EvaluatedPopulation:
-        """Calculates the fitnesses for each individual and places them in pairs alongside the individuals"""
-        return [(candidate, self.fitness_function(candidate) for candidate in population)]
-
-    def without_fitnesses(self, evaluated_population: EvaluatedPopulation) -> Population:
-        """Removes the fitnesses and just returns a list of the individuals, in the same order as given"""
-        if evaluated_population:
-            return utils.unzip(evaluated_population)[0]
-        else:
-            return []
-
-    def select(self, evaluated_population: EvaluatedPopulation, how_many: int) -> EvaluatedPopulation:
-        """Finds the individuals with the greatest fitness and returns them without the fitness"""
-        evaluated_population.sort(key=utils.second, reverse=True)
-        return self.without_fitnesses(evaluated_population[:how_many])
-
 
 
 class UnivariateModel:

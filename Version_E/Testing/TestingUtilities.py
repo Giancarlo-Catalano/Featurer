@@ -18,6 +18,7 @@ TestResults = dict
 
 TerminationPredicate = Callable
 
+
 def to_json_object(input_string: str) -> JSON:
     return json.loads(input_string)
 
@@ -45,9 +46,10 @@ def execute_and_time(func, *args, **kwargs):
 def run_multiple_times(func, runs, *args, **kwargs):
     return [func(*args, **kwargs) for _ in range(runs)]
 
+
 def get_evolved_population_sample(problem: CombinatorialProblem,
-                           population_size: int,
-                           evaluation_budget: int) -> PrecomputedPopulationInformation:
+                                  population_size: int,
+                                  evaluation_budget: int) -> PrecomputedPopulationInformation:
     ga = GASampler(problem.score_of_candidate,
                    problem.search_space,
                    population_size,
@@ -66,14 +68,15 @@ def decode_termination_predicate(problem: CombinatorialProblem, test_settings: S
         return run_with_limited_budget(budget)
     elif test_kind == "run_until_success":
         budget: int = test_settings["budget"]
-        problem: TestableCombinatorialProblem = problem  # we assume that it is a TestableCombinatorialProblem
+        assert (
+            isinstance(problem, TestableCombinatorialProblem))  # we assume that it is a TestableCombinatorialProblem
         target_individuals = problem.get_ideal_features()
         return run_until_found_features(target_individuals, max_budget=budget)
     else:
         raise Exception(f"Could not generate a termination function for the following test settings: {test_settings}")
 
 
-def decode_problem(problem_arguments: Settings) -> CombinatorialProblem:
+def decode_problem(problem_arguments: Settings):
     return Problems.decode_problem(problem_arguments)
 
 
@@ -81,9 +84,8 @@ def decode_criterion(criterion_arguments: Settings, problem: CombinatorialProble
     return Criteria.decode_criterion(criterion_arguments, problem)
 
 
-
-
-def make_selector(problem: CombinatorialProblem, sample_size: int, ga_budget: int, criterion: MeasurableCriterion) -> FeatureSelector:
+def make_selector(problem: CombinatorialProblem, sample_size: int, ga_budget: int,
+                  criterion: MeasurableCriterion) -> FeatureSelector:
     training_ppi = get_evolved_population_sample(problem, sample_size, ga_budget)
     selector = FeatureSelector(training_ppi, criterion)
     return selector
@@ -103,13 +105,12 @@ def generate_problem_miner(arguments: Settings, overloading_miner_arguments=None
 
     if overloading_miner_arguments is None:
         overloading_miner_arguments = arguments["miner"]
-    miner = Miners.decode_miner(overloading_miner_arguments, selector, decode_termination_predicate(problem, arguments["test"]))
+    miner = Miners.decode_miner(overloading_miner_arguments, selector,
+                                decode_termination_predicate(problem, arguments["test"]))
     return problem, miner
 
 
-
-
-def load_miner_settings_list_from_external_file(file_name: str) -> list[dict]:
+def load_json_from_file(file_name: str) -> list[dict]:
     try:
         with open(file_name, 'r') as file:
             return json.load(file)
@@ -118,10 +119,6 @@ def load_miner_settings_list_from_external_file(file_name: str) -> list[dict]:
         print(f"Could not read file: {file_name}")
 
 
-def load_miners_from_second_command_line_argument():
+def load_data_from_second_file():
     second_argument = sys.argv[2]
-    return load_miner_settings_list_from_external_file(second_argument)
-
-
-
-
+    return load_json_from_file(second_argument)

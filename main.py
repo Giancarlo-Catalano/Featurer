@@ -104,17 +104,17 @@ def test_new_miner():
 
 
 def aggregate_folders():
-    folder_names = ["bgb"]
-    folder_root = r"C:\Users\gac8\Documents\R projects\PS_analysis\input_files\Dec-19"
+    folder_names = ["T2"]
+    folder_root = r"/home/gian/Documents/DataProcessing/Dec_20"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")
-        input_full_path = folder_root + "\\" + folder_name
-        output_full_path = folder_root + "\\csvs\\" + folder_name + ".csv"
+        input_full_path = folder_root + "/" + folder_name
+        output_full_path = folder_root + "/csvs/" + folder_name + ".csv"
         aggregate_files(input_full_path, output_full_path)
 
 
 if __name__ == '__main__':
     execute_command_line()
-    test_new_miner()
-    aggregate_folders()
+    # test_new_miner()
+    # aggregate_folders()
