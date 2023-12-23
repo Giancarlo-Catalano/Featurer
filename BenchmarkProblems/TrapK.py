@@ -74,7 +74,6 @@ class TrapK(TestableCombinatorialProblem):
 
         return [feature_with_a_single_zero(var_index) for var_index in range(self.amount_of_bits)]
 
-
     def get_ideal_features(self) -> list[Feature]:
         """
         :return: the features we're hoping the miner will find
@@ -88,7 +87,7 @@ class TrapK(TestableCombinatorialProblem):
         :param group_index: the group number, starting from the left at 0
         :return: the start and end indexes of the variables involved in the group
         """
-        return group_index*self.k, (group_index+1)*self.k
+        return group_index * self.k, (group_index + 1) * self.k
 
     def contains_which_ideal_features(self, feature: Feature) -> tuple:
         """
@@ -96,6 +95,7 @@ class TrapK(TestableCombinatorialProblem):
         :param feature: the feature which might contain the deceptive groups
         :return: a tuple of boolean values, each associated with a group
         """
+
         def is_group_all_ones(group_index: int) -> bool:
             start, end = self.get_bounds_of_group(group_index)
             all_values_are_used = all(feature.variable_mask[start:end])
@@ -106,3 +106,5 @@ class TrapK(TestableCombinatorialProblem):
 
         return tuple(is_group_all_ones(group_index) for group_index in range(self.amount_of_groups))
 
+    def get_global_optima_fitness(self) -> float:
+        return self.k * self.amount_of_groups

@@ -82,3 +82,7 @@ class TestableCombinatorialProblem(CombinatorialProblem):
 
     def get_ideal_features(self) -> Ideals:
         raise Exception("An implementation of TestableCombinatorialProblem does not implement get_ideal_features")
+
+
+    def get_global_optima_fitness(self) -> float:
+        raise Exception("An implementation of TestableCombinatorialProblem does not implement get_global_optima_fitness")

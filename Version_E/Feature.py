@@ -1,3 +1,4 @@
+import itertools
 from typing import Optional
 
 import SearchSpace
@@ -49,7 +50,17 @@ class Feature:
         return overlap.any()
 
     @classmethod
+    def can_be_merged(cls, first, second) -> bool:
+        overlap = first.variable_mask & second.variable_mask
+        where_different = bitarray(list(first.values_mask != second.values_mask))
+        disagreements = overlap & where_different
+        return not disagreements.any()
+
+
+
+    @classmethod
     def merge_is_good(cls, first, second) -> bool:
+
         merged = first.variable_mask | second.variable_mask
         return (merged != first.variable_mask) and (merged != second.variable_mask)
 

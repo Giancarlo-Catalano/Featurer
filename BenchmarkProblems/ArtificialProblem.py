@@ -26,6 +26,8 @@ class ArtificialProblem(TestableCombinatorialProblem):
     important_features: list[Feature]
     score_for_each_feature: list[int]
 
+    global_optima_fitness: float
+
     def get_random_feature(self) -> Feature:
         value = random.randrange(2)
         start = random.randrange(self.amount_of_bits - self.size_of_features)
@@ -84,6 +86,8 @@ class ArtificialProblem(TestableCombinatorialProblem):
         self.important_features = self.generate_features()
         self.score_for_each_feature = self.generate_scores_for_features()
 
+        self.global_optima_fitness = self.compute_global_optima_fitness()
+
     def __repr__(self):
         return (f"ArtificialProblem(bits={self.amount_of_bits}, "
                 f"amount_of_features = {self.amount_of_features},"
@@ -117,3 +121,37 @@ class ArtificialProblem(TestableCombinatorialProblem):
 
     def feature_repr(self, feature: SearchSpace.UserFeature):
         return Feature.from_legacy_feature(feature, self.search_space).__repr__()
+
+
+    def compute_global_optima_fitness(self) -> float:
+        # I actually need to brute force this!!
+
+        amount_of_important_features = len(self.important_features)
+        overlap_matrix = np.zeros((amount_of_important_features, amount_of_important_features), dtype=bool)
+        for index_a, feature_a in enumerate(self.important_features):
+            for index_b, feature_b in enumerate(self.important_features):
+                mergeable = Feature.can_be_merged(feature_a, feature_b)
+                overlap_matrix[index_a][index_b] = mergeable
+
+        Combination = np.array
+        def maybe_extended(combination: Combination, where: int):
+            if all(overlap_matrix[where][combination]):
+                new_item = np.array(combination)
+                new_item[where] = True
+                return [combination, new_item]
+            else:
+                return [combination]
+
+        combinations = [np.zeros(amount_of_important_features, dtype=bool)]
+        for to_be_considered in range(amount_of_important_features):
+            combinations = [new_item for old_comb in combinations
+                            for new_item in maybe_extended(old_comb, to_be_considered)]
+
+        # TODO this is only correct when the scores for the important features are all ones
+        lengths = [combination.sum() for combination in combinations]
+        return max(lengths)
+
+
+    def get_global_optima_fitness(self) -> float:
+        return self.global_optima_fitness
+

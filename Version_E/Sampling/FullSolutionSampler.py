@@ -26,7 +26,7 @@ class Evaluator:
 
     def with_fitnesses(self, population: Population) -> EvaluatedPopulation:
         """Calculates the fitnesses for each individual and places them in pairs alongside the individuals"""
-        return [(candidate, self.fitness_function(candidate) for candidate in population)]
+        return [(candidate, self.fitness_function(candidate)) for candidate in population]
 
     def without_fitnesses(self, evaluated_population: EvaluatedPopulation) -> Population:
         """Removes the fitnesses and just returns a list of the individuals, in the same order as given"""

@@ -6,6 +6,7 @@ from os.path import isfile, join
 
 import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
+from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
@@ -114,7 +115,15 @@ def aggregate_folders():
         aggregate_files(input_full_path, output_full_path)
 
 
+def test_other():
+    problem = ArtificialProblem(amount_of_bits=15, amount_of_features=5, allow_overlaps=True, size_of_partials=4)
+    print(f"The problem is {problem}")
+    global_optima = problem.get_global_optima_fitness()
+
+    print(f"The global optima is {global_optima}")
+
 if __name__ == '__main__':
     execute_command_line()
     # test_new_miner()
     # aggregate_folders()
+

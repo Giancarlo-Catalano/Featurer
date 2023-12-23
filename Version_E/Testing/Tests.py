@@ -327,71 +327,80 @@ def test_compare_connectedness_of_results(problem_parameters: dict,
     return {"results_for_each_miner": results}
 
 
-def test_compare_samplers(problem_parameters: dict,
+def test_compare_samplers(problem_parameters_list: list[dict],
                           sampler_list: list[dict],
                           criterion_parameters: dict,
                           test_parameters: dict) -> TestResults:
-    problem: CombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
+    def get_results_for_problem(problem_parameters: dict) -> list[dict]:
+        problem: TestableCombinatorialProblem = TestingUtilities.decode_problem(problem_parameters)
+        problem_str: str = problem_parameters["problem"]["which"]
+        global_optima_fitness = problem.get_global_optima_fitness()
 
-    # generate the reference population using a ga
-    reference_population_generator = GASampler(fitness_function=problem.score_of_candidate,
-                                               search_space=problem.search_space,
-                                               population_size=test_parameters["reference_population_size"],
-                                               termination_criteria=run_until_fixed_amount_of_iterations(
-                                                   test_parameters["reference_generations"]))
+        # generate the reference population using a ga
+        reference_population_generator = GASampler(fitness_function=problem.score_of_candidate,
+                                                   search_space=problem.search_space,
+                                                   population_size=test_parameters["reference_population_size"],
+                                                   termination_criteria=run_with_limited_budget(
+                                                       test_parameters["reference_budget"]))
 
-    reference_population = reference_population_generator.evolve_population()
-    reference_ppi = PrecomputedPopulationInformation.from_preevolved_population(reference_population, problem)
-    criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
-    selector = FeatureSelector(reference_ppi, criterion)
+        reference_population = reference_population_generator.evolve_population()
+        reference_ppi = PrecomputedPopulationInformation.from_preevolved_population(reference_population, problem)
+        criterion = TestingUtilities.decode_criterion(criterion_parameters, problem)
+        selector = FeatureSelector(reference_ppi, criterion)
 
-    full_solution_amount = test_parameters["full_solution_amount"]
+        full_solution_amount = test_parameters["full_solution_amount"]
 
+        # test the various ways of obtaining a full solution
+        #    Miner gives PSs -> PSs are passed to a SimpleSampler -> Full solutions
+        #    EDA or Traditional GA -> Full Solutions
 
+        fitness_function = problem.score_of_candidate
 
-    # test the various ways of obtaining a full solution
-    #    Miner gives PSs -> PSs are passed to a SimpleSampler -> Full solutions
-    #    EDA or Traditional GA -> Full Solutions
+        def get_miner_sampler(sampler_dict: dict) -> SimpleSampler:
+            miner = TestingUtilities.decode_miner(sampler_dict["miner"],
+                                                  selector,
+                                                  run_with_limited_budget(sampler_dict["miner_budget"]))
+            basis_features = miner.get_meaningful_features(sampler_dict["basis_PS_amount"])
+            scored_basis_features = list(zip(basis_features, selector.get_scores(basis_features)))
+            return SimpleSampler(search_space=problem.search_space,
+                                 features_with_scores=scored_basis_features,
+                                 fitness_function=fitness_function)
 
-    fitness_function = problem.score_of_candidate
+        def get_baseline_sampler(sampler_dict: dict) -> FullSolutionSampler:
+            sampler_kind = sampler_dict["which"]
+            if sampler_kind == "GA":
+                return GASampler(fitness_function=fitness_function,
+                                 search_space=problem.search_space,
+                                 population_size=sampler_dict["population_size"],
+                                 termination_criteria=run_with_limited_budget(sampler_dict["budget"]))
+            elif sampler_kind == "UMDA":
+                return UMDA(search_space=problem.search_space,
+                            fitness_function=fitness_function,
+                            population_size=sampler_dict["population_size"],
+                            termination_predicate=run_with_limited_budget(sampler_dict["budget"]))
+            else:
+                raise Exception("Sampler method was not recognised")
 
+        def get_datapoints_for_sampler(sampler_dict: dict) -> list[float]:
+            method = sampler_dict["method"]
+            sampler = get_miner_sampler(sampler_dict) if method == "via_miner" else get_baseline_sampler(sampler_dict)
+            sampled_with_scores = sampler.sample(full_solution_amount)
+            sampled, scores = utils.unzip(sampled_with_scores)
+            scores = [float(score) for score in scores]  # apparently these values are not json serializable otherwise ?
+            return scores
 
-    def get_miner_sampler(sampler_dict: dict) -> SimpleSampler:
-        miner = TestingUtilities.decode_miner(sampler_dict["miner"],
-                                              selector,
-                                              run_with_limited_budget(test_parameters["miner_budget"]))
-        basis_features = miner.get_meaningful_features(test_parameters["basis_PS_amount"])
-        scored_basis_features = list(zip(basis_features, selector.get_scores(basis_features)))
-        return SimpleSampler(search_space= problem.search_space,
-                             features_with_scores=scored_basis_features,
-                             fitness_function=fitness_function)
+        def result_item_for_sampler(sampler_dict: dict) -> dict:
+            fitnesses = get_datapoints_for_sampler(sampler_dict)
+            contains_global_optima = global_optima_fitness in fitnesses
+            return {"sampler": sampler_dict,
+                    "problem": problem_str,
+                    "fitnesses": fitnesses,
+                    "successfull": contains_global_optima}
 
-    def get_baseline_sampler(sampler_dict: dict) -> FullSolutionSampler:
-        sampler_kind = sampler_dict["which"]
-        if sampler_kind == "GA":
-            return GASampler(fitness_function=fitness_function,
-                             search_space=problem.search_space,
-                             population_size=sampler_dict["population"],
-                             termination_criteria=run_with_limited_budget(sampler_dict["budget"]))
-        elif sampler_kind == "UMDA":
-            return UMDA(search_space = problem.search_space,
-                        fitness_function= fitness_function,
-                        population_size = sampler_dict["population"],
-                        termination_predicate=run_with_limited_budget(sampler_dict["budget"]))
-        else:
-            raise Exception("Sampler method was not recognised")
+        return [result_item_for_sampler(sampler_dict) for sampler_dict in sampler_list]
 
-
-    def get_datapoints_for_sampler(sampler_dict: dict) -> list[float]:
-        method = sampler_dict["method"]
-        sampler = get_miner_sampler(sampler_dict) if method == "via_miner" else get_baseline_sampler(sampler_dict)
-        sampled_with_scores = sampler.sample(full_solution_amount)
-        sampled, scores = utils.unzip(sampled_with_scores)
-        return scores
-
-
-    return {"sampling_results": [ {"sampler": sampler_dict, "fitnesses": get_datapoints_for_sampler(sampler_dict)}
-                                  for sampler_dict in sampler_list ]}
+    return {"sampling_results": [result_item for problem_dict in problem_parameters_list
+                                 for result_item in get_results_for_problem(problem_dict)]}
 
 
 def apply_test_once(arguments: Settings) -> TestResults:
@@ -421,7 +430,8 @@ def apply_test_once(arguments: Settings) -> TestResults:
                                                      max_budget=test_parameters["budget"])
     elif test_kind == "compare_samplers":
         samplers: list[dict] = TestingUtilities.load_data_from_second_file()
-        return test_compare_samplers(problem_parameters=arguments["problem"],
+        problems: list[dict] = arguments["problems"]
+        return test_compare_samplers(problem_parameters_list=problems,
                                      criterion_parameters=arguments["criterion"],
                                      sampler_list=samplers,
                                      test_parameters=test_parameters)

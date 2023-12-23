@@ -96,3 +96,6 @@ class ShuffleProblem(TestableCombinatorialProblem):
         return [self.shuffle_feature(ideal) for ideal in ideals]
 
 
+
+    def get_global_optima_fitness(self) -> float:
+        return self.original_problem.get_global_optima_fitness()

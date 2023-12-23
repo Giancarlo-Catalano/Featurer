@@ -1,0 +1,24 @@
+[
+    {
+        "method": "via_miner",
+        "miner": {
+            "which": "constructive",
+            "population_size": 150,
+            "uses_archive": true,
+            "stochastic": false},
+        "miner_budget": 1000,
+        "basis_PS_amount": 50
+    },
+    {
+        "method": "baseline",
+        "which": "GA",
+        "population_size": 1500,
+        "budget": 1000
+    },
+    {
+        "method": "baseline",
+        "which": "UMDA",
+        "population_size": 1500,
+        "budget": 1000
+    }
+]

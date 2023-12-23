@@ -1,7 +1,7 @@
 from typing import Callable
 
 import utils
-from UnivariateUtils import UnivariateModel
+from Version_E.Sampling.EDAs.UnivariateUtils import UnivariateModel
 from SearchSpace import SearchSpace, Candidate
 from Version_E.Sampling.FullSolutionSampler import FullSolutionSampler, EvaluatedPopulation, Population, Evaluator
 
@@ -9,10 +9,6 @@ from Version_E.Sampling.FullSolutionSampler import FullSolutionSampler, Evaluate
 class EDASampler(FullSolutionSampler):
     population_size: int
     selection_proportion = 0.3
-
-    search_space: SearchSpace
-    fitness_function: Callable
-    termination_predicate: Callable
 
     def __init__(self,
                  search_space: SearchSpace,
@@ -27,33 +23,32 @@ class EDASampler(FullSolutionSampler):
         raise Exception("In an implementation of EDASampler, self.update is not implemented")
 
     def sample(self, how_many_to_return: int) -> EvaluatedPopulation:
-        evaluator = Evaluator(self.fitness_function)
         model = UnivariateModel.get_uniform(self.search_space)
 
-        population = evaluator.with_fitnesses(model.sample_many(self.population_size))
+        population = self.evaluator.with_fitnesses(model.sample_many(self.population_size))
 
         iteration_count = 0
 
         def should_continue():
-            return self.termination_predicate(iteration=iteration_count, used_budget=evaluator.used_evaluations)
+            return self.termination_criteria(iteration=iteration_count, used_budget=self.evaluator.used_evaluations)
 
         while should_continue():
             amount_of_population_to_keep = int(len(population) * self.selection_proportion)
-            selected = evaluator.select(population, amount_of_population_to_keep)
-            model_from_selected = UnivariateModel.get_from_selected_population(evaluator.without_fitnesses(selected),
+            selected = self.evaluator.select(population, amount_of_population_to_keep)
+            model_from_selected = UnivariateModel.get_from_selected_population(self.evaluator.without_fitnesses(selected),
                                                                                self.search_space)
             model = self.combine_new_model(model, model_from_selected)
             children = model.sample_many(self.population_size - len(selected))
-            evaluated_children = evaluator.with_fitnesses(children)
+            evaluated_children = self.evaluator.with_fitnesses(children)
             population = selected + evaluated_children
 
             iteration_count += 1
 
-        population.sort(key=utils.second, reversed=True)
+        population.sort(key=utils.second, reverse=True)
         return population[:how_many_to_return]
 
 
-class UMDA(EDASampler):
+class UMDA(EDASampler, FullSolutionSampler):
 
     def __init__(self,
                  search_space: SearchSpace,
