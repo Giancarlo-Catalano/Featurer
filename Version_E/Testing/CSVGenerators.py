@@ -4,6 +4,8 @@ import os
 from collections import namedtuple
 from typing import Iterable
 
+import numpy as np
+
 import utils
 from Version_E.Testing.Miners import generate_miner_name
 
@@ -100,16 +102,35 @@ def make_csv_for_bgb(file_names: list[str], output_name: str):
 
 
 def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
+    Datapoint = namedtuple("Datapoint", "method problem mean_fitness successfull")
+
+    def get_individual_measurements_from_output(data: dict) -> list[dict]:
+        return [result_dict for testing_run in data["result"]
+                for result_dict in testing_run["sampling_results"]]
+
+    def get_sampler_str(sampler_dict: dict) -> str:
+        if sampler_dict["method"] == "via_miner":
+            return generate_miner_name(sampler_dict["miner"])
+        else:
+            return sampler_dict["which"]
+    def get_row_from_measurement(measurement_dict: dict) -> Datapoint:
+        sampler_str = get_sampler_str(measurement_dict["sampler"])
+        problem = measurement_dict["problem"]
+        fitnesses = measurement_dict["fitnesses"]
+        mean_fitness = np.average(fitnesses)
+        successfull = measurement_dict["successfull"]
+
+        return Datapoint(sampler_str, problem, mean_fitness, successfull)
+
+    os.makedirs(os.path.dirname(output_name), exist_ok=True)  # to create the directory if it doesn't exist
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
-        csv_writer.writerow(["sampler", "ioe", "fitness"])
+        csv_writer.writerow(["method", "problem", "mean_fitness", "successfull"])
         for input_file_str in file_names:
             with open(input_file_str, "r") as input_file:
                 data = json.load(input_file)
-                runs = utils.concat_lists([run["for_each_ioe"] for run in data["result"]])
-                rows = [(run["sampler"], run["ioe"], fitness)
-                        for run in runs
-                        for fitness in run["fitnesses"]]
+                measurements = get_individual_measurements_from_output(data)
+                rows = map(get_row_from_measurement, measurements)
                 csv_writer.writerows(rows)
 
 

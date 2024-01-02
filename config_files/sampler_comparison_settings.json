@@ -38,8 +38,10 @@
   "test": {
     "which": "compare_samplers",
     "reference_population_size": 1500,
+    "basis_size": 50,
     "reference_budget": 10000,
-    "full_solution_amount": 50,
-    "runs": 1
+    "fs_return_amount": 50,
+    "runs": 1,
+    "fs_budgets": [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 28000, 29000, 30000]
   }
 }

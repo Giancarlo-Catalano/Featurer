@@ -148,6 +148,7 @@ class SlowInteraction(MeasurableCriterion):
 
 
 class Interaction(MeasurableCriterion):
+    """ this uses both the proportion and the average"""
     cached_pX1s: PPICachedData
     cached_normalised_fitnesses: PPICachedData
 
@@ -205,6 +206,8 @@ class Interaction(MeasurableCriterion):
 
         if p11 == 0:
             return 0
+
+
         max_pX1_p1X = np.max(pX1s * p1Xs)
         result = p11 * np.log2(p11 / max_pX1_p1X)
 
@@ -272,10 +275,11 @@ class Artefact(MeasurableCriterion):
 
 
 class InteractionSimplified(MeasurableCriterion):
+    """this just uses the average fitness"""
     cached_pX1s: PPICachedData
     cached_normalised_fitnesses: PPICachedData
 
-    def get_P1Xs(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
+    def get_pX1s(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
         normalised_fitnesses = self.cached_normalised_fitnesses.get_data_for_ppi(ppi)
 
         def get_P1X_for_column(val_column: int) -> float:
@@ -319,7 +323,7 @@ class InteractionSimplified(MeasurableCriterion):
 
     def __init__(self):
         self.cached_normalised_fitnesses = PPICachedData(self.get_remapped_fitnesses)
-        self.cached_pX1s = PPICachedData(self.get_P1Xs)
+        self.cached_pX1s = PPICachedData(self.get_pX1s)
 
 
     def weakest_link_for_feature(self, feature_column_index: int,
@@ -352,3 +356,72 @@ class InteractionSimplified(MeasurableCriterion):
 
     def describe_score(self, given_score) -> str:
         return f"Weakest_Link(P) = {given_score:.2f}"
+
+
+class MutualInformation(MeasurableCriterion):
+    cached_pXBs: PPICachedData
+
+    def get_p_XBs(self, ppi: PrecomputedPopulationInformation) -> FlatArray:
+        """ In this case we're returning the marginal probabilities"""
+        return np.sum(ppi.candidate_matrix, axis=0) / ppi.sample_size
+
+    def get_p_AB_AXs_XBs_for_feature(self, feature_column_index: int,
+                                     pfi: PrecomputedFeatureInformation,
+                                     cached_p_XBs: FlatArray) -> (float, FlatArray, FlatArray):
+        # first, we only consider rows where there are less than 2 errors
+        errors_for_feature = pfi.feature_presence_error_matrix[:, feature_column_index]
+        less_than_two_errors = errors_for_feature < 2
+        feature = pfi.feature_matrix[:, feature_column_index]
+        which_variables_are_fixed = feature == 1  # used to select columns with fixed variables
+        rows_with_less_than_two_errors = pfi.candidate_matrix[less_than_two_errors][:, which_variables_are_fixed]
+        error_counts_where_less_than_two = errors_for_feature[less_than_two_errors]
+
+        # we keep all the rows with exactly one error
+        rows_with_one_error = rows_with_less_than_two_errors[error_counts_where_less_than_two == 1]
+        where_single_errors_are = (1 - rows_with_one_error) * feature[which_variables_are_fixed]
+
+
+        # calculate the counts
+        c_AB = len(rows_with_less_than_two_errors) - len(rows_with_one_error)  # amount of rows that are exact matches
+        count_where_one_error_elsewhere = np.sum(where_single_errors_are, axis=0)
+        c_AX = c_AB + count_where_one_error_elsewhere
+
+        # calculate the probabilities
+        p_AB = c_AB / pfi.sample_size
+        p_AXs = c_AX / pfi.sample_size
+
+        p_XBs = cached_p_XBs[which_variables_are_fixed]
+
+        return p_AB, p_AXs, p_XBs
+
+    def get_remapped_fitnesses(self, ppi: PrecomputedPopulationInformation) -> np.ndarray:
+        return utils.remap_array_in_zero_one(ppi.fitness_array)
+
+    def __init__(self):
+        self.cached_pXBs = PPICachedData(self.get_p_XBs)
+
+
+    def get_lowest_information_share_for_feature(self, feature_column_index: int,
+                                                 pfi: PrecomputedFeatureInformation,
+                                                 cached_p_XBs: FlatArray) -> float:
+        p_AB, p_AXs, p_XBs = self.get_p_AB_AXs_XBs_for_feature(feature_column_index, pfi, cached_p_XBs)
+        if len(p_XBs) == 0:
+            return 0
+
+        max_p_AX_p_BX = np.max(p_AXs * p_XBs)
+        result = p_AB * np.log2(p_AB / max_p_AX_p_BX)
+
+        return result
+
+    def __repr__(self):
+        return f"MutualInformation"
+
+    def get_raw_score_array(self, pfi: PrecomputedFeatureInformation) -> np.ndarray:
+        cached_p_XBs: FlatArray = self.cached_pXBs.get_data_for_ppi(pfi.precomputed_population_information)
+        scores = np.array([self.get_lowest_information_share_for_feature(feature_index, pfi, cached_p_XBs)
+                           for feature_index in range(pfi.amount_of_features)])
+
+        return scores
+
+    def describe_score(self, given_score) -> str:
+        return f"MutualInformation = {given_score:.2f}"

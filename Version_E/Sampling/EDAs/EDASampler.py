@@ -54,8 +54,8 @@ class UMDA(EDASampler, FullSolutionSampler):
                  search_space: SearchSpace,
                  fitness_function: Callable,
                  population_size: int,
-                 termination_predicate):
-        super().__init__(search_space, fitness_function, population_size, termination_predicate)
+                 termination_criteria):
+        super().__init__(search_space, fitness_function, population_size, termination_criteria)
 
     def __repr__(self):
         return "UMDA"

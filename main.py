@@ -63,7 +63,7 @@ def test_new_miner():
                     "cols": 4}
 
 
-    problem = artificial_problem
+    problem = plateau
 
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
@@ -73,8 +73,8 @@ def test_new_miner():
 
     problem = Problems.decode_problem(problem)
     criterion = Criteria.decode_criterion(criterion, problem)
-    sample_size = 100
-    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, 1000)
+    sample_size = 10000
+    training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, -1)
     selector = FeatureSelector(training_ppi, criterion)
 
     miner = ConstructiveMiner(selector=selector,
@@ -105,8 +105,8 @@ def test_new_miner():
 
 
 def aggregate_folders():
-    folder_names = ["T2"]
-    folder_root = r"/home/gian/Documents/DataProcessing/Dec_20"
+    folder_names = ["bgb"]
+    folder_root = r"/home/gian/Documents/CondorDataCollection/PSs/Jan_1"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")

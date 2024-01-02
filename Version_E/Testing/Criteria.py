@@ -4,7 +4,8 @@ from Version_E.MeasurableCriterion.Explainability import Explainability, Trivial
 from Version_E.MeasurableCriterion.ForSampling import Completeness
 from Version_E.MeasurableCriterion.GoodFitness import HighFitness, ConsistentFitness, FitnessHigherThanAverage, \
     WorstCase, SuprisinglyHighFitness
-from Version_E.MeasurableCriterion.Interaction import Interaction, SlowInteraction, Artefact
+from Version_E.MeasurableCriterion.Interaction import Interaction, SlowInteraction, Artefact, \
+    MutualInformation, InteractionSimplified
 from Version_E.MeasurableCriterion.MeasurableCriterion import MeasurableCriterion
 from Version_E.MeasurableCriterion.Popularity import Overrepresentation, Commonality
 from Version_E.MeasurableCriterion.Robustness import Robustness, Deceptiveness
@@ -52,7 +53,7 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return Deceptiveness()
     elif criterion_string == "shap":
         return SHAPValue()
-    elif criterion_string == "interaction":
+    elif criterion_string == "interaction":  # this is atomicity!
         return Interaction()
     elif criterion_string == "target_size":
         return TargetSize(properties["target"])
@@ -62,6 +63,8 @@ def decode_criterion(properties: dict, problem: CombinatorialProblem) -> Measura
         return SuprisinglyHighFitness()
     elif criterion_string == "artefact":
         return Artefact()
+    elif criterion_string == "mutual_information":
+        return MutualInformation()
     else:
         raise Exception(f"The criterion string {criterion_string} was not recognised")
 
