@@ -38,7 +38,7 @@ def aggregate_files(directory: str, output_name: str):
     files_in_directory = [file for file in files_in_directory if isfile(file)]
 
     # aggregate
-    CSVGenerators.make_csv_for_bgb(files_in_directory, output_name)
+    CSVGenerators.make_csv_for_sampling_comparison(files_in_directory, output_name)
 
 
 
@@ -105,8 +105,8 @@ def test_new_miner():
 
 
 def aggregate_folders():
-    folder_names = ["bgb"]
-    folder_root = r"/home/gian/Documents/CondorDataCollection/PSs/Jan_1"
+    folder_names = ["sc"]
+    folder_root = r"/home/gian/Documents/CondorDataCollection/PSs/Jan_3"
 
     for folder_name in folder_names:
         print(f"Aggregating {folder_name}")
