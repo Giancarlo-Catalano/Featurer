@@ -7,6 +7,7 @@ from os.path import isfile, join
 import BenchmarkProblems.CombinatorialProblem
 import SearchSpace
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
+from BenchmarkProblems.PlateauProblem import PlateauProblem
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.Feature import Feature
 from Version_E.InterestingAlgorithms.BiDirectionalMiner import BiDirectionalMiner
@@ -39,9 +40,6 @@ def aggregate_files(directory: str, output_name: str):
 
     # aggregate
     CSVGenerators.make_csv_for_sampling_comparison(files_in_directory, output_name)
-
-
-
 
 
 def test_new_miner():
@@ -103,7 +101,6 @@ def test_new_miner():
         print(criterion.describe_feature(feature, training_ppi))
 
 
-
 def aggregate_folders():
     folder_names = ["sc"]
     folder_root = r"/home/gian/Documents/CondorDataCollection/PSs/Jan_3"
@@ -116,14 +113,16 @@ def aggregate_folders():
 
 
 def test_other():
-    problem = ArtificialProblem(amount_of_bits=15, amount_of_features=5, allow_overlaps=True, size_of_partials=4)
-    print(f"The problem is {problem}")
-    global_optima = problem.get_global_optima_fitness()
-
-    print(f"The global optima is {global_optima}")
+    problem = PlateauProblem(5)
+    ga = GASampler(fitness_function = problem.score_of_candidate,
+                   search_space = problem.search_space,
+                   population_size = 150,
+                   termination_criteria = run_with_limited_budget(100000))
+    ga.sample(50)
 
 if __name__ == '__main__':
-    execute_command_line()
+    # execute_command_line()
     # test_new_miner()
     # aggregate_folders()
+    test_other()
 

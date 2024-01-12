@@ -102,7 +102,7 @@ def make_csv_for_bgb(file_names: list[str], output_name: str):
 
 
 def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
-    Datapoint = namedtuple("Datapoint", "method problem total_evals ps_prop mean_fitness successfull")
+    Datapoint = namedtuple("Datapoint", "method problem total_evals ps_prop mean_fitness max_fitness successfull")
 
     def get_individual_measurements_from_output(data: dict) -> list[dict]:
         return [result_dict for testing_run in data["result"]
@@ -110,18 +110,20 @@ def make_csv_for_sampling_comparison(file_names: list[str], output_name: str):
     def get_row_from_measurement(measurement_dict: dict) -> Datapoint:
         fitnesses = measurement_dict["fitnesses"]
         mean_fitness = np.average(fitnesses)
+        max_fitness = np.max(fitnesses)
 
         return Datapoint(method = measurement_dict["method"],
                          problem = measurement_dict["problem"],
                          total_evals = measurement_dict["normal_eval_budget"],
                          ps_prop = measurement_dict.get("ps_eval_budget_prop", 0),
                          mean_fitness = mean_fitness,
+                         max_fitness = max_fitness,
                          successfull = measurement_dict["contains_global_optima"])
 
     os.makedirs(os.path.dirname(output_name), exist_ok=True)  # to create the directory if it doesn't exist
     with open(output_name, "w+", newline="", encoding="utf-8") as output_file:
         csv_writer = csv.writer(output_file, delimiter=",")
-        csv_writer.writerow(['method', 'problem', 'total_evals', 'ps_prop', 'mean_fitness', 'successfull'])
+        csv_writer.writerow(['method', 'problem', 'total_evals', 'ps_prop', 'mean_fitness', "max_fitness", 'successfull'])
         for input_file_str in file_names:
             with open(input_file_str, "r") as input_file:
                 data = json.load(input_file)

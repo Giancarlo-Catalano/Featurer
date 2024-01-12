@@ -476,7 +476,7 @@ def test_sampling_aux(problem_params: dict,
 
         scores = get_datapoints_from_sampler(sampler)
         contains_global_optima = global_optima_fitness in scores
-        yield {"method": method_params["method"],
+        yield {"method": method_params["method"]+f"{method_params['population_size']}",
                "normal_eval_budget": total_evaluation_budget,
                "problem": problem_str,
                "fitnesses": scores,

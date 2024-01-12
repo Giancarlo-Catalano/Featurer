@@ -24,10 +24,24 @@ class GASampler(FullSolutionSampler):
     def __repr__(self):
         return "GASampler"
 
-    def generate_selector(self, evaluated_population: EvaluatedPopulation):  # -> SupportsNext[Candidate]:
+
+    def generate_selector(self, evaluated_population: EvaluatedPopulation):  # -> SupportsNext[Candidate]
+        tournament_size = 2
+        sorted_population, _ = utils.unzip(sorted(evaluated_population, key=utils.second))
+        population_size = len(sorted_population)
+
+        while True:
+            tournament_indexes = [random.randrange(population_size) for _ in range(tournament_size)]
+            winning_index = max(tournament_indexes)
+            yield sorted_population[winning_index]
+
+
+
+    def generate_selector_old(self, evaluated_population: EvaluatedPopulation):  # -> SupportsNext[Candidate]:
         population, scores = utils.unzip(evaluated_population)
 
         normalised_scores = utils.remap_array_in_zero_one(scores)
+        normalised_scores = normalised_scores / np.sum(normalised_scores)
         cumulative_weights = np.cumsum(normalised_scores)
 
         batch_size = len(evaluated_population) * 2
