@@ -205,7 +205,7 @@ def test_performance_given_bootstrap(problem_parameters: dict,
     mined_per_run = test_parameters["features_per_run"]
     miner_max_budget = test_parameters["miner_max_budget"]
     ideal_features = problem.get_ideal_features()
-    found_all_targets = run_until_found_features(ideal_features, miner_max_budget)
+    miner_predicate = run_with_limited_budget(miner_max_budget)
 
     generations_for_bootstrap = test_parameters["bootstrap_generations"]
     populations_for_bootstrap = test_parameters["bootstrap_populations"]
@@ -235,11 +235,11 @@ def test_performance_given_bootstrap(problem_parameters: dict,
             # use the reference population to mine features
             miner = TestingUtilities.decode_miner(miner_parameters,
                                                   selector,
-                                                  termination_predicate=found_all_targets)
+                                                  termination_predicate=miner_predicate)
             mined_features, execution_time = execute_and_time(miner.get_meaningful_features, mined_per_run)
             mined_features = utils.remove_duplicates(mined_features, hashable=True)
 
-            # check whether the run was successfull or not
+            # check whether the run was successful or not
             amount_of_found_ideals = len([mined for mined in mined_features if mined in ideal_features])
             successful = amount_of_found_ideals == len(ideal_features)
 
@@ -532,7 +532,6 @@ def apply_test_once(arguments: Settings) -> TestResults:
                                      runs=test_parameters["runs"],
                                      features_per_run=test_parameters["features_per_run"])
     if test_kind == "budget_given_bootstrap":
-        miners = TestingUtilities.load_data_from_second_file()
         return test_performance_given_bootstrap(problem_parameters=arguments["problem"],
                                                 miner_parameters=test_parameters["miner"],
                                                 criterion_parameters=arguments["criterion"],
