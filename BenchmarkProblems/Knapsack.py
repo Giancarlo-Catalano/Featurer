@@ -151,7 +151,7 @@ class KnapsackProblem(CombinatorialProblem):
         def score_for_property(observed, expected):
             return abs(observed - expected) / expected
 
-        return sum(score_for_property(total_property, expected)
+        return -sum(score_for_property(total_property, expected)
                    for total_property, expected in zip([price, weight, volume],
                                                        [self.expected_price, self.expected_weight,
                                                         self.expected_volume]))

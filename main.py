@@ -9,6 +9,8 @@ import SearchSpace
 import utils
 from BenchmarkProblems.ArtificialProblem import ArtificialProblem
 from BenchmarkProblems.CombinatorialProblem import CombinatorialProblem
+from BenchmarkProblems.Knapsack import KnapsackProblem
+from BenchmarkProblems.CheckerBoard import CheckerBoardProblem
 from BenchmarkProblems.PlateauProblem import PlateauProblem
 from Version_E.BaselineAlgorithms.GA import GAMiner
 from Version_E.BaselineAlgorithms.RandomSearch import random_feature_in_search_space
@@ -28,6 +30,9 @@ from Version_E.PrecomputedPopulationInformation import PrecomputedPopulationInfo
 from Version_E.Testing import TestingUtilities, Problems, Criteria, Tests, CSVGenerators
 from Version_E.Sampling.GASampler import GASampler
 from Version_E.Testing.TestingUtilities import execute_and_time
+
+
+from BenchmarkProblems import GraphColouring
 
 
 def execute_command_line():
@@ -52,33 +57,18 @@ def aggregate_files(directory: str, output_name: str):
 
 
 def test_new_miner():
-    artificial_problem = {"which": "artificial",
-                          "size": 15,
-                          "size_of_partials": 4,
-                          "amount_of_features": 5,
-                          "allow_overlaps": True}
-
-    trapk = {"which": "trapk",
-             "amount_of_groups": 5,
-             "k": 5}
-
-    plateau = {"which": "plateau",
-               "amount_of_groups": 5}
-
-    checkerboard = {"which": "checkerboard",
-                    "rows": 4,
-                    "cols": 4}
-
-
     criterion = {"which": "balance",
                  "arguments":  [{"which": "simple"},
                                 {"which": "high_fitness"},
                                 {"which": "interaction"}],
                  "weights": [1, 1, 1]}
 
-    problem = plateau
 
-    problem = Problems.decode_problem(problem)
+    #problem = GraphColouring.GraphColouringProblem(3, 6, 0.3)
+    #problem = KnapsackProblem(expected_price=60, expected_volume=15, expected_weight=3000)
+    #problem = CheckerBoardProblem(rows=4, cols=4)
+    problem = ArtificialProblem(10, 4, 3, True)
+
     criterion = Criteria.decode_criterion(criterion, problem)
     sample_size = 10000
     training_ppi = TestingUtilities.get_evolved_population_sample(problem, sample_size, -1)
@@ -90,24 +80,18 @@ def test_new_miner():
                                  uses_archive=True,
                                  termination_criteria_met=run_with_limited_budget(budget_limit = 10000))
 
-    print(f"The problem is {problem}")
-    print(f"It has ideals \n\t" +"\n\t".join(f"{ideal}" for ideal in problem.get_ideal_features()))
-
+    print(f"The problem is {problem.long_repr()}")
     print(f"The miner is {miner}")
-
 
     good_features = miner.get_meaningful_features(30)
     print("The good features are: ")
     for feature in good_features:
         print(problem.feature_repr(feature.to_legacy_feature()))
         print(criterion.describe_feature(feature, training_ppi))
+        print("\n\n")
 
     evaluations = miner.feature_selector.used_budget
     print(f"The used budget is {evaluations}")
-
-    for feature in problem.get_ideal_features():
-        print(problem.feature_repr(feature.to_legacy_feature()))
-        print(criterion.describe_feature(feature, training_ppi))
 
 
 def aggregate_folders():
@@ -195,8 +179,8 @@ def test_time_comparison():
 
 
 if __name__ == '__main__':
-    execute_command_line()
-    # test_new_miner()
+    #execute_command_line()
+    test_new_miner()
     # aggregate_folders()
     # test_other()
 
